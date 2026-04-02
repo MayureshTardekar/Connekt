@@ -30,7 +30,7 @@ Connekt is an all-in-one smart campus companion app for college students. It com
 ### Installation
 1. Clone the repository.
    ```bash
-   git clone [<repository_url>](https://github.com/MayureshTardekar/Connekt)
+   git clone https://github.com/MayureshTardekar/Connekt
    ```
 2. Navigate into the project folder.
    ```bash
