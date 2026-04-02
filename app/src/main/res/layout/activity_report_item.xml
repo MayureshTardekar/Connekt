@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="40dp">
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbarReportItem"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/surface"
+            app:layout_constraintTop_toTopOf="parent"
+            app:title="Report Application"
+            app:titleTextColor="@color/textPrimary"/>
+
+        <!-- Radio Group for Status -->
+        <RadioGroup
+            android:id="@+id/rgStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginHorizontal="24dp"
+            android:layout_marginTop="24dp"
+            app:layout_constraintTop_toBottomOf="@id/toolbarReportItem"
+            android:gravity="center">
+
+            <RadioButton
+                android:id="@+id/rbLost"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="I Lost This"
+                android:buttonTint="#EF4444"
+                android:checked="true"/>
+
+            <RadioButton
+                android:id="@+id/rbFound"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="I Found This"
+                android:buttonTint="#10B981"/>
+        </RadioGroup>
+
+        <!-- Image Upload -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardReportImage"
+            android:layout_width="match_parent"
+            android:layout_height="180dp"
+            android:layout_marginHorizontal="24dp"
+            android:layout_marginTop="16dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#F3F4F6"
+            app:layout_constraintTop_toBottomOf="@id/rgStatus">
+
+            <ImageView
+                android:id="@+id/ivReportPreview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:visibility="gone"/>
+
+            <LinearLayout
+                android:id="@+id/llReportPlaceholder"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@android:drawable/ic_menu_camera"
+                    app:tint="@color/textSecondary"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tap to Upload Image"
+                    android:textColor="@color/textSecondary"
+                    android:textStyle="bold"
+                    android:layout_marginTop="8dp"/>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Item Name -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutItemName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Item Name (e.g., Car Keys)"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            app:boxCornerRadiusTopStart="12dp"
+            app:boxCornerRadiusTopEnd="12dp"
+            app:boxCornerRadiusBottomStart="12dp"
+            app:boxCornerRadiusBottomEnd="12dp"
+            android:layout_marginHorizontal="24dp"
+            android:layout_marginTop="24dp"
+            app:layout_constraintTop_toBottomOf="@id/cardReportImage">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etItemName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Location -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutItemLocation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Last Seen / Found Location"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            app:boxCornerRadiusTopStart="12dp"
+            app:boxCornerRadiusTopEnd="12dp"
+            app:boxCornerRadiusBottomStart="12dp"
+            app:boxCornerRadiusBottomEnd="12dp"
+            android:layout_marginHorizontal="24dp"
+            android:layout_marginTop="16dp"
+            app:layout_constraintTop_toBottomOf="@id/layoutItemName">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etItemLocation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Description -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutItemDesc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Additional Description"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            app:boxCornerRadiusTopStart="12dp"
+            app:boxCornerRadiusTopEnd="12dp"
+            app:boxCornerRadiusBottomStart="12dp"
+            app:boxCornerRadiusBottomEnd="12dp"
+            android:layout_marginHorizontal="24dp"
+            android:layout_marginTop="16dp"
+            app:layout_constraintTop_toBottomOf="@id/layoutItemLocation">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etItemDesc"
+                android:layout_width="match_parent"
+                android:layout_height="100dp"
+                android:gravity="top|start"
+                android:inputType="textMultiLine"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSubmitReport"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="Submit Report"
+            android:textSize="16sp"
+            android:textColor="@color/surface"
+            android:layout_marginHorizontal="24dp"
+            android:layout_marginTop="32dp"
+            app:cornerRadius="16dp"
+            app:backgroundTint="@color/primary"
+            app:layout_constraintTop_toBottomOf="@id/layoutItemDesc"/>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>
