@@ -28,6 +28,7 @@
         <activity android:name=".activities.LostFoundActivity" android:theme="@style/Theme.CampusHive.NoActionBar" />
         <activity android:name=".activities.ReportItemActivity" android:theme="@style/Theme.CampusHive.NoActionBar" />
         <activity android:name=".activities.ChatListActivity" android:theme="@style/Theme.CampusHive.NoActionBar" />
+        <activity android:name=".activities.ChatRoomActivity" android:theme="@style/Theme.CampusHive.NoActionBar" />
         <activity android:name=".activities.StudyGroupActivity" android:theme="@style/Theme.CampusHive.NoActionBar" />
         <activity android:name=".activities.AnonFeedActivity" android:theme="@style/Theme.CampusHive.NoActionBar" />
 
