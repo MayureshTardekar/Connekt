@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
+import '../main_screen.dart';
 
 class SignupScreen extends StatefulWidget {
-  const SignupScreen({Key? key}) : super(key: key);
+  const SignupScreen({super.key});
 
   @override
   State<SignupScreen> createState() => _SignupScreenState();
@@ -12,110 +13,146 @@ class _SignupScreenState extends State<SignupScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isPasswordVisible = false;
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
+  final _confirmController = TextEditingController();
+  bool _isAgreed = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppTheme.textPrimary),
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: AppTheme.softShadow,
+            ),
+            child: const Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary, size: 20),
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 16),
-              Text(
-                'Join CampusHive',
-                style: Theme.of(context).textTheme.displaySmall,
-              ),
               const SizedBox(height: 8),
-              Text(
-                'Create an account to connect with your peers.',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 48),
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  hintText: 'Full Name',
-                  prefixIcon: Icon(Icons.person_outline),
+              Text('Create Account', style: Theme.of(context).textTheme.displaySmall),
+              const SizedBox(height: 8),
+              Text('Join Connekt and connect with your campus.', style: Theme.of(context).textTheme.bodyMedium),
+              const SizedBox(height: 32),
+
+              Container(
+                padding: const EdgeInsets.all(28),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 24, offset: const Offset(0, 8)),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  hintText: 'University Email',
-                  prefixIcon: Icon(Icons.email_outlined),
-                ),
-              ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: _passwordController,
-                obscureText: !_isPasswordVisible,
-                decoration: InputDecoration(
-                  hintText: 'Password',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                      color: AppTheme.textSecondary,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildField('Full Name', _nameController, 'Alex Johnson', Icons.person_outline_rounded),
+                    const SizedBox(height: 20),
+                    _buildField('Email', _emailController, 'name@campus.edu', Icons.mail_outline_rounded, type: TextInputType.emailAddress),
+                    const SizedBox(height: 20),
+                    _buildField('Password', _passwordController, '••••••••', Icons.lock_outline_rounded, isPassword: true),
+                    const SizedBox(height: 20),
+                    _buildField('Confirm Password', _confirmController, '••••••••', Icons.verified_user_outlined, isPassword: true),
+                    const SizedBox(height: 24),
+
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          height: 22,
+                          width: 22,
+                          child: Checkbox(
+                            value: _isAgreed,
+                            activeColor: AppTheme.primary,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                            onChanged: (val) => setState(() => _isAgreed = val ?? false),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text.rich(
+                            TextSpan(
+                              text: 'I agree to the ',
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 13),
+                              children: const [
+                                TextSpan(text: 'Terms', style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.w700)),
+                                TextSpan(text: ' and '),
+                                TextSpan(text: 'Privacy Policy', style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.w700)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    onPressed: () {
-                      setState(() {
-                        _isPasswordVisible = !_isPasswordVisible;
-                      });
-                    },
-                  ),
+                    const SizedBox(height: 28),
+
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainScreen()));
+                        },
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                        child: const Text('Create Account', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 48),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    // TODO: Connect Firebase
-                  },
-                  child: const Text('Create Account'),
+              const SizedBox(height: 28),
+              Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Already have an account? ', style: Theme.of(context).textTheme.bodyMedium),
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Text('Sign In', style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.w700, fontSize: 15)),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 40),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Already a member? ', style: Theme.of(context).textTheme.bodyMedium),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pop(context);
-                    },
-                    child: const Text(
-                      'Sign In',
-                      style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
-              ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildField(String label, TextEditingController controller, String hint, IconData icon, {bool isPassword = false, TextInputType type = TextInputType.text}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: Theme.of(context).textTheme.labelLarge),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: controller,
+          obscureText: isPassword,
+          keyboardType: type,
+          decoration: InputDecoration(
+            hintText: hint,
+            prefixIcon: Icon(icon, color: AppTheme.textSecondary, size: 20),
+          ),
+        ),
+      ],
     );
   }
 }
