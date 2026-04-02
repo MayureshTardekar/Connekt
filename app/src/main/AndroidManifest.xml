@@ -18,5 +18,9 @@
             </intent-filter>
         </activity>
 
+        <activity android:name=".activities.LoginActivity" android:theme="@style/Theme.CampusHive.NoActionBar" />
+        <activity android:name=".activities.SignupActivity" android:theme="@style/Theme.CampusHive.NoActionBar" />
+        <activity android:name=".activities.DashboardActivity" android:theme="@style/Theme.CampusHive.NoActionBar" />
+
     </application>
 </manifest>
