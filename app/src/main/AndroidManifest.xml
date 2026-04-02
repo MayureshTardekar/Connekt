@@ -22,6 +22,7 @@
         <activity android:name=".activities.SignupActivity" android:theme="@style/Theme.CampusHive.NoActionBar" />
         <activity android:name=".activities.DashboardActivity" android:theme="@style/Theme.CampusHive.NoActionBar" />
         <activity android:name=".activities.NotesActivity" android:theme="@style/Theme.CampusHive.NoActionBar" />
+        <activity android:name=".activities.UploadNoteActivity" android:theme="@style/Theme.CampusHive.NoActionBar" />
         <activity android:name=".activities.EventsActivity" android:theme="@style/Theme.CampusHive.NoActionBar" />
         <activity android:name=".activities.LostFoundActivity" android:theme="@style/Theme.CampusHive.NoActionBar" />
         <activity android:name=".activities.ChatListActivity" android:theme="@style/Theme.CampusHive.NoActionBar" />
