@@ -372,11 +372,15 @@ app/
 *   **Nice additions:** Voice note UI placeholder, attach button bottom sheet (camera/gallery/document placeholders for media sharing), “start new chat” from edit icon.
 *   **Done criteria:** Chat feels complete even without backend. All data sourced from local mock models.
 
-### Phase 2 — Expressive Messaging (GIFs, Stickers, Reactions) (1 week)
-**Goal:** Make chat “fun + sticky”.
-*   **Features:** Emoji picker panel, sticker tray with categories (college, mood, memes), GIF picker UI (mock API first), tap reaction on any message, full-screen media viewer for images/GIFs.
-*   **UX polish:** Recent emojis/stickers, Favorite stickers, Quick reactions on double tap.
-*   **Done criteria:** Users can express via text + emoji + sticker + GIF in the same thread. Reaction counts + UI updates smoothly.
+### Phase 2 — Expressive Messaging & Social Connections (1 week)
+**Goal:** Make chat “fun + sticky” and introduce direct social connection management.
+*   **Features:** 
+    *   **Friend Requests Flow:** UI for accepting/ignoring requests, pending friends list, and blocking from strangers.
+    *   **Like / Dislike Mechanics:** Thumbs up/down quick interactions on messages alongside other emoji reactions.
+    *   Emoji picker panel, sticker tray with categories (college, mood, memes), GIF picker UI (mock API first).
+    *   Full-screen media viewer for images/GIFs.
+*   **UX polish:** Recent emojis/stickers, Favorite stickers, Quick reactions (Like/Dislike) on double tap.
+*   **Done criteria:** Users can express via text + emoji + sticker + GIF in the same thread. Reaction counts (Like/Dislike) update smoothly. Friend Request tabs work with mock users.
 
 ### Phase 3 — Campus Social Layer (1–2 weeks)
 **Goal:** Connect the chat to the rest of the ecosystem.
