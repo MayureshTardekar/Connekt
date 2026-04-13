@@ -6,6 +6,7 @@ import '../../core/providers/chat_provider.dart';
 import '../../core/models/chat_conversation.dart';
 import '../../theme/avatar_helper.dart';
 import 'chat_detail_screen.dart';
+import 'friend_requests_screen.dart';
 
 class ChatTab extends ConsumerWidget {
   const ChatTab({super.key});
@@ -72,8 +73,7 @@ class ChatTab extends ConsumerWidget {
                       // Pending Friend Requests Banner
                       GestureDetector(
                         onTap: () {
-                          // Placeholder for Friend Requests Screen
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Opening Friend Requests...')));
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const FriendRequestsScreen()));
                         },
                         child: Container(
                           margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
