@@ -186,7 +186,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _isDownloaded
-                      ? AppTheme.success
+                      ? AppTheme.emerald
                       : AppTheme.primary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),

@@ -343,7 +343,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                                 child: Text(
                                   'Reply',
                                   style: TextStyle(
-                                    color: AppTheme.neutral[400],
+                                    color: AppTheme.textSecondary,
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                   ),

@@ -667,7 +667,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                                   ? Colors.white.withOpacity(
                                                       0.15,
                                                     )
-                                                  : AppColors.secondary
+                                                  : AppColors.accent
                                                         .withOpacity(0.1),
                                               borderRadius:
                                                   BorderRadius.circular(12),
@@ -676,7 +676,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                                     ? Colors.white.withOpacity(
                                                         0.2,
                                                       )
-                                                    : AppColors.secondary
+                                                    : AppColors.accent
                                                           .withOpacity(0.3),
                                               ),
                                             ),
@@ -844,7 +844,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                                     : Icons.check_rounded,
                                                 size: 14,
                                                 color: msg.isRead
-                                                    ? AppColors.secondary
+                                                    ? AppColors.accent
                                                     : Colors.white.withOpacity(
                                                         0.7,
                                                       ),

@@ -33,7 +33,7 @@ class AppTheme {
       ),
 
       // Card Theme (Modern flat cards with borders)
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: AppColors.surface,
         elevation: 0,
         shape: RoundedRectangleBorder(

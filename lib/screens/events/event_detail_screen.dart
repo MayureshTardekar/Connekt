@@ -338,7 +338,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _isRsvped
-                          ? AppTheme.success
+                          ? AppTheme.emerald
                           : widget.gradientColors.first,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
