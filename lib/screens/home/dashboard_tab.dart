@@ -10,6 +10,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/dashboard_provider.dart';
 import '../../core/providers/ai_provider.dart';
 
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 class DashboardTab extends ConsumerStatefulWidget {
   const DashboardTab({super.key});
 
@@ -20,6 +22,30 @@ class DashboardTab extends ConsumerStatefulWidget {
 class _DashboardTabState extends ConsumerState<DashboardTab>
     with TickerProviderStateMixin {
   late AnimationController _staggerController;
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning,';
+    if (hour < 17) return 'Good afternoon,';
+    return 'Good evening,';
+  }
+
+  String _getUserName() {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return 'Student';
+    return user.userMetadata?['full_name'] ??
+        user.userMetadata?['name'] ??
+        user.email?.split('@').first ??
+        'Student';
+  }
+
+  String _getUserInitials() {
+    final name = _getUserName();
+    final parts = name.split(' ');
+    if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    return name.isNotEmpty ? name[0].toUpperCase() : 'S';
+  }
+
 
   @override
   void initState() {
@@ -86,7 +112,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab>
                         child: CircleAvatar(
                           radius: 22,
                           backgroundColor: Colors.white,
-                          child: avatarWidget('Alex Johnson', radius: 20),
+                          child: avatarWidget(_getUserInitials(), radius: 20),
                         ),
                       ),
                       const SizedBox(width: 14),
@@ -95,13 +121,13 @@ class _DashboardTabState extends ConsumerState<DashboardTab>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Good evening,',
+                              _getGreeting(),
                               style: Theme.of(
                                 context,
                               ).textTheme.bodyMedium?.copyWith(fontSize: 13),
                             ),
                             Text(
-                              'User', // ## [MOCK DATA] 'Alex Johnson'
+                              _getUserName(),
                               style: Theme.of(
                                 context,
                               ).textTheme.titleLarge?.copyWith(fontSize: 19),

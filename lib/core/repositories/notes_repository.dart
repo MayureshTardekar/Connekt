@@ -4,10 +4,13 @@ import '../models/academic_note.dart';
 class NotesRepository {
   final _supabase = Supabase.instance.client;
 
+  // Table name must match the Supabase schema: 'academic_notes'
+  static const _table = 'academic_notes';
+
   Future<List<AcademicNote>> getNotes() async {
     try {
       final response = await _supabase
-          .from('notes')
+          .from(_table)
           .select()
           .order('created_at', ascending: false);
       
@@ -20,7 +23,7 @@ class NotesRepository {
 
   Stream<List<AcademicNote>> watchNotes() {
     return _supabase
-        .from('notes')
+        .from(_table)
         .stream(primaryKey: ['id'])
         .order('created_at', ascending: false)
         .map((data) => data.map((note) => AcademicNote.fromMap(note)).toList());
@@ -28,7 +31,7 @@ class NotesRepository {
 
   Future<void> uploadNote(AcademicNote note) async {
     try {
-      await _supabase.from('notes').insert(note.toMap());
+      await _supabase.from(_table).insert(note.toMap());
     } catch (e) {
       print('Error uploading note: $e');
     }
