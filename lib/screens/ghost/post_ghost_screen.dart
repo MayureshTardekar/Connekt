@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_colors.dart';
 
 class PostGhostScreen extends StatefulWidget {
   const PostGhostScreen({super.key});
@@ -9,6 +10,11 @@ class PostGhostScreen extends StatefulWidget {
 
 class _PostGhostScreenState extends State<PostGhostScreen> {
   String? _selectedMood;
+  int _charCount = 0;
+  final int _maxChars = 500;
+  bool _isEphemeral = false;
+  bool _isSensitive = false;
+  bool _isPoll = false;
 
   final List<Map<String, dynamic>> _moods = [
     {'label': 'Stressed', 'icon': Icons.sentiment_very_dissatisfied_rounded, 'color': const Color(0xFFDC2626)},
@@ -91,7 +97,13 @@ class _PostGhostScreenState extends State<PostGhostScreen> {
             const SizedBox(height: 28),
 
             // Text area
-            const Text('What\'s on your mind?', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('What\'s on your mind?', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                Text('${_charCount}/$_maxChars', style: TextStyle(color: _charCount > _maxChars ? AppColors.error : Colors.white54, fontSize: 12)),
+              ],
+            ),
             const SizedBox(height: 16),
             Container(
               decoration: BoxDecoration(
@@ -100,7 +112,8 @@ class _PostGhostScreenState extends State<PostGhostScreen> {
                 border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               ),
               child: TextField(
-                maxLines: 8,
+                maxLines: 6,
+                onChanged: (val) => setState(() => _charCount = val.length),
                 style: const TextStyle(color: Colors.white, fontSize: 16, height: 1.6),
                 decoration: InputDecoration(
                   hintText: 'Share your thoughts, feelings, or just vent...',
@@ -110,6 +123,59 @@ class _PostGhostScreenState extends State<PostGhostScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 24),
+            
+            // Advanced options
+            const Text('Post Options', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            
+            _buildToggleOption(
+              icon: Icons.timer_outlined,
+              title: 'Ephemeral Post',
+              subtitle: 'Destroys itself after 24 hours',
+              value: _isEphemeral,
+              onChanged: (val) => setState(() => _isEphemeral = val),
+            ),
+            const SizedBox(height: 12),
+            _buildToggleOption(
+              icon: Icons.warning_amber_rounded,
+              title: 'Sensitive Content',
+              subtitle: 'Adds a trigger warning blur',
+              value: _isSensitive,
+              onChanged: (val) => setState(() => _isSensitive = val),
+            ),
+            const SizedBox(height: 12),
+            _buildToggleOption(
+              icon: Icons.poll_outlined,
+              title: 'Add Anonymous Poll',
+              subtitle: 'Cannot be edited once posted',
+              value: _isPoll,
+              onChanged: (val) => setState(() => _isPoll = val),
+            ),
+
+            if (_isPoll) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16)),
+                child: Column(
+                  children: [
+                    _buildPollOptionField('Option 1'),
+                    const SizedBox(height: 8),
+                    _buildPollOptionField('Option 2'),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.add_circle_outline, color: AppColors.primary, size: 18),
+                        const SizedBox(width: 8),
+                        Text('Add another option', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                      ],
+                    )
+                  ],
+                ),
+              )
+            ],
+
             const SizedBox(height: 32),
 
             SizedBox(
@@ -128,6 +194,49 @@ class _PostGhostScreenState extends State<PostGhostScreen> {
             ),
             const SizedBox(height: 40),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildToggleOption({required IconData icon, required String title, required String subtitle, required bool value, required void Function(bool) onChanged}) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16)),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.white70),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 2),
+                Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+              ],
+            ),
+          ),
+          Switch(
+            value: value,
+            activeColor: const Color(0xFF7E22CE),
+            onChanged: onChanged,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPollOptionField(String hint) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(12)),
+      child: TextField(
+        style: const TextStyle(color: Colors.white, fontSize: 14),
+        decoration: InputDecoration(
+          border: InputBorder.none,
+          hintText: hint,
+          hintStyle: const TextStyle(color: Colors.white30),
         ),
       ),
     );

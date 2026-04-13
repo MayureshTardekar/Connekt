@@ -139,17 +139,24 @@ class _GhostTabState extends State<GhostTab> {
                   child: ListView(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     children: [
+                      // Ephemeral and Sensitive
                       _buildGhostPost(context, 'VENTING', const Color(0xFFF43F5E), Icons.whatshot_rounded, '2m ago',
                         'Sometimes I feel like I\'m studying for a degree in stress management rather than Computer Science. Does anyone else feel like they\'re just pretending to know what\'s going on?',
-                        128, 14),
+                        128, 14, isEphemeral: true, isSensitive: true),
                       const SizedBox(height: 14),
+                      // Anonymous Poll
+                      _buildGhostPost(context, 'CONFUSED', const Color(0xFFF59E0B), Icons.psychology_rounded, '1h ago',
+                        'Which IDE are you guys actually using for the MP project? I feel like Android Studio is cooking my RAM.',
+                        89, 22, pollOptions: [
+                          {'title': 'VS Code', 'percent': 65.0},
+                          {'title': 'Android Studio', 'percent': 25.0},
+                          {'title': 'IntelliJ', 'percent': 10.0},
+                        ]),
+                      const SizedBox(height: 14),
+                      // Standard post
                       _buildGhostPost(context, 'HAPPY', const Color(0xFF10B981), Icons.sentiment_very_satisfied_rounded, '15m ago',
                         'Finally nailed that presentation today. The library cafe was actually quiet for once. Today is a win!',
                         45, 3),
-                      const SizedBox(height: 14),
-                      _buildGhostPost(context, 'CONFUSED', const Color(0xFFF59E0B), Icons.psychology_rounded, '1h ago',
-                        'Is it normal to have a crush on your TA or am I just desperate for academic validation? Asking for a friend.',
-                        89, 22),
                       const SizedBox(height: 14),
                       _buildGhostPost(context, 'MOTIVATED', const Color(0xFF3B82F6), Icons.rocket_launch_rounded, '3h ago',
                         'Just submitted my first ever open source PR and it got merged! Small step but it feels huge. Keep going everyone! 🚀',
@@ -184,7 +191,7 @@ class _GhostTabState extends State<GhostTab> {
     );
   }
 
-  Widget _buildGhostPost(BuildContext context, String tag, Color tagColor, IconData tagIcon, String time, String content, int likes, int comments) {
+  Widget _buildGhostPost(BuildContext context, String tag, Color tagColor, IconData tagIcon, String time, String content, int likes, int comments, {bool isEphemeral = false, bool isSensitive = false, List<Map<String, dynamic>>? pollOptions}) {
     return GestureDetector(
       onTap: () {
         Navigator.push(context, MaterialPageRoute(
@@ -204,31 +211,103 @@ class _GhostTabState extends State<GhostTab> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(color: tagColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(tagIcon, size: 13, color: tagColor),
-                      const SizedBox(width: 5),
-                      Text(tag, style: TextStyle(color: tagColor, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(color: tagColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(tagIcon, size: 13, color: tagColor),
+                          const SizedBox(width: 5),
+                          Text(tag, style: TextStyle(color: tagColor, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+                        ],
+                      ),
+                    ),
+                    if (isEphemeral) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                        decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.timer_outlined, size: 12, color: Colors.orange),
+                            SizedBox(width: 4),
+                            Text('24H', style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      )
                     ],
-                  ),
+                  ],
                 ),
                 Text(time, style: const TextStyle(color: Color(0xFF6B7280), fontSize: 11)),
               ],
             ),
             const SizedBox(height: 14),
-            Text(content, style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 15, height: 1.6, fontWeight: FontWeight.w400)),
+            if (isSensitive)
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(color: Colors.black45, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.red.withOpacity(0.3))),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text('Sensitive Content Hidden', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13, fontWeight: FontWeight.w600))),
+                    Text('Show', style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 13)),
+                  ],
+                ),
+              )
+            else
+              Text(content, style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 15, height: 1.6, fontWeight: FontWeight.w400)),
+            
+            if (pollOptions != null) ...[
+              const SizedBox(height: 16),
+              ...pollOptions.map((opt) => Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: Stack(
+                  children: [
+                    Container(
+                      height: 36,
+                      width: double.infinity,
+                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(8)),
+                    ),
+                    FractionallySizedBox(
+                      widthFactor: opt['percent'] / 100,
+                      child: Container(
+                        height: 36,
+                        decoration: BoxDecoration(color: tagColor.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                    Positioned.fill(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(opt['title'], style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                            Text('${opt['percent']}%', style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )),
+              Text('243 votes', style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11)),
+            ],
+
             const SizedBox(height: 18),
             Divider(color: Colors.white.withValues(alpha: 0.06), height: 1),
             const SizedBox(height: 14),
             Row(
               children: [
-                Icon(Icons.favorite_border_rounded, size: 18, color: Colors.white.withValues(alpha: 0.4)),
-                const SizedBox(width: 6),
-                Text('$likes', style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 13, fontWeight: FontWeight.w600)),
+                Icon(Icons.keyboard_double_arrow_up_rounded, size: 20, color: Colors.white.withValues(alpha: 0.4)),
+                const SizedBox(width: 4),
+                Text('$likes', style: TextStyle(color: tagColor, fontSize: 13, fontWeight: FontWeight.w700)),
+                const SizedBox(width: 4),
+                Icon(Icons.keyboard_double_arrow_down_rounded, size: 20, color: Colors.white.withValues(alpha: 0.4)),
                 const SizedBox(width: 24),
                 Icon(Icons.chat_bubble_outline_rounded, size: 17, color: Colors.white.withValues(alpha: 0.4)),
                 const SizedBox(width: 6),
