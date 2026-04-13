@@ -15,9 +15,9 @@ final campusSummaryProvider = FutureProvider<String>((ref) async {
   final aiRepo = ref.watch(aiRepositoryProvider);
   
   // Watch all campus data streams
-  final notes = ref.watch(academicNotesProvider).value ?? [];
-  final events = ref.watch(campusEventsProvider).value ?? [];
-  final lostFound = ref.watch(lostFoundProvider).value ?? [];
+  final notes = ref.watch(academicNotesProvider).asData?.value ?? [];
+  final events = ref.watch(campusEventsProvider).asData?.value ?? [];
+  final lostFound = ref.watch(lostFoundProvider).asData?.value ?? [];
   
   // If we have some data, summarize it
   return aiRepo.summarizeAppState(
