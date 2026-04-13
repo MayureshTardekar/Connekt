@@ -4,15 +4,20 @@ import '../../theme/avatar_helper.dart';
 import '../main_screen.dart';
 import '../lost_found/lost_found_tab.dart';
 import '../study_groups/study_groups_tab.dart';
+import '../ai/ai_chat_screen.dart';
 
-class DashboardTab extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/providers/dashboard_provider.dart';
+import '../../core/providers/ai_provider.dart';
+
+class DashboardTab extends ConsumerStatefulWidget {
   const DashboardTab({super.key});
 
   @override
-  State<DashboardTab> createState() => _DashboardTabState();
+  ConsumerState<DashboardTab> createState() => _DashboardTabState();
 }
 
-class _DashboardTabState extends State<DashboardTab>
+class _DashboardTabState extends ConsumerState<DashboardTab>
     with TickerProviderStateMixin {
   late AnimationController _staggerController;
 
@@ -96,7 +101,7 @@ class _DashboardTabState extends State<DashboardTab>
                               ).textTheme.bodyMedium?.copyWith(fontSize: 13),
                             ),
                             Text(
-                              'Alex Johnson',
+                              'User', // ## [MOCK DATA] 'Alex Johnson'
                               style: Theme.of(
                                 context,
                               ).textTheme.titleLarge?.copyWith(fontSize: 19),
@@ -223,20 +228,20 @@ class _DashboardTabState extends State<DashboardTab>
                             Row(
                               children: [
                                 _buildStatPill(
-                                  '24',
+                                  '${ref.watch(dashboardStatsProvider).noteCount}',
                                   'Notes',
                                   const Color(0xFF818CF8),
                                 ),
                                 const SizedBox(width: 10),
                                 _buildStatPill(
-                                  '5',
-                                  'Events',
+                                  '${ref.watch(dashboardStatsProvider).ghostPostCount}',
+                                  'Secrets',
                                   const Color(0xFFFBBF24),
                                 ),
                                 const SizedBox(width: 10),
                                 _buildStatPill(
-                                  '12',
-                                  'Online',
+                                  '${ref.watch(dashboardStatsProvider).unreadMessagesCount}',
+                                  'Messages',
                                   const Color(0xFF34D399),
                                 ),
                               ],
@@ -388,8 +393,109 @@ class _DashboardTabState extends State<DashboardTab>
               ),
               const SizedBox(height: 32),
 
+              // AI Assistant Card
               FadeTransition(
                 opacity: _staggeredFade(6),
+                child: SlideTransition(
+                  position: _staggeredSlide(6),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF0F172A).withOpacity(0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const AIChatScreen()),
+                        ),
+                        borderRadius: BorderRadius.circular(24),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.cyan.withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.bolt_rounded,
+                                  color: Colors.cyanAccent,
+                                  size: 28,
+                                ),
+                              ),
+                              const SizedBox(width: 20),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Connekt AI Assistant',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    ref.watch(campusSummaryProvider).when(
+                                          data: (summary) => Text(
+                                            summary,
+                                            style: const TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 13,
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          loading: () => const Text(
+                                            'Analyzing campus activity...',
+                                            style: TextStyle(
+                                              color: Colors.white38,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                          error: (_, __) => const Text(
+                                            'Summarize campus activity or ask anything.',
+                                            style: TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(
+                                Icons.chevron_right_rounded,
+                                color: Colors.white38,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              FadeTransition(
+                opacity: _staggeredFade(7),
                 child: Text(
                   'Recent Activity',
                   style: Theme.of(context).textTheme.titleLarge,
@@ -403,6 +509,7 @@ class _DashboardTabState extends State<DashboardTab>
                   position: _staggeredSlide(7),
                   child: Column(
                     children: [
+                      /* ## [MOCK DATA]
                       _buildActivityCard(
                         context,
                         name: 'Jordan Davies',
@@ -432,6 +539,7 @@ class _DashboardTabState extends State<DashboardTab>
                         iconColor: AppTheme.teal,
                         iconBg: const Color(0xFFCCFBF1),
                       ),
+                      */
                     ],
                   ),
                 ),

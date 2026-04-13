@@ -4,14 +4,19 @@ import '../../theme/avatar_helper.dart';
 import 'upload_note_screen.dart';
 import 'note_detail_screen.dart';
 
-class NotesTab extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/providers/campus_provider.dart';
+import '../../core/models/academic_note.dart';
+import 'package:intl/intl.dart';
+
+class NotesTab extends ConsumerStatefulWidget {
   const NotesTab({super.key});
 
   @override
-  State<NotesTab> createState() => _NotesTabState();
+  ConsumerState<NotesTab> createState() => _NotesTabState();
 }
 
-class _NotesTabState extends State<NotesTab> {
+class _NotesTabState extends ConsumerState<NotesTab> {
   int _selectedFilter = 0;
   final List<String> _filters = [
     'All',
@@ -212,43 +217,61 @@ class _NotesTabState extends State<NotesTab> {
             ),
           ),
 
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                _buildNoteCard(
-                  context,
-                  subject: 'MATHEMATICS',
-                  subjectColor: AppTheme.primary,
-                  time: '12 min ago',
-                  title: 'Advanced Vector Calculus: Week 4 Summary',
-                  description:
-                      'Comprehensive breakdown of Green\'s theorem with solved examples.',
-                  author: 'Jordan Davies',
-                  noteIcon: Icons.functions_rounded,
-                  noteIconColors: const [Color(0xFF3B82F6), Color(0xFF1E40AF)],
-                  fileSize: '4.2 MB',
-                  downloads: 47,
+          ref.watch(academicNotesProvider).when(
+            data: (notes) {
+              final filteredNotes = _selectedFilter == 0
+                  ? notes
+                  : notes
+                      .where(
+                          (n) => n.category.toUpperCase() == _filters[_selectedFilter].toUpperCase())
+                      .toList();
+
+              if (filteredNotes.isEmpty) {
+                return const SliverFillRemaining(
+                  child: Center(
+                    child: Text('No notes found for this category.'),
+                  ),
+                );
+              }
+
+              return SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final note = filteredNotes[index];
+                      final timeStr = _getTimeAgo(note.createdAt);
+                      
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 18),
+                        child: _buildNoteCard(
+                          context,
+                          subject: note.category.toUpperCase(),
+                          subjectColor: _getCategoryColor(note.category),
+                          time: timeStr,
+                          title: note.title,
+                          description: note.description,
+                          author: note.author,
+                          noteIcon: _getCategoryIcon(note.category),
+                          noteIconColors: _getCategoryGradients(note.category),
+                          fileSize: '0.0 MB', // TODO: Add file size to model
+                          downloads: 0, // TODO: Add downloads to model
+                        ),
+                      );
+                    },
+                    childCount: filteredNotes.length,
+                  ),
                 ),
-                const SizedBox(height: 18),
-                _buildNoteCard(
-                  context,
-                  subject: 'QUANTUM PHYSICS',
-                  subjectColor: AppTheme.anonPurple,
-                  time: '2 hours ago',
-                  title: 'Particle Duality & Schrödinger\'s Equation',
-                  description:
-                      'Digital lecture notes covering core concepts of matter waves.',
-                  author: 'Aisha Lindholm',
-                  noteIcon: Icons.science_rounded,
-                  noteIconColors: const [Color(0xFF7C3AED), Color(0xFF5B21B6)],
-                  fileSize: '2.8 MB',
-                  downloads: 23,
-                ),
-                const SizedBox(height: 80),
-              ]),
+              );
+            },
+            loading: () => const SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (err, stack) => SliverFillRemaining(
+              child: Center(child: Text('Error: $err')),
             ),
           ),
+          const SliverToBoxAdapter(child: SizedBox(height: 80)),
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -261,6 +284,38 @@ class _NotesTabState extends State<NotesTab> {
         child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
       ),
     );
+  }
+
+  String _getTimeAgo(DateTime dateTime) {
+    final difference = DateTime.now().difference(dateTime);
+    if (difference.inMinutes < 1) return 'now';
+    if (difference.inMinutes < 60) return '${difference.inMinutes}m ago';
+    if (difference.inHours < 24) return '${difference.inHours}h ago';
+    return DateFormat('MMM d').format(dateTime);
+  }
+
+  Color _getCategoryColor(String category) {
+    category = category.toUpperCase();
+    if (category.contains('MATH')) return AppTheme.primary;
+    if (category.contains('PHYSIC')) return AppTheme.anonPurple;
+    if (category.contains('CS')) return AppTheme.success;
+    return AppTheme.accent;
+  }
+
+  IconData _getCategoryIcon(String category) {
+    category = category.toUpperCase();
+    if (category.contains('MATH')) return Icons.functions_rounded;
+    if (category.contains('PHYSIC')) return Icons.science_rounded;
+    if (category.contains('CS')) return Icons.code_rounded;
+    return Icons.description_rounded;
+  }
+
+  List<Color> _getCategoryGradients(String category) {
+    category = category.toUpperCase();
+    if (category.contains('MATH')) return const [Color(0xFF3B82F6), Color(0xFF1E40AF)];
+    if (category.contains('PHYSIC')) return const [Color(0xFF7C3AED), Color(0xFF5B21B6)];
+    if (category.contains('CS')) return const [Color(0xFF10B981), Color(0xFF065F46)];
+    return const [Color(0xFFF43F5E), Color(0xFF9F1239)];
   }
 
   Widget _buildNoteCard(

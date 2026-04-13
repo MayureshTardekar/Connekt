@@ -4,14 +4,18 @@ import '../../theme/app_theme.dart';
 import 'post_ghost_screen.dart';
 import 'comments_screen.dart';
 
-class GhostTab extends StatefulWidget {
+import '../../core/providers/campus_provider.dart';
+import '../../core/models/ghost_post.dart';
+import 'package:intl/intl.dart';
+
+class GhostTab extends ConsumerStatefulWidget {
   const GhostTab({super.key});
 
   @override
-  State<GhostTab> createState() => _GhostTabState();
+  ConsumerState<GhostTab> createState() => _GhostTabState();
 }
 
-class _GhostTabState extends State<GhostTab> {
+class _GhostTabState extends ConsumerState<GhostTab> {
   int _selectedMood = 0;
   final List<String> _moods = [
     'All',
@@ -280,64 +284,69 @@ class _GhostTabState extends State<GhostTab> {
 
                 // Posts
                 Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    children: [
-                      // Ephemeral and Sensitive
-                      _buildGhostPost(
-                        context,
-                        'VENTING',
-                        const Color(0xFFF43F5E),
-                        Icons.whatshot_rounded,
-                        '2m ago',
-                        'Sometimes I feel like I\'m studying for a degree in stress management rather than Computer Science. Does anyone else feel like they\'re just pretending to know what\'s going on?',
-                        128,
-                        14,
-                        isEphemeral: true,
-                        isSensitive: true,
-                      ),
-                      const SizedBox(height: 14),
-                      // Anonymous Poll
-                      _buildGhostPost(
-                        context,
-                        'CONFUSED',
-                        const Color(0xFFF59E0B),
-                        Icons.psychology_rounded,
-                        '1h ago',
-                        'Which IDE are you guys actually using for the MP project? I feel like Android Studio is cooking my RAM.',
-                        89,
-                        22,
-                        pollOptions: [
-                          {'title': 'VS Code', 'percent': 65.0},
-                          {'title': 'Android Studio', 'percent': 25.0},
-                          {'title': 'IntelliJ', 'percent': 10.0},
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      // Standard post
-                      _buildGhostPost(
-                        context,
-                        'HAPPY',
-                        const Color(0xFF10B981),
-                        Icons.sentiment_very_satisfied_rounded,
-                        '15m ago',
-                        'Finally nailed that presentation today. The library cafe was actually quiet for once. Today is a win!',
-                        45,
-                        3,
-                      ),
-                      const SizedBox(height: 14),
-                      _buildGhostPost(
-                        context,
-                        'MOTIVATED',
-                        const Color(0xFF3B82F6),
-                        Icons.rocket_launch_rounded,
-                        '3h ago',
-                        'Just submitted my first ever open source PR and it got merged! Small step but it feels huge. Keep going everyone! 🚀',
-                        215,
-                        31,
-                      ),
-                      const SizedBox(height: 100),
-                    ],
+                  child: ref.watch(ghostPostsProvider).when(
+                    data: (posts) {
+                      final filteredPosts = _selectedMood == 0
+                          ? posts
+                          : posts
+                              .where(
+                                  (p) => p.mood.toUpperCase() == _moods[_selectedMood].toUpperCase())
+                              .toList();
+
+                      if (filteredPosts.isEmpty) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.ghost_fixed, color: Colors.white24, size: 64),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No secrets here... yet.',
+                                style: TextStyle(color: Colors.white38),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      return ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        itemCount: filteredPosts.length + 1,
+                        itemBuilder: (context, index) {
+                          if (index == filteredPosts.length) {
+                            return const SizedBox(height: 100);
+                          }
+
+                          final post = filteredPosts[index];
+                          final timeAgo = _getTimeAgo(post.createdAt);
+                          
+                          // Map mood to icon and color
+                          final moodIndex = _moods.indexWhere((m) => m.toUpperCase() == post.mood.toUpperCase());
+                          final color = moodIndex != -1 ? _getMoodColor(moodIndex) : AppTheme.anonPurple;
+                          final icon = moodIndex != -1 ? _moodIcons[moodIndex] : Icons.bubble_chart_rounded;
+
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 14),
+                            child: _buildGhostPost(
+                              context,
+                              post.mood.toUpperCase(),
+                              color,
+                              icon,
+                              timeAgo,
+                              post.text,
+                              post.likes,
+                              post.commentsCount,
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    loading: () => const Center(
+                      child: CircularProgressIndicator(color: AppTheme.anonPurple),
+                    ),
+                    error: (err, stack) => Center(
+                      child: Text('Error: $err', style: TextStyle(color: Colors.red)),
+                    ),
                   ),
                 ),
               ],
@@ -377,6 +386,27 @@ class _GhostTabState extends State<GhostTab> {
         ],
       ),
     );
+  }
+
+  String _getTimeAgo(DateTime dateTime) {
+    final difference = DateTime.now().difference(dateTime);
+    if (difference.inMinutes < 1) return 'now';
+    if (difference.inMinutes < 60) return '${difference.inMinutes}m ago';
+    if (difference.inHours < 24) return '${difference.inHours}h ago';
+    return DateFormat('MMM d').format(dateTime);
+  }
+
+  Color _getMoodColor(int index) {
+    const colors = [
+      AppTheme.anonPurple,
+      Color(0xFFF43F5E), // Stressed
+      Color(0xFF10B981), // Happy
+      Color(0xFFF59E0B), // Confused
+      Color(0xFF8B5CF6), // Venting
+      Color(0xFF3B82F6), // Motivated
+    ];
+    if (index < 0 || index >= colors.length) return AppTheme.anonPurple;
+    return colors[index];
   }
 
   Widget _buildGhostPost(
