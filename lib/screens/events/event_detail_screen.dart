@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/avatar_helper.dart';
 
@@ -55,29 +56,32 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               onPressed: () => Navigator.pop(context),
             ),
             flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: widget.gradientColors,
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+              background: Hero(
+                tag: 'event_header_${widget.title}',
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: widget.gradientColors,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                   ),
-                ),
-                child: Stack(
-                  children: [
-                    Positioned(
-                      right: -20,
-                      bottom: -20,
-                      child: Icon(
-                        widget.icon,
-                        size: 160,
-                        color: Colors.white.withValues(alpha: 0.1),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        right: -20,
+                        bottom: -20,
+                        child: Icon(
+                          widget.icon,
+                          size: 160,
+                          color: Colors.white.withValues(alpha: 0.1),
+                        ),
                       ),
-                    ),
-                    Center(
-                      child: Icon(widget.icon, size: 80, color: Colors.white),
-                    ),
-                  ],
+                      Center(
+                        child: Icon(widget.icon, size: 80, color: Colors.white),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -317,47 +321,60 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           child: Row(
             children: [
               Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() => _isRsvped = !_isRsvped);
-                    if (_isRsvped) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('RSVP Confirmed! Reminder set.'),
-                        ),
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _isRsvped
-                        ? AppTheme.success
-                        : widget.gradientColors.first,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                child: Semantics(
+                  button: true,
+                  label: _isRsvped ? 'Cancel RSVP' : 'Confirm RSVP',
+                  child: ElevatedButton(
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      setState(() => _isRsvped = !_isRsvped);
+                      if (_isRsvped) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('RSVP Confirmed! Reminder set.'),
+                          ),
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _isRsvped
+                          ? AppTheme.success
+                          : widget.gradientColors.first,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 0,
                     ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    _isRsvped ? 'You\'re Going!' : 'RSVP Now',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                    child: Text(
+                      _isRsvped ? 'You\'re Going!' : 'RSVP Now',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
               ),
               const SizedBox(width: 16),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppTheme.inputBg,
+              Semantics(
+                button: true,
+                label: 'Set reminder for event',
+                child: InkWell(
+                  onTap: () => HapticFeedback.selectionClick(),
                   borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  Icons.notifications_active_outlined,
-                  color: widget.gradientColors.first,
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppTheme.inputBg,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(
+                      Icons.notifications_active_outlined,
+                      color: widget.gradientColors.first,
+                    ),
+                  ),
                 ),
               ),
             ],

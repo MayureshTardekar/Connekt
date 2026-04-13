@@ -141,60 +141,65 @@ class _EventsTabState extends State<EventsTab> {
                     ];
                     final dates = ['12', '13', '14', '15', '16', '17', '18'];
                     final isSelected = _selectedDay == index;
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedDay = index),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: 56,
-                        margin: const EdgeInsets.only(right: 10),
-                        decoration: BoxDecoration(
-                          gradient: isSelected
-                              ? const LinearGradient(
-                                  colors: [
-                                    Color(0xFFF59E0B),
-                                    Color(0xFFD97706),
-                                  ],
-                                )
-                              : null,
-                          color: isSelected ? null : Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color: const Color(
-                                      0xFFF59E0B,
-                                    ).withValues(alpha: 0.35),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ]
-                              : AppTheme.softShadow,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              days[index],
-                              style: TextStyle(
-                                color: isSelected
-                                    ? Colors.white70
-                                    : AppTheme.textSecondary,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
+                    return Semantics(
+                      button: true,
+                      selected: isSelected,
+                      label: 'Select ${days[index]} date ${dates[index]}',
+                      child: GestureDetector(
+                        onTap: () => setState(() => _selectedDay = index),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: 56,
+                          margin: const EdgeInsets.only(right: 10),
+                          decoration: BoxDecoration(
+                            gradient: isSelected
+                                ? const LinearGradient(
+                                    colors: [
+                                      Color(0xFFF59E0B),
+                                      Color(0xFFD97706),
+                                    ],
+                                  )
+                                : null,
+                            color: isSelected ? null : Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: const Color(
+                                        0xFFF59E0B,
+                                      ).withValues(alpha: 0.35),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ]
+                                : AppTheme.softShadow,
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                days[index],
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? Colors.white70
+                                      : AppTheme.textSecondary,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              dates[index],
-                              style: TextStyle(
-                                color: isSelected
-                                    ? Colors.white
-                                    : AppTheme.textPrimary,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800,
+                              const SizedBox(height: 4),
+                              Text(
+                                dates[index],
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? Colors.white
+                                      : AppTheme.textPrimary,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     );
@@ -301,14 +306,18 @@ class _EventsTabState extends State<EventsTab> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const PostEventScreen()),
+      floatingActionButton: Semantics(
+        label: 'Post a new event',
+        button: true,
+        child: FloatingActionButton(
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PostEventScreen()),
+          ),
+          backgroundColor: const Color(0xFFF59E0B),
+          elevation: 8,
+          child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
         ),
-        backgroundColor: const Color(0xFFF59E0B),
-        elevation: 8,
-        child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
       ),
     );
   }
@@ -325,169 +334,176 @@ class _EventsTabState extends State<EventsTab> {
     required bool isLive,
   }) {
     final attendeeNames = ['Alex', 'Jordan', 'Aisha'];
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => EventDetailScreen(
-            title: title,
-            description: description,
-            location: location,
-            time: time,
-            gradientColors: gradientColors,
-            icon: icon,
-            attendees: attendees,
+    return Semantics(
+      label: 'Event: $title. $description. At $time, $location. $attendees attending.',
+      button: true,
+      child: GestureDetector(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => EventDetailScreen(
+              title: title,
+              description: description,
+              location: location,
+              time: time,
+              gradientColors: gradientColors,
+              icon: icon,
+              attendees: attendees,
+            ),
           ),
         ),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: AppTheme.softShadow,
-        ),
-        child: Column(
-          children: [
-            Container(
-              height: 110,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: gradientColors,
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(22),
-                ),
-              ),
-              child: Stack(
-                children: [
-                  Positioned(
-                    right: -20,
-                    bottom: -20,
-                    child: Icon(
-                      icon,
-                      size: 100,
-                      color: Colors.white.withValues(alpha: 0.1),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: AppTheme.softShadow,
+          ),
+          child: Column(
+            children: [
+              Hero(
+                tag: 'event_header_$title',
+                child: Container(
+                  height: 110,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: gradientColors,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(22),
                     ),
                   ),
-                  Center(child: Icon(icon, size: 44, color: Colors.white)),
-                  if (isLive)
-                    Positioned(
-                      top: 12,
-                      right: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.coral,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.circle, size: 6, color: Colors.white),
-                            SizedBox(width: 4),
-                            Text(
-                              'LIVE',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ],
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        right: -20,
+                        bottom: -20,
+                        child: Icon(
+                          icon,
+                          size: 100,
+                          color: Colors.white.withValues(alpha: 0.1),
                         ),
                       ),
-                    ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleLarge?.copyWith(fontSize: 17),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    description,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(fontSize: 13),
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      _buildInfoChip(Icons.location_on_rounded, location),
-                      const SizedBox(width: 10),
-                      _buildInfoChip(Icons.access_time_rounded, time),
+                      Center(child: Icon(icon, size: 44, color: Colors.white)),
+                      if (isLive)
+                        Positioned(
+                          top: 12,
+                          right: 12,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppTheme.coral,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.circle, size: 6, color: Colors.white),
+                                SizedBox(width: 4),
+                                Text(
+                                  'LIVE',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                     ],
                   ),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      SizedBox(
-                        width: 60,
-                        height: 24,
-                        child: Stack(
-                          children: List.generate(
-                            3,
-                            (i) => Positioned(
-                              left: i * 16.0,
-                              child: CircleAvatar(
-                                radius: 12,
-                                backgroundColor: Colors.white,
-                                child: avatarWidget(
-                                  attendeeNames[i],
-                                  radius: 11,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.titleLarge?.copyWith(fontSize: 17),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      description,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(fontSize: 13),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        _buildInfoChip(Icons.location_on_rounded, location),
+                        const SizedBox(width: 10),
+                        _buildInfoChip(Icons.access_time_rounded, time),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        SizedBox(
+                          width: 60,
+                          height: 24,
+                          child: Stack(
+                            children: List.generate(
+                              3,
+                              (i) => Positioned(
+                                left: i * 16.0,
+                                child: CircleAvatar(
+                                  radius: 12,
+                                  backgroundColor: Colors.white,
+                                  child: avatarWidget(
+                                    attendeeNames[i],
+                                    radius: 11,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '$attendees attending',
-                        style: const TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(colors: gradientColors),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Text(
-                          'RSVP',
-                          style: TextStyle(
-                            color: Colors.white,
+                        const SizedBox(width: 8),
+                        Text(
+                          '$attendees attending',
+                          style: const TextStyle(
+                            color: AppTheme.textSecondary,
                             fontSize: 12,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(colors: gradientColors),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Text(
+                            'RSVP',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

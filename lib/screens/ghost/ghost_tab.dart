@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../theme/app_theme.dart';
 import 'post_ghost_screen.dart';
 import 'comments_screen.dart';
@@ -606,10 +607,17 @@ class _GhostTabState extends State<GhostTab> {
             const SizedBox(height: 14),
             Row(
               children: [
-                Icon(
-                  Icons.keyboard_double_arrow_up_rounded,
-                  size: 20,
-                  color: Colors.white.withValues(alpha: 0.4),
+                Semantics(
+                  button: true,
+                  label: 'Upvote',
+                  child: GestureDetector(
+                    onTap: () => HapticFeedback.lightImpact(),
+                    child: Icon(
+                      Icons.keyboard_double_arrow_up_rounded,
+                      size: 20,
+                      color: Colors.white.withValues(alpha: 0.4),
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 4),
                 Text(
@@ -621,31 +629,57 @@ class _GhostTabState extends State<GhostTab> {
                   ),
                 ),
                 const SizedBox(width: 4),
-                Icon(
-                  Icons.keyboard_double_arrow_down_rounded,
-                  size: 20,
-                  color: Colors.white.withValues(alpha: 0.4),
+                Semantics(
+                  button: true,
+                  label: 'Downvote',
+                  child: GestureDetector(
+                    onTap: () => HapticFeedback.lightImpact(),
+                    child: Icon(
+                      Icons.keyboard_double_arrow_down_rounded,
+                      size: 20,
+                      color: Colors.white.withValues(alpha: 0.4),
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 24),
-                Icon(
-                  Icons.chat_bubble_outline_rounded,
-                  size: 17,
-                  color: Colors.white.withValues(alpha: 0.4),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  '$comments',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.4),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                Semantics(
+                  button: true,
+                  label: '$comments Comments',
+                  child: GestureDetector(
+                    onTap: () => HapticFeedback.selectionClick(),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.chat_bubble_outline_rounded,
+                          size: 17,
+                          color: Colors.white.withValues(alpha: 0.4),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '$comments',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.4),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 const Spacer(),
-                Icon(
-                  Icons.share_rounded,
-                  size: 17,
-                  color: Colors.white.withValues(alpha: 0.3),
+                Semantics(
+                  button: true,
+                  label: 'Share post',
+                  child: GestureDetector(
+                    onTap: () => HapticFeedback.selectionClick(),
+                    child: Icon(
+                      Icons.share_rounded,
+                      size: 17,
+                      color: Colors.white.withValues(alpha: 0.3),
+                    ),
+                  ),
                 ),
               ],
             ),
