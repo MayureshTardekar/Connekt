@@ -24,45 +24,48 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   bool _hasLoadedInitialMessages = false;
 
   @override
-  void dispose() { 
-    _messageController.dispose(); 
-    _scrollController.dispose(); 
-    super.dispose(); 
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   void _sendMessage() {
     if (_messageController.text.trim().isEmpty) return;
-    setState(() { 
-      _localMessages.add(ChatMessage(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        senderId: 'me',
-        senderName: 'Me',
-        text: _messageController.text.trim(),
-        timestamp: DateTime.now(),
-        isFromMe: true,
-        isRead: false,
-      )); 
-      _messageController.clear(); 
+    setState(() {
+      _localMessages.add(
+        ChatMessage(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          senderId: 'me',
+          senderName: 'Me',
+          text: _messageController.text.trim(),
+          timestamp: DateTime.now(),
+          isFromMe: true,
+          isRead: false,
+        ),
+      );
+      _messageController.clear();
     });
-    
+
     // Auto-scroll to bottom
     Future.delayed(const Duration(milliseconds: 100), () {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent, 
-            duration: const Duration(milliseconds: 300), 
-            curve: Curves.easeOut);
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
       }
     });
   }
 
   void _toggleReaction(int index, String emoji) {
     if (index < 0 || index >= _localMessages.length) return;
-    
+
     setState(() {
       final msg = _localMessages[index];
       final currentReactions = Map<String, int>.from(msg.reactions);
-      
+
       // Simple toggle logic for demo
       if (currentReactions.containsKey(emoji) && currentReactions[emoji]! > 0) {
         currentReactions[emoji] = currentReactions[emoji]! - 1;
@@ -70,7 +73,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       } else {
         currentReactions[emoji] = (currentReactions[emoji] ?? 0) + 1;
       }
-      
+
       _localMessages[index] = msg.copyWith(reactions: currentReactions);
     });
   }
@@ -88,7 +91,10 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
           padding: const EdgeInsets.all(20),
           decoration: const BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(30),
+              topRight: Radius.circular(30),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,7 +103,10 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                 child: Container(
                   width: 40,
                   height: 5,
-                  decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
@@ -105,9 +114,24 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  Text('Stickers', style: AppTypography.heading3.copyWith(color: AppColors.primary)),
-                  Text('GIFs', style: AppTypography.heading3.copyWith(color: AppColors.textHint)),
-                  Text('Memes', style: AppTypography.heading3.copyWith(color: AppColors.textHint)),
+                  Text(
+                    'Stickers',
+                    style: AppTypography.heading3.copyWith(
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  Text(
+                    'GIFs',
+                    style: AppTypography.heading3.copyWith(
+                      color: AppColors.textHint,
+                    ),
+                  ),
+                  Text(
+                    'Memes',
+                    style: AppTypography.heading3.copyWith(
+                      color: AppColors.textHint,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 20),
@@ -123,11 +147,29 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                   ),
                   itemCount: 16, // Dummy sticker count
                   itemBuilder: (context, index) {
-                    final emojis = ['🐶', '🐱', '🔥', '🚀', '🍔', '🎉', '🎸', '😂', '😎', '💡', '💯', '🤔', '🙌', '👀', '💖', '💤'];
+                    final emojis = [
+                      '🐶',
+                      '🐱',
+                      '🔥',
+                      '🚀',
+                      '🍔',
+                      '🎉',
+                      '🎸',
+                      '😂',
+                      '😎',
+                      '💡',
+                      '💯',
+                      '🤔',
+                      '🙌',
+                      '👀',
+                      '💖',
+                      '💤',
+                    ];
                     return GestureDetector(
                       onTap: () {
                         Navigator.pop(context); // Close panel
-                        _messageController.text += emojis[index]; // Append sticker text (or send a real sticker graphic)
+                        _messageController.text +=
+                            emojis[index]; // Append sticker text (or send a real sticker graphic)
                       },
                       child: Container(
                         decoration: BoxDecoration(
@@ -135,7 +177,10 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                           borderRadius: BorderRadius.circular(16),
                         ),
                         alignment: Alignment.center,
-                        child: Text(emojis[index], style: const TextStyle(fontSize: 32)),
+                        child: Text(
+                          emojis[index],
+                          style: const TextStyle(fontSize: 32),
+                        ),
                       ),
                     );
                   },
@@ -157,27 +202,53 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
           padding: const EdgeInsets.all(24),
           decoration: const BoxDecoration(
             color: AppColors.background,
-            borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.textHint.withOpacity(0.3), borderRadius: BorderRadius.circular(2))),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.textHint.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                   _buildAttachOption(Icons.image_rounded, 'Gallery', Colors.purple),
-                   _buildAttachOption(Icons.camera_alt_rounded, 'Camera', Colors.blue),
-                   _buildAttachOption(Icons.insert_drive_file_rounded, 'Document', Colors.orange),
-                   _buildAttachOption(Icons.location_on_rounded, 'Location', Colors.green),
+                  _buildAttachOption(
+                    Icons.image_rounded,
+                    'Gallery',
+                    Colors.purple,
+                  ),
+                  _buildAttachOption(
+                    Icons.camera_alt_rounded,
+                    'Camera',
+                    Colors.blue,
+                  ),
+                  _buildAttachOption(
+                    Icons.insert_drive_file_rounded,
+                    'Document',
+                    Colors.orange,
+                  ),
+                  _buildAttachOption(
+                    Icons.location_on_rounded,
+                    'Location',
+                    Colors.green,
+                  ),
                 ],
               ),
               const SizedBox(height: 20),
             ],
           ),
         );
-      }
+      },
     );
   }
 
@@ -185,12 +256,23 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     return Column(
       children: [
         Container(
-          width: 56, height: 56,
-          decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
           child: Icon(icon, color: color, size: 28),
         ),
         const SizedBox(height: 8),
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondary)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textSecondary,
+          ),
+        ),
       ],
     );
   }
@@ -198,7 +280,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   @override
   Widget build(BuildContext context) {
     // Watch messages provider
-    final messagesAsync = ref.watch(chatMessagesProvider(widget.conversation.id));
+    final messagesAsync = ref.watch(
+      chatMessagesProvider(widget.conversation.id),
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -206,89 +290,144 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         backgroundColor: AppColors.surface,
         elevation: 0,
         leading: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary), 
-            onPressed: () => Navigator.pop(context)),
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: AppColors.textPrimary,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Row(
           children: [
             Stack(
               children: [
                 avatarWidget(widget.conversation.participantName, radius: 18),
                 Positioned(
-                    bottom: 0, right: 0, 
-                    child: Container(
-                        width: 10, height: 10, 
-                        decoration: BoxDecoration(
-                            color: AppColors.success, 
-                            shape: BoxShape.circle, 
-                            border: Border.all(color: Colors.white, width: 2)))),
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: AppColors.success,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                  ),
+                ),
               ],
             ),
             const SizedBox(width: 12),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(widget.conversation.participantName, style: AppTypography.heading3.copyWith(fontSize: 16)),
-                const Text('Online', style: TextStyle(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.w500)),
+                Text(
+                  widget.conversation.participantName,
+                  style: AppTypography.heading3.copyWith(fontSize: 16),
+                ),
+                const Text(
+                  'Online',
+                  style: TextStyle(
+                    color: AppColors.success,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ],
             ),
           ],
         ),
         actions: [
           Container(
-              margin: const EdgeInsets.only(right: 8), 
-              padding: const EdgeInsets.all(8), 
-              decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(12)), 
-              child: const Icon(Icons.videocam_rounded, color: AppColors.textSecondary, size: 20)),
+            margin: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.videocam_rounded,
+              color: AppColors.textSecondary,
+              size: 20,
+            ),
+          ),
           Container(
-              margin: const EdgeInsets.only(right: 16), 
-              padding: const EdgeInsets.all(8), 
-              decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(12)), 
-              child: const Icon(Icons.call_rounded, color: AppColors.textSecondary, size: 20)),
+            margin: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.call_rounded,
+              color: AppColors.textSecondary,
+              size: 20,
+            ),
+          ),
         ],
       ),
       body: Column(
         children: [
           Expanded(
             child: messagesAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ),
               error: (err, stack) => Center(child: Text('Error: $err')),
               data: (serverMessages) {
                 if (!_hasLoadedInitialMessages) {
                   _localMessages = List.from(serverMessages);
                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if(mounted) {
-                      setState(() { _hasLoadedInitialMessages = true; });
-                       if (_scrollController.hasClients) {
-                          _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-                       }
+                    if (mounted) {
+                      setState(() {
+                        _hasLoadedInitialMessages = true;
+                      });
+                      if (_scrollController.hasClients) {
+                        _scrollController.jumpTo(
+                          _scrollController.position.maxScrollExtent,
+                        );
+                      }
                     }
                   });
                 }
-                
+
                 return ListView.builder(
                   controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 20,
+                  ),
                   itemCount: _localMessages.length,
                   itemBuilder: (context, index) {
                     final msg = _localMessages[index];
                     final isSent = msg.isFromMe;
-                    final showAvatar = !isSent && (index == 0 || (_localMessages[index - 1].isFromMe));
-                    final String timeFormat = '${msg.timestamp.hour}:${msg.timestamp.minute.toString().padLeft(2, "0")}';
+                    final showAvatar =
+                        !isSent &&
+                        (index == 0 || (_localMessages[index - 1].isFromMe));
+                    final String timeFormat =
+                        '${msg.timestamp.hour}:${msg.timestamp.minute.toString().padLeft(2, "0")}';
 
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 6),
                       child: Row(
-                        mainAxisAlignment: isSent ? MainAxisAlignment.end : MainAxisAlignment.start,
+                        mainAxisAlignment: isSent
+                            ? MainAxisAlignment.end
+                            : MainAxisAlignment.start,
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           if (!isSent)
                             Padding(
                               padding: const EdgeInsets.only(right: 8),
-                              child: showAvatar ? avatarWidget(widget.conversation.participantName, radius: 14) : const SizedBox(width: 28),
+                              child: showAvatar
+                                  ? avatarWidget(
+                                      widget.conversation.participantName,
+                                      radius: 14,
+                                    )
+                                  : const SizedBox(width: 28),
                             ),
                           Flexible(
                             child: GestureDetector(
-                              onDoubleTap: () => _toggleReaction(index, '👍'), // Quick Like
+                              onDoubleTap: () =>
+                                  _toggleReaction(index, '👍'), // Quick Like
                               onLongPress: () {
                                 // Simple bottom sheet reaction picker mock
                                 showModalBottomSheet(
@@ -297,15 +436,33 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                   builder: (_) => Container(
                                     margin: const EdgeInsets.all(20),
                                     padding: const EdgeInsets.all(20),
-                                    decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(30)),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.surface,
+                                      borderRadius: BorderRadius.circular(30),
+                                    ),
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
                                       children: [
-                                        for (final r in ['👍', '👎', '😂', '🔥', '❤️'])
+                                        for (final r in [
+                                          '👍',
+                                          '👎',
+                                          '😂',
+                                          '🔥',
+                                          '❤️',
+                                        ])
                                           GestureDetector(
-                                            onTap: () { Navigator.pop(context); _toggleReaction(index, r); },
-                                            child: Text(r, style: const TextStyle(fontSize: 32)),
-                                          )
+                                            onTap: () {
+                                              Navigator.pop(context);
+                                              _toggleReaction(index, r);
+                                            },
+                                            child: Text(
+                                              r,
+                                              style: const TextStyle(
+                                                fontSize: 32,
+                                              ),
+                                            ),
+                                          ),
                                       ],
                                     ),
                                   ),
@@ -315,55 +472,137 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                 clipBehavior: Clip.none,
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                    margin: EdgeInsets.only(bottom: msg.reactions.isNotEmpty ? 12 : 0),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
+                                    ),
+                                    margin: EdgeInsets.only(
+                                      bottom: msg.reactions.isNotEmpty ? 12 : 0,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: isSent ? AppColors.primary : AppColors.surface,
+                                      color: isSent
+                                          ? AppColors.primary
+                                          : AppColors.surface,
                                       borderRadius: BorderRadius.only(
-                                        topLeft: const Radius.circular(20), topRight: const Radius.circular(20),
-                                        bottomLeft: Radius.circular(isSent ? 20 : 6), bottomRight: Radius.circular(isSent ? 6 : 20),
+                                        topLeft: const Radius.circular(20),
+                                        topRight: const Radius.circular(20),
+                                        bottomLeft: Radius.circular(
+                                          isSent ? 20 : 6,
+                                        ),
+                                        bottomRight: Radius.circular(
+                                          isSent ? 6 : 20,
+                                        ),
                                       ),
                                       boxShadow: [
                                         BoxShadow(
-                                            color: (isSent ? AppColors.primary : Colors.black).withOpacity(0.08), 
-                                            blurRadius: 8, 
-                                            offset: const Offset(0, 2))
+                                          color:
+                                              (isSent
+                                                      ? AppColors.primary
+                                                      : Colors.black)
+                                                  .withOpacity(0.08),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
                                       ],
                                     ),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
                                       children: [
-                                        if (msg.sharedCardType == SharedCardType.note && msg.sharedData != null) ...[
+                                        if (msg.sharedCardType ==
+                                                SharedCardType.note &&
+                                            msg.sharedData != null) ...[
                                           Container(
-                                            margin: const EdgeInsets.only(bottom: 8),
+                                            margin: const EdgeInsets.only(
+                                              bottom: 8,
+                                            ),
                                             padding: const EdgeInsets.all(12),
                                             decoration: BoxDecoration(
-                                              color: isSent ? Colors.white.withOpacity(0.15) : AppColors.primary.withOpacity(0.05),
-                                              borderRadius: BorderRadius.circular(12),
-                                              border: Border.all(color: isSent ? Colors.white.withOpacity(0.2) : AppColors.primary.withOpacity(0.2)),
+                                              color: isSent
+                                                  ? Colors.white.withOpacity(
+                                                      0.15,
+                                                    )
+                                                  : AppColors.primary
+                                                        .withOpacity(0.05),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              border: Border.all(
+                                                color: isSent
+                                                    ? Colors.white.withOpacity(
+                                                        0.2,
+                                                      )
+                                                    : AppColors.primary
+                                                          .withOpacity(0.2),
+                                              ),
                                             ),
                                             child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.stretch,
                                               children: [
                                                 Row(
-                                                  mainAxisSize: MainAxisSize.min,
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
                                                   children: [
                                                     Container(
-                                                      padding: const EdgeInsets.all(8),
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                            8,
+                                                          ),
                                                       decoration: BoxDecoration(
-                                                        color: isSent ? Colors.white : AppColors.primary,
-                                                        borderRadius: BorderRadius.circular(8),
+                                                        color: isSent
+                                                            ? Colors.white
+                                                            : AppColors.primary,
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
                                                       ),
-                                                      child: Icon(Icons.picture_as_pdf_rounded, color: isSent ? AppColors.primary : Colors.white, size: 20),
+                                                      child: Icon(
+                                                        Icons
+                                                            .picture_as_pdf_rounded,
+                                                        color: isSent
+                                                            ? AppColors.primary
+                                                            : Colors.white,
+                                                        size: 20,
+                                                      ),
                                                     ),
                                                     const SizedBox(width: 12),
                                                     Flexible(
                                                       child: Column(
-                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
                                                         children: [
-                                                          Text(msg.sharedData!['title'], style: TextStyle(color: isSent ? Colors.white : AppColors.textPrimary, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                                          const SizedBox(height: 2),
-                                                          Text('${msg.sharedData!['pages']} Pages • ${msg.sharedData!['author']}', style: TextStyle(color: isSent ? Colors.white70 : AppColors.textSecondary, fontSize: 11)),
+                                                          Text(
+                                                            msg.sharedData!['title'],
+                                                            style: TextStyle(
+                                                              color: isSent
+                                                                  ? Colors.white
+                                                                  : AppColors
+                                                                        .textPrimary,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                            ),
+                                                            maxLines: 1,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                          ),
+                                                          const SizedBox(
+                                                            height: 2,
+                                                          ),
+                                                          Text(
+                                                            '${msg.sharedData!['pages']} Pages • ${msg.sharedData!['author']}',
+                                                            style: TextStyle(
+                                                              color: isSent
+                                                                  ? Colors
+                                                                        .white70
+                                                                  : AppColors
+                                                                        .textSecondary,
+                                                              fontSize: 11,
+                                                            ),
+                                                          ),
                                                         ],
                                                       ),
                                                     ),
@@ -371,12 +610,43 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                                 ),
                                                 const SizedBox(height: 12),
                                                 GestureDetector(
-                                                  onTap: () { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Opening Note module...'))); },
+                                                  onTap: () {
+                                                    ScaffoldMessenger.of(
+                                                      context,
+                                                    ).showSnackBar(
+                                                      const SnackBar(
+                                                        content: Text(
+                                                          'Opening Note module...',
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
                                                   child: Container(
-                                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          vertical: 8,
+                                                        ),
                                                     alignment: Alignment.center,
-                                                    decoration: BoxDecoration(color: isSent ? Colors.white : AppColors.primary, borderRadius: BorderRadius.circular(8)),
-                                                    child: Text('Open Note', style: TextStyle(color: isSent ? AppColors.primary : Colors.white, fontWeight: FontWeight.w700, fontSize: 12)),
+                                                    decoration: BoxDecoration(
+                                                      color: isSent
+                                                          ? Colors.white
+                                                          : AppColors.primary,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
+                                                    ),
+                                                    child: Text(
+                                                      'Open Note',
+                                                      style: TextStyle(
+                                                        color: isSent
+                                                            ? AppColors.primary
+                                                            : Colors.white,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        fontSize: 12,
+                                                      ),
+                                                    ),
                                                   ),
                                                 ),
                                               ],
@@ -384,33 +654,96 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                           ),
                                         ],
                                         // EVENT SHARED CARD
-                                        if (msg.sharedCardType == SharedCardType.event && msg.sharedData != null) ...[
+                                        if (msg.sharedCardType ==
+                                                SharedCardType.event &&
+                                            msg.sharedData != null) ...[
                                           Container(
-                                            margin: const EdgeInsets.only(bottom: 8),
+                                            margin: const EdgeInsets.only(
+                                              bottom: 8,
+                                            ),
                                             padding: const EdgeInsets.all(12),
                                             decoration: BoxDecoration(
-                                              color: isSent ? Colors.white.withOpacity(0.15) : AppColors.secondary.withOpacity(0.1),
-                                              borderRadius: BorderRadius.circular(12),
-                                              border: Border.all(color: isSent ? Colors.white.withOpacity(0.2) : AppColors.secondary.withOpacity(0.3)),
+                                              color: isSent
+                                                  ? Colors.white.withOpacity(
+                                                      0.15,
+                                                    )
+                                                  : AppColors.secondary
+                                                        .withOpacity(0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              border: Border.all(
+                                                color: isSent
+                                                    ? Colors.white.withOpacity(
+                                                        0.2,
+                                                      )
+                                                    : AppColors.secondary
+                                                          .withOpacity(0.3),
+                                              ),
                                             ),
                                             child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.stretch,
                                               children: [
                                                 Row(
                                                   children: [
                                                     Container(
-                                                      padding: const EdgeInsets.all(10),
-                                                      decoration: BoxDecoration(color: isSent ? Colors.white : AppColors.secondary, borderRadius: BorderRadius.circular(10)),
-                                                      child: Icon(Icons.event_rounded, color: isSent ? AppColors.secondary : Colors.white, size: 24),
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                            10,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: isSent
+                                                            ? Colors.white
+                                                            : AppColors
+                                                                  .secondary,
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              10,
+                                                            ),
+                                                      ),
+                                                      child: Icon(
+                                                        Icons.event_rounded,
+                                                        color: isSent
+                                                            ? AppColors
+                                                                  .secondary
+                                                            : Colors.white,
+                                                        size: 24,
+                                                      ),
                                                     ),
                                                     const SizedBox(width: 12),
                                                     Expanded(
                                                       child: Column(
-                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
                                                         children: [
-                                                          Text(msg.sharedData!['title'], style: TextStyle(color: isSent ? Colors.white : AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14)),
-                                                          const SizedBox(height: 2),
-                                                          Text('${msg.sharedData!['date']} • ${msg.sharedData!['location']}', style: TextStyle(color: isSent ? Colors.white70 : AppColors.textSecondary, fontSize: 11)),
+                                                          Text(
+                                                            msg.sharedData!['title'],
+                                                            style: TextStyle(
+                                                              color: isSent
+                                                                  ? Colors.white
+                                                                  : AppColors
+                                                                        .textPrimary,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              fontSize: 14,
+                                                            ),
+                                                          ),
+                                                          const SizedBox(
+                                                            height: 2,
+                                                          ),
+                                                          Text(
+                                                            '${msg.sharedData!['date']} • ${msg.sharedData!['location']}',
+                                                            style: TextStyle(
+                                                              color: isSent
+                                                                  ? Colors
+                                                                        .white70
+                                                                  : AppColors
+                                                                        .textSecondary,
+                                                              fontSize: 11,
+                                                            ),
+                                                          ),
                                                         ],
                                                       ),
                                                     ),
@@ -419,14 +752,59 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                                 const SizedBox(height: 12),
                                                 Row(
                                                   children: [
-                                                    Text('🔥 ${msg.sharedData!['attendees']} Going', style: TextStyle(color: isSent ? Colors.white : AppColors.secondary, fontSize: 12, fontWeight: FontWeight.w600)),
+                                                    Text(
+                                                      '🔥 ${msg.sharedData!['attendees']} Going',
+                                                      style: TextStyle(
+                                                        color: isSent
+                                                            ? Colors.white
+                                                            : AppColors
+                                                                  .secondary,
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                    ),
                                                     const Spacer(),
                                                     GestureDetector(
-                                                      onTap: () { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('RSVP marked as Going!'))); },
+                                                      onTap: () {
+                                                        ScaffoldMessenger.of(
+                                                          context,
+                                                        ).showSnackBar(
+                                                          const SnackBar(
+                                                            content: Text(
+                                                              'RSVP marked as Going!',
+                                                            ),
+                                                          ),
+                                                        );
+                                                      },
                                                       child: Container(
-                                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                                                        decoration: BoxDecoration(color: isSent ? Colors.white : AppColors.secondary, borderRadius: BorderRadius.circular(20)),
-                                                        child: Text('RSVP', style: TextStyle(color: isSent ? AppColors.secondary : Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                                                        padding:
+                                                            const EdgeInsets.symmetric(
+                                                              horizontal: 16,
+                                                              vertical: 6,
+                                                            ),
+                                                        decoration: BoxDecoration(
+                                                          color: isSent
+                                                              ? Colors.white
+                                                              : AppColors
+                                                                    .secondary,
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                20,
+                                                              ),
+                                                        ),
+                                                        child: Text(
+                                                          'RSVP',
+                                                          style: TextStyle(
+                                                            color: isSent
+                                                                ? AppColors
+                                                                      .secondary
+                                                                : Colors.white,
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            fontSize: 12,
+                                                          ),
+                                                        ),
                                                       ),
                                                     ),
                                                   ],
@@ -435,19 +813,42 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                             ),
                                           ),
                                         ],
-                                        Text(msg.text, style: TextStyle(color: isSent ? Colors.white : AppColors.textPrimary, fontSize: 15, height: 1.4)),
+                                        Text(
+                                          msg.text,
+                                          style: TextStyle(
+                                            color: isSent
+                                                ? Colors.white
+                                                : AppColors.textPrimary,
+                                            fontSize: 15,
+                                            height: 1.4,
+                                          ),
+                                        ),
                                         const SizedBox(height: 4),
                                         Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            Text(timeFormat, style: TextStyle(color: isSent ? Colors.white60 : AppColors.textHint, fontSize: 10)),
+                                            Text(
+                                              timeFormat,
+                                              style: TextStyle(
+                                                color: isSent
+                                                    ? Colors.white60
+                                                    : AppColors.textHint,
+                                                fontSize: 10,
+                                              ),
+                                            ),
                                             if (isSent) ...[
-                                                const SizedBox(width: 4), 
-                                                Icon(
-                                                    msg.isRead ? Icons.done_all_rounded : Icons.check_rounded, 
-                                                    size: 14, 
-                                                    color: msg.isRead ? AppColors.secondary : Colors.white.withOpacity(0.7)
-                                                )
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                msg.isRead
+                                                    ? Icons.done_all_rounded
+                                                    : Icons.check_rounded,
+                                                size: 14,
+                                                color: msg.isRead
+                                                    ? AppColors.secondary
+                                                    : Colors.white.withOpacity(
+                                                        0.7,
+                                                      ),
+                                              ),
                                             ],
                                           ],
                                         ),
@@ -461,13 +862,42 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                       right: isSent ? 10 : null,
                                       left: isSent ? null : 10,
                                       child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))]),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 3,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(
+                                                0.05,
+                                              ),
+                                              blurRadius: 4,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
                                         child: Row(
-                                          children: msg.reactions.entries.map((e) => Padding(
-                                            padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                                            child: Text('${e.key} ${e.value}', style: const TextStyle(fontSize: 10)),
-                                          )).toList(),
+                                          children: msg.reactions.entries
+                                              .map(
+                                                (e) => Padding(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 2.0,
+                                                      ),
+                                                  child: Text(
+                                                    '${e.key} ${e.value}',
+                                                    style: const TextStyle(
+                                                      fontSize: 10,
+                                                    ),
+                                                  ),
+                                                ),
+                                              )
+                                              .toList(),
                                         ),
                                       ),
                                     ),
@@ -483,15 +913,19 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
               },
             ),
           ),
-          
+
           // Chat Input Component
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-                color: AppColors.surface, 
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, -2))
-                ]
+              color: AppColors.surface,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, -2),
+                ),
+              ],
             ),
             child: SafeArea(
               child: Row(
@@ -499,30 +933,50 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                   GestureDetector(
                     onTap: _showAttachmentPanel,
                     child: Container(
-                        padding: const EdgeInsets.all(10), 
-                        decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(12)), 
-                        child: const Icon(Icons.add_rounded, color: AppColors.textSecondary, size: 22)),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.add_rounded,
+                        color: AppColors.textSecondary,
+                        size: 22,
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(24)),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(24),
+                      ),
                       child: Row(
                         children: [
                           Expanded(
                             child: TextField(
-                                controller: _messageController, 
-                                decoration: const InputDecoration(
-                                    border: InputBorder.none, 
-                                    hintText: 'Type a message...', 
-                                    hintStyle: TextStyle(color: AppColors.textHint, fontSize: 14)), 
-                                onSubmitted: (_) => _sendMessage()),
+                              controller: _messageController,
+                              decoration: const InputDecoration(
+                                border: InputBorder.none,
+                                hintText: 'Type a message...',
+                                hintStyle: TextStyle(
+                                  color: AppColors.textHint,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              onSubmitted: (_) => _sendMessage(),
+                            ),
                           ),
                           GestureDetector(
                             onTap: _showStickerPanel,
-                            child: const Icon(Icons.emoji_emotions_outlined, color: AppColors.textHint, size: 24),
-                          )
+                            child: const Icon(
+                              Icons.emoji_emotions_outlined,
+                              color: AppColors.textHint,
+                              size: 24,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -533,12 +987,21 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                          color: AppColors.primary, 
-                          borderRadius: BorderRadius.circular(14), 
-                          boxShadow: [
-                              BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 3))
-                          ]),
-                      child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.send_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
                   ),
                 ],

@@ -12,10 +12,16 @@ class CreateGroupScreen extends StatelessWidget {
         backgroundColor: AppTheme.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary),
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: AppTheme.textPrimary,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('Create Study Group', style: Theme.of(context).textTheme.titleLarge),
+        title: Text(
+          'Create Study Group',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -28,16 +34,28 @@ class CreateGroupScreen extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [Color(0xFF1E40AF), Color(0xFF3B82F6)]),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF1E40AF), Color(0xFF3B82F6)],
+                ),
                 borderRadius: BorderRadius.circular(24),
               ),
               child: const Column(
                 children: [
                   Icon(Icons.groups_rounded, size: 48, color: Colors.white),
                   SizedBox(height: 12),
-                  Text('Start a Study Session', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                  Text(
+                    'Start a Study Session',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   SizedBox(height: 4),
-                  Text('Invite classmates to learn together', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                  Text(
+                    'Invite classmates to learn together',
+                    style: TextStyle(color: Colors.white70, fontSize: 13),
+                  ),
                 ],
               ),
             ),
@@ -60,9 +78,21 @@ class CreateGroupScreen extends StatelessWidget {
               decoration: InputDecoration(
                 hintText: 'What will the group focus on?',
                 contentPadding: const EdgeInsets.all(20),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: AppTheme.primary, width: 2)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: const BorderSide(
+                    color: AppTheme.primary,
+                    width: 2,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -97,7 +127,10 @@ class CreateGroupScreen extends StatelessWidget {
                       prefixIcon: Icon(Icons.access_time_rounded),
                     ),
                     onTap: () async {
-                      await showTimePicker(context: context, initialTime: TimeOfDay.now());
+                      await showTimePicker(
+                        context: context,
+                        initialTime: TimeOfDay.now(),
+                      );
                     },
                   ),
                 ),
@@ -130,7 +163,10 @@ class CreateGroupScreen extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Create Group', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'Create Group',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
             const SizedBox(height: 40),

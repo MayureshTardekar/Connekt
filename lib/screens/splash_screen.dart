@@ -9,7 +9,8 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with TickerProviderStateMixin {
   late AnimationController _fadeController;
   late AnimationController _scaleController;
   late AnimationController _slideController;
@@ -22,20 +23,49 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   void initState() {
     super.initState();
 
-    _fadeController = AnimationController(duration: const Duration(milliseconds: 1200), vsync: this);
-    _scaleController = AnimationController(duration: const Duration(milliseconds: 1000), vsync: this);
-    _slideController = AnimationController(duration: const Duration(milliseconds: 800), vsync: this);
-    _progressController = AnimationController(duration: const Duration(milliseconds: 2000), vsync: this);
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+    _scaleController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+    _slideController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _progressController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
 
-    _fadeAnimation = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
-    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(CurvedAnimation(parent: _scaleController, curve: Curves.elasticOut));
-    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic));
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeOut,
+    );
+    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(parent: _scaleController, curve: Curves.elasticOut),
+    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
+        );
 
     // Staggered animation sequence
     _scaleController.forward();
-    Future.delayed(const Duration(milliseconds: 400), () => _fadeController.forward());
-    Future.delayed(const Duration(milliseconds: 600), () => _slideController.forward());
-    Future.delayed(const Duration(milliseconds: 800), () => _progressController.forward());
+    Future.delayed(
+      const Duration(milliseconds: 400),
+      () => _fadeController.forward(),
+    );
+    Future.delayed(
+      const Duration(milliseconds: 600),
+      () => _slideController.forward(),
+    );
+    Future.delayed(
+      const Duration(milliseconds: 800),
+      () => _progressController.forward(),
+    );
 
     Future.delayed(const Duration(milliseconds: 3200), () {
       if (mounted) {
@@ -45,7 +75,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
             pageBuilder: (_, __, ___) => const LoginScreen(),
             transitionsBuilder: (_, animation, __, child) {
               return FadeTransition(
-                opacity: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                opacity: CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeInOut,
+                ),
                 child: child,
               );
             },
@@ -90,7 +123,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [AppTheme.primary.withValues(alpha: 0.15), Colors.transparent],
+                    colors: [
+                      AppTheme.primary.withValues(alpha: 0.15),
+                      Colors.transparent,
+                    ],
                   ),
                 ),
               ),
@@ -104,7 +140,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [AppTheme.anonPurple.withValues(alpha: 0.12), Colors.transparent],
+                    colors: [
+                      AppTheme.anonPurple.withValues(alpha: 0.12),
+                      Colors.transparent,
+                    ],
                   ),
                 ),
               ),
@@ -133,7 +172,11 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                         ],
                       ),
                       child: const Center(
-                        child: Icon(Icons.hub_rounded, color: Colors.white, size: 56),
+                        child: Icon(
+                          Icons.hub_rounded,
+                          color: Colors.white,
+                          size: 56,
+                        ),
                       ),
                     ),
                   ),
@@ -148,20 +191,22 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                         children: [
                           Text(
                             'Connekt',
-                            style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                              color: Colors.white,
-                              fontSize: 44,
-                              letterSpacing: -2,
-                            ),
+                            style: Theme.of(context).textTheme.displayLarge
+                                ?.copyWith(
+                                  color: Colors.white,
+                                  fontSize: 44,
+                                  letterSpacing: -2,
+                                ),
                           ),
                           const SizedBox(height: 12),
                           Text(
                             'Your campus. Your community.',
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: Colors.white.withValues(alpha: 0.6),
-                              fontSize: 16,
-                              letterSpacing: 0.5,
-                            ),
+                            style: Theme.of(context).textTheme.bodyLarge
+                                ?.copyWith(
+                                  color: Colors.white.withValues(alpha: 0.6),
+                                  fontSize: 16,
+                                  letterSpacing: 0.5,
+                                ),
                           ),
                         ],
                       ),
@@ -186,7 +231,12 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                             widthFactor: _progressController.value,
                             child: Container(
                               decoration: BoxDecoration(
-                                gradient: const LinearGradient(colors: [Color(0xFF818CF8), Color(0xFFA78BFA)]),
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color(0xFF818CF8),
+                                    Color(0xFFA78BFA),
+                                  ],
+                                ),
                                 borderRadius: BorderRadius.circular(2),
                               ),
                             ),

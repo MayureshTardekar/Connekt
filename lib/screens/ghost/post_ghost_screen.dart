@@ -17,11 +17,31 @@ class _PostGhostScreenState extends State<PostGhostScreen> {
   bool _isPoll = false;
 
   final List<Map<String, dynamic>> _moods = [
-    {'label': 'Stressed', 'icon': Icons.sentiment_very_dissatisfied_rounded, 'color': const Color(0xFFDC2626)},
-    {'label': 'Happy', 'icon': Icons.sentiment_very_satisfied_rounded, 'color': const Color(0xFF059669)},
-    {'label': 'Confused', 'icon': Icons.psychology_rounded, 'color': const Color(0xFFD97706)},
-    {'label': 'Venting', 'icon': Icons.whatshot_rounded, 'color': const Color(0xFF7E22CE)},
-    {'label': 'Motivated', 'icon': Icons.rocket_launch_rounded, 'color': const Color(0xFF2563EB)},
+    {
+      'label': 'Stressed',
+      'icon': Icons.sentiment_very_dissatisfied_rounded,
+      'color': const Color(0xFFDC2626),
+    },
+    {
+      'label': 'Happy',
+      'icon': Icons.sentiment_very_satisfied_rounded,
+      'color': const Color(0xFF059669),
+    },
+    {
+      'label': 'Confused',
+      'icon': Icons.psychology_rounded,
+      'color': const Color(0xFFD97706),
+    },
+    {
+      'label': 'Venting',
+      'icon': Icons.whatshot_rounded,
+      'color': const Color(0xFF7E22CE),
+    },
+    {
+      'label': 'Motivated',
+      'icon': Icons.rocket_launch_rounded,
+      'color': const Color(0xFF2563EB),
+    },
   ];
 
   @override
@@ -35,7 +55,10 @@ class _PostGhostScreenState extends State<PostGhostScreen> {
           icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('New Ghost Post', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'New Ghost Post',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -54,16 +77,34 @@ class _PostGhostScreenState extends State<PostGhostScreen> {
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.visibility_off_rounded, color: Colors.white70, size: 18),
+                  Icon(
+                    Icons.visibility_off_rounded,
+                    color: Colors.white70,
+                    size: 18,
+                  ),
                   SizedBox(width: 8),
-                  Text('This post is completely anonymous', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
+                  Text(
+                    'This post is completely anonymous',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ],
               ),
             ),
             const SizedBox(height: 28),
 
             // Mood selector
-            const Text('How are you feeling?', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text(
+              'How are you feeling?',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 16),
             Wrap(
               spacing: 10,
@@ -71,22 +112,40 @@ class _PostGhostScreenState extends State<PostGhostScreen> {
               children: _moods.map((mood) {
                 final isSelected = _selectedMood == mood['label'];
                 return GestureDetector(
-                  onTap: () => setState(() => _selectedMood = mood['label'] as String),
+                  onTap: () =>
+                      setState(() => _selectedMood = mood['label'] as String),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
-                      color: isSelected ? (mood['color'] as Color) : Colors.white.withValues(alpha: 0.08),
+                      color: isSelected
+                          ? (mood['color'] as Color)
+                          : Colors.white.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: isSelected ? Colors.transparent : Colors.white.withValues(alpha: 0.15)),
+                      border: Border.all(
+                        color: isSelected
+                            ? Colors.transparent
+                            : Colors.white.withValues(alpha: 0.15),
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(mood['icon'] as IconData, color: isSelected ? Colors.white : Colors.white60, size: 18),
+                        Icon(
+                          mood['icon'] as IconData,
+                          color: isSelected ? Colors.white : Colors.white60,
+                          size: 18,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           mood['label'] as String,
-                          style: TextStyle(color: isSelected ? Colors.white : Colors.white60, fontWeight: FontWeight.bold, fontSize: 13),
+                          style: TextStyle(
+                            color: isSelected ? Colors.white : Colors.white60,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
                         ),
                       ],
                     ),
@@ -100,8 +159,23 @@ class _PostGhostScreenState extends State<PostGhostScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('What\'s on your mind?', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                Text('${_charCount}/$_maxChars', style: TextStyle(color: _charCount > _maxChars ? AppColors.error : Colors.white54, fontSize: 12)),
+                const Text(
+                  'What\'s on your mind?',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  '${_charCount}/$_maxChars',
+                  style: TextStyle(
+                    color: _charCount > _maxChars
+                        ? AppColors.error
+                        : Colors.white54,
+                    fontSize: 12,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -114,21 +188,34 @@ class _PostGhostScreenState extends State<PostGhostScreen> {
               child: TextField(
                 maxLines: 6,
                 onChanged: (val) => setState(() => _charCount = val.length),
-                style: const TextStyle(color: Colors.white, fontSize: 16, height: 1.6),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  height: 1.6,
+                ),
                 decoration: InputDecoration(
                   hintText: 'Share your thoughts, feelings, or just vent...',
-                  hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+                  hintStyle: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.3),
+                  ),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.all(20),
                 ),
               ),
             ),
             const SizedBox(height: 24),
-            
+
             // Advanced options
-            const Text('Post Options', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text(
+              'Post Options',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 16),
-            
+
             _buildToggleOption(
               icon: Icons.timer_outlined,
               title: 'Ephemeral Post',
@@ -157,7 +244,10 @@ class _PostGhostScreenState extends State<PostGhostScreen> {
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16)),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 child: Column(
                   children: [
                     _buildPollOptionField('Option 1'),
@@ -166,14 +256,24 @@ class _PostGhostScreenState extends State<PostGhostScreen> {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        Icon(Icons.add_circle_outline, color: AppColors.primary, size: 18),
+                        Icon(
+                          Icons.add_circle_outline,
+                          color: AppColors.primary,
+                          size: 18,
+                        ),
                         const SizedBox(width: 8),
-                        Text('Add another option', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                        Text(
+                          'Add another option',
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ],
-                    )
+                    ),
                   ],
                 ),
-              )
+              ),
             ],
 
             const SizedBox(height: 32),
@@ -183,12 +283,17 @@ class _PostGhostScreenState extends State<PostGhostScreen> {
               child: ElevatedButton.icon(
                 onPressed: () => Navigator.pop(context),
                 icon: const Icon(Icons.visibility_off_rounded, size: 20),
-                label: const Text('Post Anonymously', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                label: const Text(
+                  'Post Anonymously',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF7E22CE),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                 ),
               ),
             ),
@@ -199,10 +304,19 @@ class _PostGhostScreenState extends State<PostGhostScreen> {
     );
   }
 
-  Widget _buildToggleOption({required IconData icon, required String title, required String subtitle, required bool value, required void Function(bool) onChanged}) {
+  Widget _buildToggleOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required void Function(bool) onChanged,
+  }) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Row(
         children: [
           Icon(icon, color: Colors.white70),
@@ -211,9 +325,18 @@ class _PostGhostScreenState extends State<PostGhostScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                Text(
+                  subtitle,
+                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                ),
               ],
             ),
           ),
@@ -230,7 +353,10 @@ class _PostGhostScreenState extends State<PostGhostScreen> {
   Widget _buildPollOptionField(String hint) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: Colors.black26,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: TextField(
         style: const TextStyle(color: Colors.white, fontSize: 14),
         decoration: InputDecoration(
