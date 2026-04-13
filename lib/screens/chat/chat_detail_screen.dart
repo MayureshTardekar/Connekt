@@ -342,27 +342,94 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                               borderRadius: BorderRadius.circular(12),
                                               border: Border.all(color: isSent ? Colors.white.withOpacity(0.2) : AppColors.primary.withOpacity(0.2)),
                                             ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.stretch,
                                               children: [
-                                                Container(
-                                                  padding: const EdgeInsets.all(8),
-                                                  decoration: BoxDecoration(
-                                                    color: isSent ? Colors.white : AppColors.primary,
-                                                    borderRadius: BorderRadius.circular(8),
-                                                  ),
-                                                  child: Icon(Icons.picture_as_pdf_rounded, color: isSent ? AppColors.primary : Colors.white, size: 20),
+                                                Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Container(
+                                                      padding: const EdgeInsets.all(8),
+                                                      decoration: BoxDecoration(
+                                                        color: isSent ? Colors.white : AppColors.primary,
+                                                        borderRadius: BorderRadius.circular(8),
+                                                      ),
+                                                      child: Icon(Icons.picture_as_pdf_rounded, color: isSent ? AppColors.primary : Colors.white, size: 20),
+                                                    ),
+                                                    const SizedBox(width: 12),
+                                                    Flexible(
+                                                      child: Column(
+                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        children: [
+                                                          Text(msg.sharedData!['title'], style: TextStyle(color: isSent ? Colors.white : AppColors.textPrimary, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                                          const SizedBox(height: 2),
+                                                          Text('${msg.sharedData!['pages']} Pages • ${msg.sharedData!['author']}', style: TextStyle(color: isSent ? Colors.white70 : AppColors.textSecondary, fontSize: 11)),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
-                                                const SizedBox(width: 12),
-                                                Flexible(
-                                                  child: Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                    children: [
-                                                      Text(msg.sharedData!['title'], style: TextStyle(color: isSent ? Colors.white : AppColors.textPrimary, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                                      const SizedBox(height: 2),
-                                                      Text('${msg.sharedData!['pages']} Pages • ${msg.sharedData!['author']}', style: TextStyle(color: isSent ? Colors.white70 : AppColors.textSecondary, fontSize: 11)),
-                                                    ],
+                                                const SizedBox(height: 12),
+                                                GestureDetector(
+                                                  onTap: () { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Opening Note module...'))); },
+                                                  child: Container(
+                                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                                    alignment: Alignment.center,
+                                                    decoration: BoxDecoration(color: isSent ? Colors.white : AppColors.primary, borderRadius: BorderRadius.circular(8)),
+                                                    child: Text('Open Note', style: TextStyle(color: isSent ? AppColors.primary : Colors.white, fontWeight: FontWeight.w700, fontSize: 12)),
                                                   ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                        // EVENT SHARED CARD
+                                        if (msg.sharedCardType == SharedCardType.event && msg.sharedData != null) ...[
+                                          Container(
+                                            margin: const EdgeInsets.only(bottom: 8),
+                                            padding: const EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              color: isSent ? Colors.white.withOpacity(0.15) : AppColors.secondary.withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(12),
+                                              border: Border.all(color: isSent ? Colors.white.withOpacity(0.2) : AppColors.secondary.withOpacity(0.3)),
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Container(
+                                                      padding: const EdgeInsets.all(10),
+                                                      decoration: BoxDecoration(color: isSent ? Colors.white : AppColors.secondary, borderRadius: BorderRadius.circular(10)),
+                                                      child: Icon(Icons.event_rounded, color: isSent ? AppColors.secondary : Colors.white, size: 24),
+                                                    ),
+                                                    const SizedBox(width: 12),
+                                                    Expanded(
+                                                      child: Column(
+                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        children: [
+                                                          Text(msg.sharedData!['title'], style: TextStyle(color: isSent ? Colors.white : AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14)),
+                                                          const SizedBox(height: 2),
+                                                          Text('${msg.sharedData!['date']} • ${msg.sharedData!['location']}', style: TextStyle(color: isSent ? Colors.white70 : AppColors.textSecondary, fontSize: 11)),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 12),
+                                                Row(
+                                                  children: [
+                                                    Text('🔥 ${msg.sharedData!['attendees']} Going', style: TextStyle(color: isSent ? Colors.white : AppColors.secondary, fontSize: 12, fontWeight: FontWeight.w600)),
+                                                    const Spacer(),
+                                                    GestureDetector(
+                                                      onTap: () { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('RSVP marked as Going!'))); },
+                                                      child: Container(
+                                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                                                        decoration: BoxDecoration(color: isSent ? Colors.white : AppColors.secondary, borderRadius: BorderRadius.circular(20)),
+                                                        child: Text('RSVP', style: TextStyle(color: isSent ? AppColors.secondary : Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ],
                                             ),

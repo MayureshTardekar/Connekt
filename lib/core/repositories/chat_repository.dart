@@ -36,6 +36,36 @@ class ChatRepository {
 
   Future<List<ChatMessage>> getMessages(String conversationId) async {
     await Future.delayed(const Duration(milliseconds: 500));
+    
+    // Priya's Conversation (ID 2) to test Event Cards
+    if (conversationId == '2') {
+      return [
+        ChatMessage(
+          id: 'ev1',
+          senderId: 'p2',
+          senderName: 'Priya Patel',
+          text: 'Are you coming to the tech fest tomorrow?',
+          timestamp: DateTime.now().subtract(const Duration(hours: 2)),
+          isFromMe: false,
+          sharedCardType: SharedCardType.event,
+          sharedData: {
+            'title': 'HackFest 2026',
+            'date': 'Tomorrow, 5:00 PM',
+            'location': 'Main Auditorium',
+            'attendees': 142,
+          }
+        ),
+        ChatMessage(
+          id: 'ev2',
+          senderId: 'p2',
+          senderName: 'Priya Patel',
+          text: 'Thanks for the notes!',
+          timestamp: DateTime.now().subtract(const Duration(hours: 1)),
+          isFromMe: false,
+        ),
+      ];
+    }
+    
     return [
       ChatMessage(
         id: 'm1',
