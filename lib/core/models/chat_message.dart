@@ -65,29 +65,28 @@ class ChatMessage {
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
     return ChatMessage(
-      id: json['id'] as String? ?? '',
-      senderId: json['senderId'] as String? ?? '',
-      senderName: json['senderName'] as String? ?? '',
+      id: json['id']?.toString() ?? '',
+      senderId: (json['senderId'] ?? json['sender_id'])?.toString() ?? '',
+      senderName: (json['senderName'] ?? json['sender_name'])?.toString() ?? '',
       text: json['text'] as String? ?? '',
-      // Note: Assuming timestamp might be sent as ISO-8601 string or milliseconds since epoch
-      timestamp: json['timestamp'] != null 
-          ? (json['timestamp'] is int 
-              ? DateTime.fromMillisecondsSinceEpoch(json['timestamp'] as int)
-              : DateTime.parse(json['timestamp'].toString()))
+      timestamp: (json['timestamp'] ?? json['created_at']) != null 
+          ? ((json['timestamp'] ?? json['created_at']) is int 
+              ? DateTime.fromMillisecondsSinceEpoch((json['timestamp'] ?? json['created_at']) as int)
+              : DateTime.parse((json['timestamp'] ?? json['created_at']).toString()))
           : DateTime.now(),
-      isRead: json['isRead'] as bool? ?? false,
-      isFromMe: json['isFromMe'] as bool? ?? false,
+      isRead: (json['isRead'] ?? json['is_read']) as bool? ?? false,
+      isFromMe: (json['isFromMe'] ?? json['is_from_me']) as bool? ?? false,
       reactions: (json['reactions'] as Map<String, dynamic>?)?.map(
             (k, e) => MapEntry(k, e as int),
           ) ??
           {},
-      isGif: json['isGif'] as bool? ?? false,
-      isSticker: json['isSticker'] as bool? ?? false,
+      isGif: (json['isGif'] ?? json['is_gif']) as bool? ?? false,
+      isSticker: (json['isSticker'] ?? json['is_sticker']) as bool? ?? false,
       sharedCardType: SharedCardType.values.firstWhere(
-        (e) => e.name == (json['sharedCardType'] as String?),
+        (e) => e.name == (json['sharedCardType'] ?? json['shared_card_type']) as String?,
         orElse: () => SharedCardType.none,
       ),
-      sharedData: json['sharedData'] as Map<String, dynamic>?,
+      sharedData: (json['sharedData'] ?? json['shared_data']) as Map<String, dynamic>?,
     );
   }
 

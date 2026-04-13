@@ -4,14 +4,19 @@ import '../../theme/avatar_helper.dart';
 import 'post_lost_item_screen.dart';
 import 'item_detail_screen.dart';
 
-class LostFoundTab extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/providers/campus_provider.dart';
+import '../../core/models/lost_item.dart';
+import 'package:intl/intl.dart';
+
+class LostFoundTab extends ConsumerStatefulWidget {
   const LostFoundTab({super.key});
 
   @override
-  State<LostFoundTab> createState() => _LostFoundTabState();
+  ConsumerState<LostFoundTab> createState() => _LostFoundTabState();
 }
 
-class _LostFoundTabState extends State<LostFoundTab> {
+class _LostFoundTabState extends ConsumerState<LostFoundTab> {
   int _selectedFilter = 0;
   final List<String> _filters = [
     'All',
@@ -211,63 +216,61 @@ class _LostFoundTabState extends State<LostFoundTab> {
             ),
           ),
 
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                _buildItemCard(
-                  context,
-                  title: 'MacBook Pro Charger',
-                  description: 'Left in Library Room 204, near window seats.',
-                  location: 'Central Library',
-                  time: '2h ago',
-                  status: 'Lost',
-                  statusColor: AppTheme.coral,
-                  itemIcon: Icons.power_rounded,
-                  poster: 'Sarah Miller',
+          ref.watch(lostFoundProvider).when(
+            data: (items) {
+               final filteredItems = _selectedFilter == 0
+                  ? items
+                  : items.where((i) {
+                      if (_selectedFilter == 1) return i.type == 'lost';
+                      if (_selectedFilter == 2) return i.type == 'found';
+                      // Category filtering
+                      return i.description.toLowerCase().contains(_filters[_selectedFilter].toLowerCase());
+                    }).toList();
+
+              if (filteredItems.isEmpty) {
+                return const SliverFillRemaining(
+                  child: Center(
+                    child: Text('No items found.'),
+                  ),
+                );
+              }
+
+              return SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final item = filteredItems[index];
+                      final timeStr = _getTimeAgo(item.createdAt);
+                      
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 14),
+                        child: _buildItemCard(
+                          context,
+                          title: item.title,
+                          description: item.description,
+                          location: item.location,
+                          time: timeStr,
+                          status: item.type.toUpperCase(),
+                          statusColor: item.type == 'lost' ? AppTheme.coral : AppTheme.emerald,
+                          itemIcon: _getItemIcon(item.title),
+                          poster: item.contactInfo,
+                        ),
+                      );
+                    },
+                    childCount: filteredItems.length,
+                  ),
                 ),
-                const SizedBox(height: 14),
-                _buildItemCard(
-                  context,
-                  title: 'Student ID Card',
-                  description: 'Found near cafeteria entrance. Blue lanyard.',
-                  location: 'Student Cafeteria',
-                  time: '5h ago',
-                  status: 'Found',
-                  statusColor: AppTheme.emerald,
-                  itemIcon: Icons.badge_rounded,
-                  poster: 'Jamie Chen',
-                ),
-                const SizedBox(height: 14),
-                _buildItemCard(
-                  context,
-                  title: 'Black Umbrella',
-                  description:
-                      'Compact with wooden handle. Left in Lecture Hall B.',
-                  location: 'Lecture Hall B',
-                  time: 'Yesterday',
-                  status: 'Lost',
-                  statusColor: AppTheme.coral,
-                  itemIcon: Icons.umbrella_rounded,
-                  poster: 'Marcus Wright',
-                ),
-                const SizedBox(height: 14),
-                _buildItemCard(
-                  context,
-                  title: 'Wireless Earbuds Case',
-                  description:
-                      'White AirPods case on bench outside Engineering.',
-                  location: 'Engineering Block',
-                  time: 'Yesterday',
-                  status: 'Found',
-                  statusColor: AppTheme.emerald,
-                  itemIcon: Icons.headphones_rounded,
-                  poster: 'Aisha Lindholm',
-                ),
-                const SizedBox(height: 80),
-              ]),
+              );
+            },
+            loading: () => const SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (err, stack) => SliverFillRemaining(
+              child: Center(child: Text('Error: $err')),
             ),
           ),
+          const SliverToBoxAdapter(child: SizedBox(height: 80)),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -322,6 +325,25 @@ class _LostFoundTabState extends State<LostFoundTab> {
         ),
       ),
     );
+  }
+
+  String _getTimeAgo(DateTime dateTime) {
+    final difference = DateTime.now().difference(dateTime);
+    if (difference.inMinutes < 1) return 'now';
+    if (difference.inMinutes < 60) return '${difference.inMinutes}m ago';
+    if (difference.inHours < 24) return '${difference.inHours}h ago';
+    return DateFormat('MMM d').format(dateTime);
+  }
+
+  IconData _getItemIcon(String title) {
+    title = title.toLowerCase();
+    if (title.contains('charger') || title.contains('power')) return Icons.power_rounded;
+    if (title.contains('card') || title.contains('id')) return Icons.badge_rounded;
+    if (title.contains('umbrella')) return Icons.umbrella_rounded;
+    if (title.contains('earbuds') || title.contains('headphone')) return Icons.headphones_rounded;
+    if (title.contains('phone')) return Icons.phone_iphone_rounded;
+    if (title.contains('key')) return Icons.vpn_key_rounded;
+    return Icons.widgets_rounded;
   }
 
   Widget _buildItemCard(

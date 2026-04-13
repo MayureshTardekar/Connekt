@@ -4,14 +4,19 @@ import '../../theme/avatar_helper.dart';
 import 'post_event_screen.dart';
 import 'event_detail_screen.dart';
 
-class EventsTab extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/providers/campus_provider.dart';
+import '../../core/models/campus_event.dart';
+import 'package:intl/intl.dart';
+
+class EventsTab extends ConsumerStatefulWidget {
   const EventsTab({super.key});
 
   @override
-  State<EventsTab> createState() => _EventsTabState();
+  ConsumerState<EventsTab> createState() => _EventsTabState();
 }
 
-class _EventsTabState extends State<EventsTab> {
+class _EventsTabState extends ConsumerState<EventsTab> {
   int _selectedDay = 1;
   int _selectedFilter = 0;
   final List<String> _filters = [
@@ -259,51 +264,61 @@ class _EventsTabState extends State<EventsTab> {
             ),
           ),
 
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                _buildEventCard(
-                  context,
-                  title: 'Annual Hackathon 2026',
-                  description:
-                      '24-hour coding marathon. Build something amazing.',
-                  location: 'Main Auditorium',
-                  time: '09:00 AM - 08:00 PM',
-                  gradientColors: const [Color(0xFF7C3AED), Color(0xFF5B21B6)],
-                  icon: Icons.computer_rounded,
-                  attendees: 148,
-                  isLive: true,
+          ref.watch(campusEventsProvider).when(
+            data: (events) {
+              final filteredEvents = _selectedFilter == 0
+                  ? events
+                  : events
+                      .where(
+                          (e) => e.category.toUpperCase() == _filters[_selectedFilter].toUpperCase())
+                      .toList();
+
+              if (filteredEvents.isEmpty) {
+                return const SliverFillRemaining(
+                  child: Center(
+                    child: Text('No events scheduled.'),
+                  ),
+                );
+              }
+
+              return SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final event = filteredEvents[index];
+                      final timeStr = DateFormat('hh:mm a').format(event.dateTime);
+                      final isLive = event.dateTime.isBefore(DateTime.now()) && 
+                                     event.dateTime.add(const Duration(hours: 2)).isAfter(DateTime.now());
+                      
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: _buildEventCard(
+                          context,
+                          title: event.title,
+                          description: event.description,
+                          location: event.location,
+                          time: timeStr,
+                          gradientColors: _getCategoryGradients(event.category),
+                          icon: _getCategoryIcon(event.category),
+                          attendees: event.attendees,
+                          isLive: isLive,
+                        ),
+                      );
+                    },
+                    childCount: filteredEvents.length,
+                  ),
                 ),
-                const SizedBox(height: 16),
-                _buildEventCard(
-                  context,
-                  title: 'Career Fair & Networking',
-                  description:
-                      'Meet top recruiters from leading tech companies.',
-                  location: 'Student Center',
-                  time: '11:00 AM - 03:00 PM',
-                  gradientColors: const [Color(0xFF0D9488), Color(0xFF0F766E)],
-                  icon: Icons.business_center_rounded,
-                  attendees: 89,
-                  isLive: false,
-                ),
-                const SizedBox(height: 16),
-                _buildEventCard(
-                  context,
-                  title: 'Open Mic Night',
-                  description: 'Music, poetry, comedy — anything goes!',
-                  location: 'Campus Amphitheatre',
-                  time: '06:00 PM - 09:00 PM',
-                  gradientColors: const [Color(0xFFF43F5E), Color(0xFFE11D48)],
-                  icon: Icons.mic_rounded,
-                  attendees: 67,
-                  isLive: false,
-                ),
-                const SizedBox(height: 80),
-              ]),
+              );
+            },
+            loading: () => const SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (err, stack) => SliverFillRemaining(
+              child: Center(child: Text('Error: $err')),
             ),
           ),
+          const SliverToBoxAdapter(child: SizedBox(height: 80)),
         ],
       ),
       floatingActionButton: Semantics(
@@ -320,6 +335,22 @@ class _EventsTabState extends State<EventsTab> {
         ),
       ),
     );
+  }
+
+  IconData _getCategoryIcon(String category) {
+    category = category.toUpperCase();
+    if (category.contains('TECH')) return Icons.computer_rounded;
+    if (category.contains('ART')) return Icons.palette_rounded;
+    if (category.contains('SPORT')) return Icons.sports_basketball_rounded;
+    return Icons.event_rounded;
+  }
+
+  List<Color> _getCategoryGradients(String category) {
+    category = category.toUpperCase();
+    if (category.contains('TECH')) return const [Color(0xFF7C3AED), Color(0xFF5B21B6)];
+    if (category.contains('ART')) return const [Color(0xFFF43F5E), Color(0xFF9F1239)];
+    if (category.contains('SPORT')) return const [Color(0xFF10B981), Color(0xFF065F46)];
+    return const [Color(0xFFF59E0B), Color(0xFFD97706)];
   }
 
   Widget _buildEventCard(

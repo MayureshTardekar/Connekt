@@ -31,21 +31,30 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   }
 
   void _sendMessage() {
-    if (_messageController.text.trim().isEmpty) return;
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
+    
+    final newMessage = ChatMessage(
+      id: 'temp-${DateTime.now().millisecondsSinceEpoch}',
+      senderId: 'me', // TODO: Get real user ID
+      senderName: 'Me',
+      text: text,
+      timestamp: DateTime.now(),
+      isFromMe: true,
+      isRead: false,
+    );
+
+    // Optimistic update
     setState(() {
-      _localMessages.add(
-        ChatMessage(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          senderId: 'me',
-          senderName: 'Me',
-          text: _messageController.text.trim(),
-          timestamp: DateTime.now(),
-          isFromMe: true,
-          isRead: false,
-        ),
-      );
+      _localMessages.add(newMessage);
       _messageController.clear();
     });
+
+    // Send to Supabase
+    ref.read(chatRepositoryProvider).sendMessage(
+      widget.conversation.id,
+      newMessage,
+    );
 
     // Auto-scroll to bottom
     Future.delayed(const Duration(milliseconds: 100), () {
@@ -374,21 +383,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
               ),
               error: (err, stack) => Center(child: Text('Error: $err')),
               data: (serverMessages) {
-                if (!_hasLoadedInitialMessages) {
-                  _localMessages = List.from(serverMessages);
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted) {
-                      setState(() {
-                        _hasLoadedInitialMessages = true;
-                      });
-                      if (_scrollController.hasClients) {
-                        _scrollController.jumpTo(
-                          _scrollController.position.maxScrollExtent,
-                        );
-                      }
-                    }
-                  });
-                }
+                // Combine server messages and local (optimistic) ones
+                // In a real app, we would deduplicate by ID
+                final displayMessages = serverMessages; 
 
                 return ListView.builder(
                   controller: _scrollController,
@@ -396,13 +393,13 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                     horizontal: 16,
                     vertical: 20,
                   ),
-                  itemCount: _localMessages.length,
+                  itemCount: displayMessages.length,
                   itemBuilder: (context, index) {
-                    final msg = _localMessages[index];
-                    final isSent = msg.isFromMe;
+                    final msg = displayMessages[index];
+                    final isSent = msg.isFromMe || msg.senderId == 'me';
                     final showAvatar =
                         !isSent &&
-                        (index == 0 || (_localMessages[index - 1].isFromMe));
+                        (index == 0 || (displayMessages[index - 1].isFromMe));
                     final String timeFormat =
                         '${msg.timestamp.hour}:${msg.timestamp.minute.toString().padLeft(2, "0")}';
 
@@ -694,8 +691,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                                       decoration: BoxDecoration(
                                                         color: isSent
                                                             ? Colors.white
-                                                            : AppColors
-                                                                  .secondary,
+                                                            : AppColors.accent,
                                                         borderRadius:
                                                             BorderRadius.circular(
                                                               10,
@@ -704,8 +700,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                                       child: Icon(
                                                         Icons.event_rounded,
                                                         color: isSent
-                                                            ? AppColors
-                                                                  .secondary
+                                                            ? AppColors.accent
                                                             : Colors.white,
                                                         size: 24,
                                                       ),
@@ -757,8 +752,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                                       style: TextStyle(
                                                         color: isSent
                                                             ? Colors.white
-                                                            : AppColors
-                                                                  .secondary,
+                                                            : AppColors.accent,
                                                         fontSize: 12,
                                                         fontWeight:
                                                             FontWeight.w600,
@@ -786,8 +780,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                                         decoration: BoxDecoration(
                                                           color: isSent
                                                               ? Colors.white
-                                                              : AppColors
-                                                                    .secondary,
+                                                              : AppColors.accent,
                                                           borderRadius:
                                                               BorderRadius.circular(
                                                                 20,
@@ -797,8 +790,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                                           'RSVP',
                                                           style: TextStyle(
                                                             color: isSent
-                                                                ? AppColors
-                                                                      .secondary
+                                                                ? AppColors.accent
                                                                 : Colors.white,
                                                             fontWeight:
                                                                 FontWeight.bold,

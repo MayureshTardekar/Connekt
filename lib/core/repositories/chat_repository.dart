@@ -1,120 +1,88 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/chat_message.dart';
 import '../models/chat_conversation.dart';
 import '../config/app_config.dart';
 import '../network/logger.dart';
 
 class ChatRepository {
-  // Simulate network delay to make it feel like a real backend
+  final _supabase = Supabase.instance.client;
+
+  // Fetch all conversations
   Future<List<ChatConversation>> getConversations() async {
     AppLogger.info('Fetching conversations... [useMockBackend: ${AppConfig.useMockBackend}]');
-    if (!AppConfig.useMockBackend) {
-      // TODO: Implement Firebase / real backend fetching here
+    if (AppConfig.useMockBackend) {
+      // Return empty or mock based on implementation
       return [];
     }
     
-    await Future.delayed(const Duration(milliseconds: 800));
-    return [
-      ChatConversation(
-        id: '1',
-        participantName: 'Rahul Sharma',
-        participantId: 'p1',
-        lastMessage: 'Are we still meeting for the project?',
-        lastMessageTime: DateTime.now().subtract(const Duration(minutes: 5)),
-        unreadCount: 2,
-        isPinned: true,
-      ),
-      ChatConversation(
-        id: '2',
-        participantName: 'Priya Patel',
-        participantId: 'p2',
-        lastMessage: 'Thanks for the notes!',
-        lastMessageTime: DateTime.now().subtract(const Duration(hours: 1)),
-        unreadCount: 0,
-      ),
-      ChatConversation(
-        id: '3',
-        participantName: 'Dev team (MP)',
-        participantId: 'p3',
-        lastMessage: 'I will push the code tonight.',
-        lastMessageTime: DateTime.now().subtract(const Duration(hours: 3)),
-        unreadCount: 5,
-      ),
-    ];
+    final response = await _supabase
+        .from('chat_conversations')
+        .select()
+        .order('last_message_time', ascending: false);
+        
+    return response.map((json) => ChatConversation.fromJson(json)).toList();
   }
 
-  Future<List<ChatMessage>> getMessages(String conversationId) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+  // Real-time stream of conversations
+  Stream<List<ChatConversation>> watchConversations() {
+    if (AppConfig.useMockBackend) {
+      return Stream.fromFuture(getConversations());
+    }
+    return _supabase
+        .from('chat_conversations')
+        .stream(primaryKey: ['id'])
+        .order('last_message_time', ascending: false)
+        .map((data) => data.map((json) => ChatConversation.fromJson(json)).toList());
+  }
 
-    // Priya's Conversation (ID 2) to test Event Cards
-    if (conversationId == '2') {
-      return [
-        ChatMessage(
-          id: 'ev1',
-          senderId: 'p2',
-          senderName: 'Priya Patel',
-          text: 'Are you coming to the tech fest tomorrow?',
-          timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-          isFromMe: false,
-          sharedCardType: SharedCardType.event,
-          sharedData: {
-            'title': 'HackFest 2026',
-            'date': 'Tomorrow, 5:00 PM',
-            'location': 'Main Auditorium',
-            'attendees': 142,
-          },
-        ),
-        ChatMessage(
-          id: 'ev2',
-          senderId: 'p2',
-          senderName: 'Priya Patel',
-          text: 'Thanks for the notes!',
-          timestamp: DateTime.now().subtract(const Duration(hours: 1)),
-          isFromMe: false,
-        ),
-      ];
+  // Fetch all messages for a specific conversation
+  Future<List<ChatMessage>> getMessages(String conversationId) async {
+    if (AppConfig.useMockBackend) {
+      return [];
     }
 
-    return [
-      ChatMessage(
-        id: 'm1',
-        senderId: 'p1',
-        senderName: 'Rahul Sharma',
-        text: 'Hey, are you free?',
-        timestamp: DateTime.now().subtract(const Duration(minutes: 10)),
-        isFromMe: false,
-      ),
-      ChatMessage(
-        id: 'm2',
-        senderId: 'me',
-        senderName: 'Me',
-        text: 'Yes, just finishing up an assignment.',
-        timestamp: DateTime.now().subtract(const Duration(minutes: 8)),
-        isFromMe: true,
-        isRead: true,
-      ),
-      ChatMessage(
-        id: 'm3',
-        senderId: 'p1',
-        senderName: 'Rahul Sharma',
-        text: 'Are we still meeting for the project?',
-        timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
-        isFromMe: false,
-      ),
-      ChatMessage(
-        id: 'm4',
-        senderId: 'p1',
-        senderName: 'Rahul Sharma',
-        text: 'Hey check out these notes I made for OS.',
-        timestamp: DateTime.now().subtract(const Duration(minutes: 4)),
-        isFromMe: false,
-        sharedCardType: SharedCardType.note,
-        sharedData: {
-          'title': 'Operating Systems Ch-2',
-          'author': 'Rahul Sharma',
-          'type': 'PDF',
-          'pages': 14,
-        },
-      ),
-    ];
+    final response = await _supabase
+        .from('chat_messages')
+        .select()
+        .eq('conversation_id', conversationId)
+        .order('timestamp', ascending: true);
+        
+    return response.map((json) => ChatMessage.fromJson(json)).toList();
+  }
+
+  // Real-time stream of messages
+  Stream<List<ChatMessage>> watchMessages(String conversationId) {
+    if (AppConfig.useMockBackend) {
+      return Stream.fromFuture(getMessages(conversationId));
+    }
+    return _supabase
+        .from('chat_messages')
+        .stream(primaryKey: ['id'])
+        .eq('conversation_id', conversationId)
+        .order('timestamp', ascending: true)
+        .map((data) => data.map((json) => ChatMessage.fromJson(json)).toList());
+  }
+
+  // Send a new message
+  Future<void> sendMessage(String conversationId, ChatMessage message) async {
+    if (AppConfig.useMockBackend) return;
+
+    await _supabase.from('chat_messages').insert({
+      'conversation_id': conversationId,
+      'sender_id': message.senderId,
+      'sender_name': message.senderName,
+      'text': message.text,
+      'timestamp': message.timestamp.toIso8601String(),
+      'is_read': message.isRead,
+      'shared_card_type': message.sharedCardType.name,
+      'shared_data': message.sharedData,
+    });
+    
+    // Update the last message in the conversation for the list view
+    await _supabase.from('chat_conversations').update({
+      'last_message': message.text,
+      'last_message_time': message.timestamp.toIso8601String(),
+    }).eq('id', conversationId);
   }
 }
+
