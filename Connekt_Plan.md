@@ -347,87 +347,71 @@ app/
 
 ---
 
-## 7. Phase-wise Build Plan
+## 7. Implementation Plan (Frontend/Product-first, Backend-later)
 
-### Phase 1 — Project Setup (Day 1–2)
-- [ ] Install Android Studio, create Empty Activity project
-- [ ] Set min SDK API 21, target SDK 34
-- [ ] Connect to Firebase — add `google-services.json`
-- [ ] Enable Auth, Firestore, Storage in Firebase Console
-- [ ] Add all Gradle dependencies (see Section 10)
-- [ ] Create folder structure: activities/, adapters/, models/, utils/
-- [ ] Set up `colors.xml` and `styles.xml` with app theme
-- [ ] Create `SplashActivity` with Lottie animation + 2.5s delay
+### Phase 0 — Foundation Cleanup (2–4 days)
+**Goal:** Make the codebase scalable before features explode.
+*   **Tasks:**
+    *   Create feature folders: `features/chat`, `features/ghost`, `features/events`, etc.
+    *   Add app-wide models and mock repositories (`ChatRepository`, `EventsRepository`, etc.) returning dummy JSON.
+    *   Add state management (Riverpod / Bloc / Provider — pick one and stick to it).
+    *   Add route management (GoRouter / centralized routes).
+    *   Add design tokens for spacing, radius, and typography consistency.
+*   **Why first:** Current screens are strong visually but mostly use screen-local state/hardcoded content. A modular architecture will make the phased build much faster.
+*   **Done criteria:** Every module reads from a mock repository, no business logic directly inside big widget trees.
 
-### Phase 2 — Authentication (Day 2–3)
-- [ ] Build `activity_login.xml` — email, password, login button, signup link
-- [ ] Build `activity_signup.xml` — name, email, password, confirm password
-- [ ] Implement Firebase Email Auth login in `LoginActivity.java`
-- [ ] Implement signup + save user doc to Firestore `users` collection
-- [ ] Add auth state check in Splash — skip login if already logged in
-- [ ] Add logout in Dashboard menu
+### Phase 1 — Chat V1 (Core UX) (1–2 weeks)
+**Goal:** Fully functional chat experience (still mock/local mode), with production-like behavior.
+*   **Features:**
+    *   Conversation list (last message preview, unread badge, pinned chats, archive swipe actions).
+    *   Chat detail (text send, reply-to message, date separators).
+    *   Message status states (sending/sent/read/failed as UI-only simulation).
+    *   Long press menu (copy, delete, react placeholder).
+    *   Search across chats/messages.
+    *   Empty states + skeleton loaders.
+*   **Nice additions:** Voice note UI placeholder, attach button bottom sheet (camera/gallery/document placeholders for media sharing), “start new chat” from edit icon.
+*   **Done criteria:** Chat feels complete even without backend. All data sourced from local mock models.
 
-### Phase 3 — Dashboard (Day 3)
-- [ ] Build `activity_dashboard.xml` with grid of CardViews
-- [ ] Cards: Notes, Events, Lost & Found, Chat, Anonymous, Study Groups
-- [ ] Show "Welcome, [Name]!" fetched from Firestore
-- [ ] Wire all card click listeners to respective activities
+### Phase 2 — Expressive Messaging (GIFs, Stickers, Reactions) (1 week)
+**Goal:** Make chat “fun + sticky”.
+*   **Features:** Emoji picker panel, sticker tray with categories (college, mood, memes), GIF picker UI (mock API first), tap reaction on any message, full-screen media viewer for images/GIFs.
+*   **UX polish:** Recent emojis/stickers, Favorite stickers, Quick reactions on double tap.
+*   **Done criteria:** Users can express via text + emoji + sticker + GIF in the same thread. Reaction counts + UI updates smoothly.
 
-### Phase 4 — Notes Sharing (Day 4)
-- [ ] Build notes list screen with RecyclerView
-- [ ] Build upload note screen — title, subject, PDF picker
-- [ ] Implement `Intent.ACTION_GET_CONTENT` for PDF file pick
-- [ ] Upload PDF to Firebase Storage: `notes/{uid}/{filename}.pdf`
-- [ ] Save metadata to Firestore after successful upload
-- [ ] Implement view/download — open URL in external app
+### Phase 3 — Campus Social Layer (1–2 weeks)
+**Goal:** Connect the chat to the rest of the ecosystem.
+*   **Features:** Share card into chat (Notes, Event, Lost&Found item, Ghost post preview), mini actions in card (“Open module”, “Save”, “Forward”), deep links between tabs/modules.
 
-### Phase 5 — Events (Day 5)
-- [ ] Build events list with RecyclerView, sorted by date
-- [ ] Build post event form — title, description, date picker, location
-- [ ] Save to `events` collection in Firestore
-- [ ] Real-time listener with `addSnapshotListener`
+### Phase 4 — Ghost Zone Advanced UX (1 week)
+**Goal:** Make Anonymous social stronger + safer (UI first).
+*   **Features:** Mood-based feed tabs with stronger sorting controls, **Ephemeral Content** (posts wiping after 24h UI), **Anonymous Polls**, post composer improvements (mood selector, tags, character counter, “sensitive content” warning toggle), comments enhancements (nested replies UI, upvote/downvote toggle, save post), report/block UI flows (placeholders).
 
-### Phase 6 — Lost & Found (Day 5–6)
-- [ ] Build lost items list with image thumbnails (Glide)
-- [ ] Build post lost item form — title, description, image picker
-- [ ] Upload image to Firebase Storage: `lost_items/{uid}/{filename}`
-- [ ] Save item to `lost_items` collection
-- [ ] Item detail screen with "Contact via Chat" button
-- [ ] Contact button passes poster's uid to ChatActivity
+### Phase 5 — Notes / Events / Lost&Found V2 polish (1–2 weeks)
+**Goal:** Make WIP modules usable before backend.
+*   **Notes:** Filter by subject/semester, note detail screen with preview pages/comments, bookmark + downloaded tab UI, **Assignment Tracker**.
+*   **Events:** Event detail page + RSVP states ("Going"), calendar month view + local notification reminders, official Club Pages.
+*   **Lost & Found:** Report flow with image carousel placeholder, claim flow UI, status timeline, **Campus Marketplace** tab for selling.
 
-### Phase 7 — Student Chat (Day 6–7)
-- [ ] Design `item_message_sent.xml` and `item_message_received.xml` bubble layouts
-- [ ] Build ChatActivity with RecyclerView, auto-scroll to bottom
-- [ ] Generate chatId: sort both UIDs alphabetically + concatenate
-- [ ] Implement send message — write to `chats/{chatId}/messages`
-- [ ] Real-time listener updates RecyclerView instantly
-- [ ] Build ChatListActivity — show all conversations for current user
+### Phase 6 — Quality, Performance, Accessibility (ongoing, 1 week sprint)
+**Goal:** Production feel.
+*   **Must-do:** Dark mode support, better keyboard handling, accessibility labels, semantic buttons, animation performance profiling (60fps target).
+*   **Extras:** Error states + retry UI, offline mock persistence (Hive/Isar local store).
 
-### Phase 8 — Anonymous Peer Support (Day 7–8) ⭐
-- [ ] Build anon feed screen with mood filter chips at top
-- [ ] Build post anon screen — mood selector + multiline text area
-- [ ] Save post to Firestore WITHOUT any userId
-- [ ] Implement like button — update `likes` counter + `likedBy` array
-- [ ] Check `likedBy` array before allowing like (no double likes)
-- [ ] Build CommentsActivity — list + add comment (also no userId)
-- [ ] Filter feed by mood locally in adapter
+### Phase 7 — Backend Integration Readiness Layer
+**Goal:** Make backend plug-in as easy as flipping a switch.
+*   **Tasks:** Add DTO mappers (mock JSON -> domain model), `useMockData` flags, logging + analytics event hooks, basic unit tests.
 
-### Phase 9 — Study Group Finder (Day 8–9)
-- [ ] Build study groups list screen
-- [ ] Build post group form — subject, datetime, location, max members
-- [ ] Implement Join button — increment `memberCount`, add uid to `members` array
-- [ ] Disable Join button when `memberCount >= maxMembers`
-- [ ] Show "Your Groups" tab — filter where `createdById == uid` or `members contains uid`
+### 🔥 Extra Features (Future Engagement)
+*   **Engagement boosters:** Karma / Points System, Daily streaks, Campus leaderboard, “Ask seniors” Q&A room, **Focus Timer** + group pomodoro rooms.
+*   **Premium UX touches:** Message drafts, scheduled messages, smart suggestions, theme packs, onboarding personas.
+*   **Safety + trust:** Anonymous mode indicators, content warnings, gentle anti-bullying nudges.
 
-### Phase 10 — Polish & Testing (Day 10–12)
-- [ ] Add ProgressBar on all screens during data load
-- [ ] Add empty state views — "No posts yet" when list is empty
-- [ ] Handle no-internet with Toast or banner
-- [ ] Consistent color theme across all screens
-- [ ] Write Firestore security rules (see Section 11)
-- [ ] Full end-to-end test on physical device
-- [ ] Prepare SRS document, ER diagram, screenshots for submission
-- [ ] Each team member prepares their viva talking points
+### Recommended Sprint Order
+1. **Phase 0 + Phase 1** (Foundation + Core chat usable)
+2. **Phase 2** (GIF/sticker/reactions)
+3. **Phase 3** (Module sharing)
+4. **Phase 4/5 parallel** (Ghost + other modules depth)
+5. **Phase 6 + 7** (Quality + integration readiness)
 
 ---
 

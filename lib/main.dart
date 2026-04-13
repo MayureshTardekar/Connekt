@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'theme/app_theme.dart';
-import 'screens/splash_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'core/theme/app_theme.dart';
+import 'core/routing/app_router.dart';
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   
@@ -13,19 +15,24 @@ void main() {
     ),
   );
 
-  runApp(const CampusHiveApp());
+  runApp(
+    // Wrapping the entire app in ProviderScope so Riverpod can manage state everywhere
+    const ProviderScope(
+      child: CampusHiveApp(),
+    ),
+  );
 }
 
 class CampusHiveApp extends StatelessWidget {
-  const CampusHiveApp({Key? key}) : super(key: key);
+  const CampusHiveApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'Connekt',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const SplashScreen(), 
+      routerConfig: appRouter, 
     );
   }
 }
