@@ -1,9 +1,17 @@
 import '../models/chat_message.dart';
 import '../models/chat_conversation.dart';
+import '../config/app_config.dart';
+import '../network/logger.dart';
 
 class ChatRepository {
   // Simulate network delay to make it feel like a real backend
   Future<List<ChatConversation>> getConversations() async {
+    AppLogger.info('Fetching conversations... [useMockBackend: ${AppConfig.useMockBackend}]');
+    if (!AppConfig.useMockBackend) {
+      // TODO: Implement Firebase / real backend fetching here
+      return [];
+    }
+    
     await Future.delayed(const Duration(milliseconds: 800));
     return [
       ChatConversation(
