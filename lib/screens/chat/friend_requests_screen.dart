@@ -1,58 +1,118 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/providers/friend_provider.dart';
+import '../../core/models/friend_request.dart';
+import '../../core/widgets/app_states.dart';
 import '../../theme/avatar_helper.dart';
 
-class FriendRequestsScreen extends StatefulWidget {
+class FriendRequestsScreen extends ConsumerWidget {
   const FriendRequestsScreen({super.key});
 
   @override
-  State<FriendRequestsScreen> createState() => _FriendRequestsScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final requestsAsync = ref.watch(pendingRequestsProvider);
 
-class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
-  // Mock Data for pending requests
-  final List<Map<String, String>> _pendingRequests = [
-    {'name': 'Vikram Singh', 'mutual': '3 mutual friends', 'time': '2h ago'},
-    {'name': 'Riya Mehta', 'mutual': '1 mutual friend', 'time': '5h ago'},
-  ];
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_rounded,
-            color: AppColors.textPrimary,
-          ),
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text('Friend Requests', style: AppTypography.heading3),
         centerTitle: true,
       ),
-      body: _pendingRequests.isEmpty
-          ? _buildEmptyState()
-          : ListView.builder(
+      body: requestsAsync.when(
+        loading: () => const AppLoadingState(message: 'Loading requests...'),
+        error: (err, _) => AppErrorState(
+          message: err.toString(),
+          onRetry: () => ref.invalidate(pendingRequestsProvider),
+        ),
+        data: (requests) {
+          if (requests.isEmpty) {
+            return const AppEmptyState(
+              icon: Icons.people_alt_rounded,
+              title: 'No pending requests',
+              subtitle: "You're all caught up! Search for friends to connect.",
+            );
+          }
+
+          return RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: () async => ref.invalidate(pendingRequestsProvider),
+            child: ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-              itemCount: _pendingRequests.length,
+              itemCount: requests.length,
               itemBuilder: (context, index) {
-                final req = _pendingRequests[index];
-                return _buildRequestCard(
-                  req['name']!,
-                  req['mutual']!,
-                  req['time']!,
-                  index,
-                );
+                return _RequestCard(request: requests[index]);
               },
             ),
+          );
+        },
+      ),
     );
   }
+}
 
-  Widget _buildRequestCard(String name, String mutual, String time, int index) {
+/// Isolated widget so actions don't cause full list rebuilds
+class _RequestCard extends ConsumerStatefulWidget {
+  final FriendRequest request;
+  const _RequestCard({required this.request});
+
+  @override
+  ConsumerState<_RequestCard> createState() => _RequestCardState();
+}
+
+class _RequestCardState extends ConsumerState<_RequestCard> {
+  bool _isLoading = false;
+
+  Future<void> _handleAction(bool accept) async {
+    setState(() => _isLoading = true);
+    final repo = ref.read(friendRepositoryProvider);
+    try {
+      if (accept) {
+        await repo.acceptRequest(widget.request.id);
+      } else {
+        await repo.declineRequest(widget.request.id);
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            accept
+                ? 'You and ${widget.request.senderName} are now friends! 🎉'
+                : 'Request declined.',
+          ),
+          backgroundColor: accept ? AppColors.success : AppColors.textHint,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Action failed. Please try again.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      setState(() => _isLoading = false);
+    }
+    // No setState needed — the stream automatically removes accepted/declined entries
+  }
+
+  String _formatTime(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final req = widget.request;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -61,7 +121,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -70,7 +130,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          avatarWidget(name, radius: 28),
+          avatarWidget(req.senderName, radius: 28),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -80,13 +140,12 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      name,
-                      style: AppTypography.bodyLarge.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                      req.senderName,
+                      style: AppTypography.bodyLarge
+                          .copyWith(fontWeight: FontWeight.w700),
                     ),
                     Text(
-                      time,
+                      _formatTime(req.createdAt),
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textHint,
@@ -94,85 +153,50 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  mutual,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
+                if (req.mutualCount > 0) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '${req.mutualCount} mutual friend${req.mutualCount > 1 ? 's' : ''}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
-                ),
+                ],
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          // Handle Decline
-                          setState(() {
-                            _pendingRequests.removeAt(index);
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Request declined')),
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            color: AppColors.error.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          alignment: Alignment.center,
-                          child: const Text(
-                            'Decline',
-                            style: TextStyle(
-                              color: AppColors.error,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          // Handle Accept
-                          setState(() {
-                            _pendingRequests.removeAt(index);
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('You and $name are now friends!'),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
+                // Buttons — disabled while loading
+                _isLoading
+                    ? const Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
                             color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primary.withOpacity(0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          alignment: Alignment.center,
-                          child: const Text(
-                            'Accept',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                            ),
                           ),
                         ),
+                      )
+                    : Row(
+                        children: [
+                          Expanded(
+                            child: _ActionButton(
+                              label: 'Decline',
+                              color: AppColors.error,
+                              background: AppColors.error.withValues(alpha: 0.1),
+                              onTap: () => _handleAction(false),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _ActionButton(
+                              label: 'Accept',
+                              color: Colors.white,
+                              background: AppColors.primary,
+                              onTap: () => _handleAction(true),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
               ],
             ),
           ),
@@ -180,37 +204,36 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
       ),
     );
   }
+}
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.05),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.people_alt_rounded,
-              size: 64,
-              color: AppColors.textHint.withOpacity(0.5),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            "No pending requests",
-            style: AppTypography.heading3.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            "You're all caught up! Search for friends above.",
-            style: TextStyle(color: AppColors.textHint),
-          ),
-        ],
+class _ActionButton extends StatelessWidget {
+  final String label;
+  final Color color;
+  final Color background;
+  final VoidCallback onTap;
+
+  const _ActionButton({
+    required this.label,
+    required this.color,
+    required this.background,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: TextStyle(color: color, fontWeight: FontWeight.w700),
+        ),
       ),
     );
   }

@@ -84,5 +84,15 @@ class ChatRepository {
       'last_message_time': message.timestamp.toIso8601String(),
     }).eq('id', conversationId);
   }
+
+  /// Archive a conversation — marks it as archived so it no longer appears in the list
+  Future<void> archiveConversation(String conversationId) async {
+    if (AppConfig.useMockBackend) return;
+
+    await _supabase
+        .from('chat_conversations')
+        .update({'is_archived': true})
+        .eq('id', conversationId);
+  }
 }
 
