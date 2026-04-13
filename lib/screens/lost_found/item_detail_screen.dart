@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/avatar_helper.dart';
 import '../chat/chat_detail_screen.dart';
+import '../../core/models/chat_conversation.dart';
 
 class ItemDetailScreen extends StatefulWidget {
   final String title;
@@ -330,10 +331,14 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const ChatDetailScreen(
-                              userName: 'Sarah Miller',
-                              userInitial: 'SM',
-                              avatarColor: AppTheme.primary,
+                            builder: (_) => ChatDetailScreen(
+                              conversation: ChatConversation(
+                                id: 'lost_found_1',
+                                participantId: 'p2',
+                                participantName: 'Sarah Miller',
+                                lastMessage: 'Hey regarding the lost item...',
+                                lastMessageTime: DateTime.now(),
+                              ),
                             ),
                           ),
                         );

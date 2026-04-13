@@ -47,6 +47,18 @@ class ChatMessage {
     SharedCardType? sharedCardType,
     Map<String, dynamic>? sharedData,
   }) {
+    return ChatMessage(
+      id: id ?? this.id,
+      senderId: senderId ?? this.senderId,
+      senderName: senderName ?? this.senderName,
+      text: text ?? this.text,
+      timestamp: timestamp ?? this.timestamp,
+      isRead: isRead ?? this.isRead,
+      isFromMe: isFromMe ?? this.isFromMe,
+      reactions: reactions ?? this.reactions,
+      isGif: isGif ?? this.isGif,
+      isSticker: isSticker ?? this.isSticker,
+      sharedCardType: sharedCardType ?? this.sharedCardType,
       sharedData: sharedData ?? this.sharedData,
     );
   }
