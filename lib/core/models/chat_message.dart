@@ -1,3 +1,5 @@
+enum SharedCardType { none, note, event, lostFound, ghostPost }
+
 class ChatMessage {
   final String id;
   final String senderId;
@@ -11,6 +13,10 @@ class ChatMessage {
   final Map<String, int> reactions;
   final bool isGif;
   final bool isSticker;
+  
+  // Phase 3 Campus Social Layer features
+  final SharedCardType sharedCardType;
+  final Map<String, dynamic>? sharedData;
 
   ChatMessage({
     required this.id,
@@ -23,6 +29,8 @@ class ChatMessage {
     this.reactions = const {},
     this.isGif = false,
     this.isSticker = false,
+    this.sharedCardType = SharedCardType.none,
+    this.sharedData,
   });
 
   ChatMessage copyWith({
@@ -36,6 +44,8 @@ class ChatMessage {
     Map<String, int>? reactions,
     bool? isGif,
     bool? isSticker,
+    SharedCardType? sharedCardType,
+    Map<String, dynamic>? sharedData,
   }) {
     return ChatMessage(
       id: id ?? this.id,
@@ -48,6 +58,8 @@ class ChatMessage {
       reactions: reactions ?? this.reactions,
       isGif: isGif ?? this.isGif,
       isSticker: isSticker ?? this.isSticker,
+      sharedCardType: sharedCardType ?? this.sharedCardType,
+      sharedData: sharedData ?? this.sharedData,
     );
   }
 }

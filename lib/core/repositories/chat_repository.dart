@@ -62,6 +62,21 @@ class ChatRepository {
         timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
         isFromMe: false,
       ),
+      ChatMessage(
+        id: 'm4',
+        senderId: 'p1',
+        senderName: 'Rahul Sharma',
+        text: 'Hey check out these notes I made for OS.',
+        timestamp: DateTime.now().subtract(const Duration(minutes: 4)),
+        isFromMe: false,
+        sharedCardType: SharedCardType.note,
+        sharedData: {
+          'title': 'Operating Systems Ch-2',
+          'author': 'Rahul Sharma',
+          'type': 'PDF',
+          'pages': 14,
+        }
+      ),
     ];
   }
 }

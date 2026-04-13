@@ -333,6 +333,41 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.end,
                                       children: [
+                                        if (msg.sharedCardType == SharedCardType.note && msg.sharedData != null) ...[
+                                          Container(
+                                            margin: const EdgeInsets.only(bottom: 8),
+                                            padding: const EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              color: isSent ? Colors.white.withOpacity(0.15) : AppColors.primary.withOpacity(0.05),
+                                              borderRadius: BorderRadius.circular(12),
+                                              border: Border.all(color: isSent ? Colors.white.withOpacity(0.2) : AppColors.primary.withOpacity(0.2)),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Container(
+                                                  padding: const EdgeInsets.all(8),
+                                                  decoration: BoxDecoration(
+                                                    color: isSent ? Colors.white : AppColors.primary,
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  child: Icon(Icons.picture_as_pdf_rounded, color: isSent ? AppColors.primary : Colors.white, size: 20),
+                                                ),
+                                                const SizedBox(width: 12),
+                                                Flexible(
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text(msg.sharedData!['title'], style: TextStyle(color: isSent ? Colors.white : AppColors.textPrimary, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                                      const SizedBox(height: 2),
+                                                      Text('${msg.sharedData!['pages']} Pages • ${msg.sharedData!['author']}', style: TextStyle(color: isSent ? Colors.white70 : AppColors.textSecondary, fontSize: 11)),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
                                         Text(msg.text, style: TextStyle(color: isSent ? Colors.white : AppColors.textPrimary, fontSize: 15, height: 1.4)),
                                         const SizedBox(height: 4),
                                         Row(
