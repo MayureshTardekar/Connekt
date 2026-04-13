@@ -17,10 +17,10 @@ class DashboardStats {
 }
 
 final dashboardStatsProvider = Provider<DashboardStats>((ref) {
-  final notes = ref.watch(academicNotesProvider).value?.length ?? 0;
-  final ghostPosts = ref.watch(ghostPostsProvider).value?.length ?? 0;
-  final events = ref.watch(campusEventsProvider).value?.length ?? 0;
-  final conversations = ref.watch(chatConversationsProvider).value ?? [];
+  final notes = ref.watch(academicNotesProvider).asData?.value.length ?? 0;
+  final ghostPosts = ref.watch(ghostPostsProvider).asData?.value.length ?? 0;
+  final events = ref.watch(campusEventsProvider).asData?.value.length ?? 0;
+  final conversations = ref.watch(chatConversationsProvider).asData?.value ?? [];
   
   int unread = 0;
   for (var c in conversations) {
