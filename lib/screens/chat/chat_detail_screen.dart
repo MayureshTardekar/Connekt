@@ -75,6 +75,79 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     });
   }
 
+  void _showStickerPanel() {
+    // Hide keyboard safely before showing the panel
+    FocusScope.of(context).unfocus();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.45,
+          padding: const EdgeInsets.all(20),
+          decoration: const BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 5,
+                  decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Tabs for Stickers vs GIFs
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Text('Stickers', style: AppTypography.heading3.copyWith(color: AppColors.primary)),
+                  Text('GIFs', style: AppTypography.heading3.copyWith(color: AppColors.textHint)),
+                  Text('Memes', style: AppTypography.heading3.copyWith(color: AppColors.textHint)),
+                ],
+              ),
+              const SizedBox(height: 20),
+              // Dummy Grid for Stickers
+              Expanded(
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  physics: const BouncingScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 4,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                  ),
+                  itemCount: 16, // Dummy sticker count
+                  itemBuilder: (context, index) {
+                    final emojis = ['🐶', '🐱', '🔥', '🚀', '🍔', '🎉', '🎸', '😂', '😎', '💡', '💯', '🤔', '🙌', '👀', '💖', '💤'];
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context); // Close panel
+                        _messageController.text += emojis[index]; // Append sticker text (or send a real sticker graphic)
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(emojis[index], style: const TextStyle(fontSize: 32)),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _showAttachmentPanel() {
     showModalBottomSheet(
       context: context,
@@ -333,13 +406,23 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(24)),
-                      child: TextField(
-                          controller: _messageController, 
-                          decoration: const InputDecoration(
-                              border: InputBorder.none, 
-                              hintText: 'Type a message...', 
-                              hintStyle: TextStyle(color: AppColors.textHint, fontSize: 14)), 
-                          onSubmitted: (_) => _sendMessage()),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                                controller: _messageController, 
+                                decoration: const InputDecoration(
+                                    border: InputBorder.none, 
+                                    hintText: 'Type a message...', 
+                                    hintStyle: TextStyle(color: AppColors.textHint, fontSize: 14)), 
+                                onSubmitted: (_) => _sendMessage()),
+                          ),
+                          GestureDetector(
+                            onTap: _showStickerPanel,
+                            child: const Icon(Icons.emoji_emotions_outlined, color: AppColors.textHint, size: 24),
+                          )
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
