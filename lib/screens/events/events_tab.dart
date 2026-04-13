@@ -7,6 +7,8 @@ import '../../core/models/campus_event.dart';
 import '../../theme/avatar_helper.dart';
 import 'post_event_screen.dart';
 import 'event_detail_screen.dart';
+import '../ai/ai_chat_screen.dart';
+import '../../core/utils/ai_prompts.dart';
 
 class EventsTab extends ConsumerStatefulWidget {
   const EventsTab({super.key});
@@ -97,6 +99,7 @@ class _EventsTabState extends ConsumerState<EventsTab> {
               children: [
                 _buildDaySelector(),
                 _buildFilterBar(),
+                _buildAIBanner(context),
               ],
             ),
           ),
@@ -247,6 +250,73 @@ class _EventsTabState extends ConsumerState<EventsTab> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildAIBanner(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        final eventsAsync = ref.read(campusEventsProvider);
+        if (eventsAsync.asData?.value == null) return;
+        final eventsStr = eventsAsync.asData!.value
+            .map((e) => "\${e.title} (\${e.category})")
+            .join(", ");
+            
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AIChatScreen(
+              initialPrompt: AIPrompts.recommendEvents("music, technology, and fun", eventsStr),
+            ),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF8B5CF6).withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ],
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.auto_awesome_rounded, color: Colors.white),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Get AI Event Recommendations',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    'Discover what matches your vibe.',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: Colors.white),
+          ],
+        ),
       ),
     );
   }

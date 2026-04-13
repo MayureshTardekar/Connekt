@@ -4,7 +4,8 @@ import '../../core/theme/app_theme.dart';
 import '../../core/providers/ai_provider.dart';
 
 class AIChatScreen extends ConsumerStatefulWidget {
-  const AIChatScreen({super.key});
+  final String? initialPrompt;
+  const AIChatScreen({super.key, this.initialPrompt});
 
   @override
   ConsumerState<AIChatScreen> createState() => _AIChatScreenState();
@@ -20,6 +21,17 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   ];
   bool _isLoading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialPrompt != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _messageController.text = widget.initialPrompt!;
+        _sendMessage();
+      });
+    }
+  }
+
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
@@ -32,17 +44,20 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
 
     try {
       final response = await ref.read(aiRepositoryProvider).getChatResponse(text);
+      if (!mounted) return;
       setState(() {
         _messages.add({'role': 'ai', 'text': response});
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _messages.add({'role': 'ai', 'text': 'Sorry, I encountered an error. Please check your API key.'});
         _isLoading = false;
       });
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

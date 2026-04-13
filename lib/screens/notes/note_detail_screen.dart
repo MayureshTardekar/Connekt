@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/avatar_helper.dart';
+import '../ai/ai_chat_screen.dart';
+import '../../core/utils/ai_prompts.dart';
 
 class NoteDetailScreen extends StatefulWidget {
   final String title;
@@ -196,6 +198,54 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
               ),
             ),
 
+            const SizedBox(height: 32),
+            // AI Action Tokens
+            const Text(
+              'Connekt AI Tools',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildAIToolButton(
+                    context,
+                    icon: Icons.auto_awesome_rounded,
+                    label: 'Summarize',
+                    color: Colors.cyan,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AIChatScreen(
+                            initialPrompt: AIPrompts.summarizeNote(widget.title, widget.subject),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildAIToolButton(
+                    context,
+                    icon: Icons.quiz_rounded,
+                    label: 'Generate Quiz',
+                    color: Colors.purpleAccent,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AIChatScreen(
+                            initialPrompt: AIPrompts.generateQuiz(widget.title, widget.subject),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 48),
             // Comments Section (Mock)
             const Text(
@@ -256,6 +306,41 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAIToolButton(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

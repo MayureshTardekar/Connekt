@@ -3,6 +3,8 @@ import '../../theme/app_theme.dart';
 import '../../theme/avatar_helper.dart';
 import '../chat/chat_detail_screen.dart';
 import '../../core/models/chat_conversation.dart';
+import '../ai/ai_chat_screen.dart';
+import '../../core/utils/ai_prompts.dart';
 
 class ItemDetailScreen extends StatefulWidget {
   final String title;
@@ -186,6 +188,56 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  if (widget.status == 'Lost')
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AIChatScreen(
+                              initialPrompt: AIPrompts.lostItemTips(widget.title),
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [AppTheme.teal, AppTheme.teal.withOpacity(0.7)],
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.travel_explore_rounded, color: Colors.white, size: 28),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Need help finding this?',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  const Text(
+                                    'Get AI tips on where to check on campus.',
+                                    style: TextStyle(color: Colors.white70, fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 16),
+                          ],
+                        ),
+                      ),
+                    ),
 
                   // Timeline card
                   Container(
