@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/providers/campus_provider.dart';
+import '../../core/models/lost_item.dart';
 import '../../theme/avatar_helper.dart';
 import 'post_lost_item_screen.dart';
 import 'item_detail_screen.dart';
-
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/providers/campus_provider.dart';
-import '../../core/models/lost_item.dart';
-import 'package:intl/intl.dart';
 
 class LostFoundTab extends ConsumerStatefulWidget {
   const LostFoundTab({super.key});
@@ -29,37 +28,22 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: AppColors.background,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             expandedHeight: 180,
             floating: false,
             pinned: true,
-            backgroundColor: AppTheme.teal,
-            leading: IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.arrow_back_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              onPressed: () => Navigator.pop(context),
-            ),
+            backgroundColor: AppColors.accent,
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Color(0xFF0D9488),
-                      Color(0xFF0F766E),
-                      Color(0xFF115E59),
+                      Color(0xFF10B981),
+                      Color(0xFF059669),
+                      Color(0xFF047857),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -68,40 +52,38 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
                 child: Stack(
                   children: [
                     Positioned(
-                      right: -20,
+                      right: -30,
                       bottom: -20,
                       child: Icon(
-                        Icons.manage_search_rounded,
+                        Icons.search_rounded,
                         size: 160,
-                        color: Colors.white.withValues(alpha: 0.06),
+                        color: Colors.white.withOpacity(0.1),
                       ),
                     ),
-                    Positioned(
-                      left: 24,
-                      right: 24,
-                      bottom: 24,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text(
-                            'Lost & Found',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 28,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.5,
+                    SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Lost & Found',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Report and recover items on campus.',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.7),
-                              fontSize: 14,
+                            const SizedBox(height: 8),
+                            Text(
+                              'Report items or help others find theirs.',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.8),
+                                fontSize: 14,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -109,387 +91,242 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
               ),
             ),
           ),
-
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      _buildStatBox(
-                        '12',
-                        'Lost',
-                        AppTheme.coral,
-                        const Color(0xFFFEE2E2),
-                      ),
-                      const SizedBox(width: 10),
-                      _buildStatBox(
-                        '8',
-                        'Found',
-                        AppTheme.emerald,
-                        const Color(0xFFD1FAE5),
-                      ),
-                      const SizedBox(width: 10),
-                      _buildStatBox(
-                        '4',
-                        'Pending',
-                        AppTheme.primary,
-                        const Color(0xFFEEF2FF),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: AppTheme.softShadow,
-                    ),
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Search lost items...',
-                        prefixIcon: const Icon(
-                          Icons.search_rounded,
-                          color: AppTheme.textSecondary,
-                        ),
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 16,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  SizedBox(
-                    height: 38,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _filters.length,
-                      itemBuilder: (context, index) {
-                        final isSelected = _selectedFilter == index;
-                        return GestureDetector(
-                          onTap: () => setState(() => _selectedFilter = index),
-                          child: Container(
-                            margin: const EdgeInsets.only(right: 8),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 18,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              gradient: isSelected
-                                  ? const LinearGradient(
-                                      colors: [
-                                        Color(0xFF0D9488),
-                                        Color(0xFF0F766E),
-                                      ],
-                                    )
-                                  : null,
-                              color: isSelected ? null : Colors.white,
-                              borderRadius: BorderRadius.circular(10),
-                              border: isSelected
-                                  ? null
-                                  : Border.all(color: AppTheme.cardBorder),
-                            ),
-                            child: Center(
-                              child: Text(
-                                _filters[index],
-                                style: TextStyle(
-                                  color: isSelected
-                                      ? Colors.white
-                                      : AppTheme.textSecondary,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
+            child: _buildFilterChips(),
           ),
-
           ref.watch(lostFoundProvider).when(
-            data: (items) {
-               final filteredItems = _selectedFilter == 0
-                  ? items
-                  : items.where((i) {
-                      if (_selectedFilter == 1) return i.type == 'lost';
-                      if (_selectedFilter == 2) return i.type == 'found';
-                      // Category filtering
-                      return i.description.toLowerCase().contains(_filters[_selectedFilter].toLowerCase());
-                    }).toList();
+                data: (items) {
+                  final filteredItems =
+                      _selectedFilter == 0
+                          ? items
+                          : items
+                              .where(
+                                (item) =>
+                                    item.type.toLowerCase() ==
+                                        _filters[_selectedFilter].toLowerCase(),
+                              )
+                              .toList();
 
-              if (filteredItems.isEmpty) {
-                return const SliverFillRemaining(
-                  child: Center(
-                    child: Text('No items found.'),
-                  ),
-                );
-              }
-
-              return SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final item = filteredItems[index];
-                      final timeStr = _getTimeAgo(item.createdAt);
-                      
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 14),
-                        child: _buildItemCard(
-                          context,
-                          title: item.title,
-                          description: item.description,
-                          location: item.location,
-                          time: timeStr,
-                          status: item.type.toUpperCase(),
-                          statusColor: item.type == 'lost' ? AppTheme.coral : AppTheme.emerald,
-                          itemIcon: _getItemIcon(item.title),
-                          poster: item.contactInfo,
+                  if (filteredItems.isEmpty) {
+                    return const SliverToBoxAdapter(
+                      child: Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(40.0),
+                          child: Text('No items found'),
                         ),
-                      );
-                    },
-                    childCount: filteredItems.length,
-                  ),
-                ),
-              );
-            },
-            loading: () => const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator()),
-            ),
-            error: (err, stack) => SliverFillRemaining(
-              child: Center(child: Text('Error: $err')),
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 80)),
+                      ),
+                    );
+                  }
+
+                  return SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          return _buildItemCard(filteredItems[index]);
+                        },
+                        childCount: filteredItems.length,
+                      ),
+                    ),
+                  );
+                },
+                loading:
+                    () => const SliverToBoxAdapter(
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                error:
+                    (err, stack) => SliverToBoxAdapter(
+                      child: Center(child: Text('Error: $err')),
+                    ),
+              ),
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const PostLostItemScreen()),
-        ),
-        backgroundColor: AppTheme.coral,
-        elevation: 8,
-        icon: const Icon(Icons.add_rounded, color: Colors.white),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const PostLostItemScreen(),
+            ),
+          );
+        },
+        backgroundColor: AppColors.accent,
+        icon: const Icon(Icons.add_location_alt_rounded, color: Colors.white),
         label: const Text(
-          'Report',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+          'Report Item',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
     );
   }
 
-  Widget _buildStatBox(
-    String count,
-    String label,
-    Color textColor,
-    Color bgColor,
-  ) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Column(
-          children: [
-            Text(
-              count,
-              style: TextStyle(
-                color: textColor,
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
+  Widget _buildFilterChips() {
+    return SizedBox(
+      height: 60,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        itemCount: _filters.length,
+        itemBuilder: (context, index) {
+          final isSelected = _selectedFilter == index;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              label: Text(_filters[index]),
+              selected: isSelected,
+              onSelected: (selected) {
+                setState(() => _selectedFilter = index);
+              },
+              selectedColor: AppColors.accent,
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.white : AppColors.textSecondary,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: isSelected ? AppColors.accent : Colors.grey.shade200,
+                ),
               ),
             ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                color: textColor,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
-  String _getTimeAgo(DateTime dateTime) {
-    final difference = DateTime.now().difference(dateTime);
-    if (difference.inMinutes < 1) return 'now';
-    if (difference.inMinutes < 60) return '${difference.inMinutes}m ago';
-    if (difference.inHours < 24) return '${difference.inHours}h ago';
-    return DateFormat('MMM d').format(dateTime);
-  }
-
-  IconData _getItemIcon(String title) {
-    title = title.toLowerCase();
-    if (title.contains('charger') || title.contains('power')) return Icons.power_rounded;
-    if (title.contains('card') || title.contains('id')) return Icons.badge_rounded;
-    if (title.contains('umbrella')) return Icons.umbrella_rounded;
-    if (title.contains('earbuds') || title.contains('headphone')) return Icons.headphones_rounded;
-    if (title.contains('phone')) return Icons.phone_iphone_rounded;
-    if (title.contains('key')) return Icons.vpn_key_rounded;
-    return Icons.widgets_rounded;
-  }
-
-  Widget _buildItemCard(
-    BuildContext context, {
-    required String title,
-    required String description,
-    required String location,
-    required String time,
-    required String status,
-    required Color statusColor,
-    required IconData itemIcon,
-    required String poster,
-  }) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ItemDetailScreen(
-              title: title,
-              description: description,
-              location: location,
-              time: time,
-              status: status,
-              statusColor: statusColor,
-              imageUrl: '',
-            ),
+  Widget _buildItemCard(LostItem item) {
+    final isLost = item.type.toLowerCase() == 'lost';
+    final statusColor = isLost ? Colors.red : Colors.green;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-        );
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: AppTheme.softShadow,
-        ),
-        child: Row(
-          children: [
-            // Icon placeholder instead of network image
-            Container(
-              width: 100,
-              height: 120,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    statusColor.withValues(alpha: 0.15),
-                    statusColor.withValues(alpha: 0.05),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: const BorderRadius.horizontal(
-                  left: Radius.circular(20),
-                ),
-              ),
-              child: Center(
-                child: Icon(
-                  itemIcon,
-                  size: 40,
-                  color: statusColor.withValues(alpha: 0.6),
-                ),
+        ],
+      ),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ItemDetailScreen(
+                title: item.title,
+                description: item.description,
+                location: item.location,
+                time: _formatDate(item.createdAt),
+                status: item.type.toUpperCase(),
+                statusColor: statusColor,
+                imageUrl: item.imageUrl ?? '',
               ),
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(14),
+          );
+        },
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: item.imageUrl != null
+                    ? Image.network(
+                        item.imageUrl!,
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return _buildPlaceholderImage();
+                        },
+                      )
+                    : _buildPlaceholderImage(),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
+                            horizontal: 8,
+                            vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: statusColor.withValues(alpha: 0.1),
+                            color: statusColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            status,
+                            item.type.toUpperCase(),
                             style: TextStyle(
-                              color: statusColor,
                               fontSize: 10,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.bold,
+                              color: statusColor,
                             ),
                           ),
                         ),
+                        const Spacer(),
                         Text(
-                          time,
+                          _formatDate(item.createdAt),
                           style: const TextStyle(
-                            color: AppTheme.textSecondary,
                             fontSize: 11,
+                            color: AppColors.textHint,
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      title,
+                      item.title,
                       style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      description,
-                      style: const TextStyle(
-                        color: AppTheme.textSecondary,
-                        fontSize: 12,
-                        height: 1.4,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on_rounded,
+                          size: 14,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            item.location,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 10),
                     Row(
                       children: [
-                        avatarWidget(poster, radius: 10),
+                        avatarWidget('Anonymous', radius: 10),
                         const SizedBox(width: 6),
-                        Text(
-                          poster,
-                          style: const TextStyle(
+                        const Text(
+                          'Anonymous',
+                          style: TextStyle(
                             fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.textSecondary,
-                          ),
-                        ),
-                        const Spacer(),
-                        const Icon(
-                          Icons.location_on_rounded,
-                          size: 13,
-                          color: AppTheme.textSecondary,
-                        ),
-                        const SizedBox(width: 3),
-                        Flexible(
-                          child: Text(
-                            location,
-                            style: const TextStyle(
-                              fontSize: 10,
-                              color: AppTheme.textSecondary,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+                            color: AppColors.textSecondary,
                           ),
                         ),
                       ],
@@ -497,10 +334,23 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
                   ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  Widget _buildPlaceholderImage() {
+    return Container(
+      width: 100,
+      height: 100,
+      color: Colors.grey.shade100,
+      child: Icon(Icons.image, color: Colors.grey.shade400),
+    );
+  }
+
+  String _formatDate(DateTime dateTime) {
+    return DateFormat('MMM d').format(dateTime);
   }
 }
