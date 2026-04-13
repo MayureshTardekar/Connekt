@@ -20,10 +20,16 @@ class _PostLostItemScreenState extends State<PostLostItemScreen> {
         backgroundColor: AppTheme.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary),
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: AppTheme.textPrimary,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('Report Item', style: Theme.of(context).textTheme.titleLarge),
+        title: Text(
+          'Report Item',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -42,16 +48,36 @@ class _PostLostItemScreenState extends State<PostLostItemScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       decoration: BoxDecoration(
-                        color: _selectedType == 'Lost' ? const Color(0xFFDC2626) : Colors.white,
+                        color: _selectedType == 'Lost'
+                            ? const Color(0xFFDC2626)
+                            : Colors.white,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: _selectedType == 'Lost' ? Colors.transparent : const Color(0xFFE5E7EB)),
+                        border: Border.all(
+                          color: _selectedType == 'Lost'
+                              ? Colors.transparent
+                              : const Color(0xFFE5E7EB),
+                        ),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.search_off_rounded, color: _selectedType == 'Lost' ? Colors.white : const Color(0xFFDC2626), size: 20),
+                          Icon(
+                            Icons.search_off_rounded,
+                            color: _selectedType == 'Lost'
+                                ? Colors.white
+                                : const Color(0xFFDC2626),
+                            size: 20,
+                          ),
                           const SizedBox(width: 8),
-                          Text('Lost', style: TextStyle(color: _selectedType == 'Lost' ? Colors.white : AppTheme.textPrimary, fontWeight: FontWeight.bold)),
+                          Text(
+                            'Lost',
+                            style: TextStyle(
+                              color: _selectedType == 'Lost'
+                                  ? Colors.white
+                                  : AppTheme.textPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -64,16 +90,36 @@ class _PostLostItemScreenState extends State<PostLostItemScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       decoration: BoxDecoration(
-                        color: _selectedType == 'Found' ? const Color(0xFF059669) : Colors.white,
+                        color: _selectedType == 'Found'
+                            ? const Color(0xFF059669)
+                            : Colors.white,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: _selectedType == 'Found' ? Colors.transparent : const Color(0xFFE5E7EB)),
+                        border: Border.all(
+                          color: _selectedType == 'Found'
+                              ? Colors.transparent
+                              : const Color(0xFFE5E7EB),
+                        ),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.check_circle_rounded, color: _selectedType == 'Found' ? Colors.white : const Color(0xFF059669), size: 20),
+                          Icon(
+                            Icons.check_circle_rounded,
+                            color: _selectedType == 'Found'
+                                ? Colors.white
+                                : const Color(0xFF059669),
+                            size: 20,
+                          ),
                           const SizedBox(width: 8),
-                          Text('Found', style: TextStyle(color: _selectedType == 'Found' ? Colors.white : AppTheme.textPrimary, fontWeight: FontWeight.bold)),
+                          Text(
+                            'Found',
+                            style: TextStyle(
+                              color: _selectedType == 'Found'
+                                  ? Colors.white
+                                  : AppTheme.textPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -94,7 +140,11 @@ class _PostLostItemScreenState extends State<PostLostItemScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: const Color(0xFFE5E7EB), width: 2, style: BorderStyle.solid),
+                  border: Border.all(
+                    color: const Color(0xFFE5E7EB),
+                    width: 2,
+                    style: BorderStyle.solid,
+                  ),
                 ),
                 child: _imageSelected
                     ? Stack(
@@ -105,17 +155,31 @@ class _PostLostItemScreenState extends State<PostLostItemScreen> {
                               color: const Color(0xFFEEF2FF),
                               borderRadius: BorderRadius.circular(22),
                             ),
-                            child: const Center(child: Icon(Icons.image_rounded, size: 60, color: AppTheme.primary)),
+                            child: const Center(
+                              child: Icon(
+                                Icons.image_rounded,
+                                size: 60,
+                                color: AppTheme.primary,
+                              ),
+                            ),
                           ),
                           Positioned(
                             top: 8,
                             right: 8,
                             child: GestureDetector(
-                              onTap: () => setState(() => _imageSelected = false),
+                              onTap: () =>
+                                  setState(() => _imageSelected = false),
                               child: Container(
                                 padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.5), shape: BoxShape.circle),
-                                child: const Icon(Icons.close, color: Colors.white, size: 18),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.5),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.close,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
                               ),
                             ),
                           ),
@@ -124,11 +188,27 @@ class _PostLostItemScreenState extends State<PostLostItemScreen> {
                     : Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.camera_alt_rounded, size: 40, color: Colors.grey.shade400),
+                          Icon(
+                            Icons.camera_alt_rounded,
+                            size: 40,
+                            color: Colors.grey.shade400,
+                          ),
                           const SizedBox(height: 12),
-                          Text('Tap to add a photo', style: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w600)),
+                          Text(
+                            'Tap to add a photo',
+                            style: TextStyle(
+                              color: Colors.grey.shade500,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                           const SizedBox(height: 4),
-                          Text('Helps others identify the item', style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
+                          Text(
+                            'Helps others identify the item',
+                            style: TextStyle(
+                              color: Colors.grey.shade400,
+                              fontSize: 12,
+                            ),
+                          ),
                         ],
                       ),
               ),
@@ -152,11 +232,24 @@ class _PostLostItemScreenState extends State<PostLostItemScreen> {
             TextFormField(
               maxLines: 4,
               decoration: InputDecoration(
-                hintText: 'Describe the item, any identifying marks, color, brand...',
+                hintText:
+                    'Describe the item, any identifying marks, color, brand...',
                 contentPadding: const EdgeInsets.all(20),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: AppTheme.primary, width: 2)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: const BorderSide(
+                    color: AppTheme.primary,
+                    width: 2,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -178,10 +271,18 @@ class _PostLostItemScreenState extends State<PostLostItemScreen> {
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _selectedType == 'Lost' ? const Color(0xFFDC2626) : const Color(0xFF059669),
+                  backgroundColor: _selectedType == 'Lost'
+                      ? const Color(0xFFDC2626)
+                      : const Color(0xFF059669),
                   padding: const EdgeInsets.symmetric(vertical: 18),
                 ),
-                child: Text('Report as $_selectedType', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                child: Text(
+                  'Report as $_selectedType',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 40),

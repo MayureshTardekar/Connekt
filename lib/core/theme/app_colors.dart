@@ -6,11 +6,13 @@ class AppColors {
   static const Color primaryLight = Color(0xFF818CF8);
   static const Color primaryDark = Color(0xFF3730A3);
   static const Color accent = Color(0xFF10B981); // Emerald Green
-  
+
   // Backgrounds & Surfaces
   static const Color background = Color(0xFFF9FAFB); // Light Gray background
   static const Color surface = Colors.white; // Card backgrounds
-  static const Color surfaceElevated = Color(0xFFF3F4F6); // Inputs, subtle boxes
+  static const Color surfaceElevated = Color(
+    0xFFF3F4F6,
+  ); // Inputs, subtle boxes
 
   // Text Colors
   static const Color textPrimary = Color(0xFF111827); // Near Black

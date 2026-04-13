@@ -25,7 +25,10 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
         backgroundColor: AppColors.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: AppColors.textPrimary,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text('Friend Requests', style: AppTypography.heading3),
@@ -38,7 +41,12 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
               itemCount: _pendingRequests.length,
               itemBuilder: (context, index) {
                 final req = _pendingRequests[index];
-                return _buildRequestCard(req['name']!, req['mutual']!, req['time']!, index);
+                return _buildRequestCard(
+                  req['name']!,
+                  req['mutual']!,
+                  req['time']!,
+                  index,
+                );
               },
             ),
     );
@@ -56,7 +64,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
             color: Colors.black.withOpacity(0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
-          )
+          ),
         ],
       ),
       child: Row(
@@ -71,12 +79,29 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(name, style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w700)),
-                    Text(time, style: const TextStyle(fontSize: 12, color: AppColors.textHint)),
+                    Text(
+                      name,
+                      style: AppTypography.bodyLarge.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      time,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textHint,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(mutual, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                Text(
+                  mutual,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
                 const SizedBox(height: 16),
                 Row(
                   children: [
@@ -87,7 +112,9 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
                           setState(() {
                             _pendingRequests.removeAt(index);
                           });
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Request declined')));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Request declined')),
+                          );
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 10),
@@ -96,7 +123,13 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           alignment: Alignment.center,
-                          child: const Text('Decline', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600)),
+                          child: const Text(
+                            'Decline',
+                            style: TextStyle(
+                              color: AppColors.error,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -108,7 +141,11 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
                           setState(() {
                             _pendingRequests.removeAt(index);
                           });
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('You and $name are now friends!')));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('You and $name are now friends!'),
+                            ),
+                          );
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 10),
@@ -116,19 +153,29 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
                             color: AppColors.primary,
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
-                              BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 3)),
-                            ]
+                              BoxShadow(
+                                color: AppColors.primary.withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
                           ),
                           alignment: Alignment.center,
-                          child: const Text('Accept', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                          child: const Text(
+                            'Accept',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ],
-                )
+                ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );
@@ -141,13 +188,28 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.05), shape: BoxShape.circle),
-            child: Icon(Icons.people_alt_rounded, size: 64, color: AppColors.textHint.withOpacity(0.5)),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.05),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.people_alt_rounded,
+              size: 64,
+              color: AppColors.textHint.withOpacity(0.5),
+            ),
           ),
           const SizedBox(height: 24),
-          Text("No pending requests", style: AppTypography.heading3.copyWith(color: AppColors.textSecondary)),
+          Text(
+            "No pending requests",
+            style: AppTypography.heading3.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
           const SizedBox(height: 8),
-          const Text("You're all caught up! Search for friends above.", style: TextStyle(color: AppColors.textHint)),
+          const Text(
+            "You're all caught up! Search for friends above.",
+            style: TextStyle(color: AppColors.textHint),
+          ),
         ],
       ),
     );

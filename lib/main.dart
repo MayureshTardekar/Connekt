@@ -6,7 +6,7 @@ import 'core/routing/app_router.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Make status bar transparent for a modern look
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -17,9 +17,7 @@ void main() {
 
   runApp(
     // Wrapping the entire app in ProviderScope so Riverpod can manage state everywhere
-    const ProviderScope(
-      child: CampusHiveApp(),
-    ),
+    const ProviderScope(child: CampusHiveApp()),
   );
 }
 
@@ -32,7 +30,7 @@ class CampusHiveApp extends StatelessWidget {
       title: 'Connekt',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      routerConfig: appRouter, 
+      routerConfig: appRouter,
     );
   }
 }

@@ -36,7 +36,7 @@ class ChatRepository {
 
   Future<List<ChatMessage>> getMessages(String conversationId) async {
     await Future.delayed(const Duration(milliseconds: 500));
-    
+
     // Priya's Conversation (ID 2) to test Event Cards
     if (conversationId == '2') {
       return [
@@ -53,7 +53,7 @@ class ChatRepository {
             'date': 'Tomorrow, 5:00 PM',
             'location': 'Main Auditorium',
             'attendees': 142,
-          }
+          },
         ),
         ChatMessage(
           id: 'ev2',
@@ -65,7 +65,7 @@ class ChatRepository {
         ),
       ];
     }
-    
+
     return [
       ChatMessage(
         id: 'm1',
@@ -105,7 +105,7 @@ class ChatRepository {
           'author': 'Rahul Sharma',
           'type': 'PDF',
           'pages': 14,
-        }
+        },
       ),
     ];
   }

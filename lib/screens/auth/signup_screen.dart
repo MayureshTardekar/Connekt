@@ -31,7 +31,11 @@ class _SignupScreenState extends State<SignupScreen> {
               borderRadius: BorderRadius.circular(12),
               boxShadow: AppTheme.softShadow,
             ),
-            child: const Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary, size: 20),
+            child: const Icon(
+              Icons.arrow_back_rounded,
+              color: AppTheme.textPrimary,
+              size: 20,
+            ),
           ),
           onPressed: () => Navigator.pop(context),
         ),
@@ -43,9 +47,15 @@ class _SignupScreenState extends State<SignupScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 8),
-              Text('Create Account', style: Theme.of(context).textTheme.displaySmall),
+              Text(
+                'Create Account',
+                style: Theme.of(context).textTheme.displaySmall,
+              ),
               const SizedBox(height: 8),
-              Text('Join Connekt and connect with your campus.', style: Theme.of(context).textTheme.bodyMedium),
+              Text(
+                'Join Connekt and connect with your campus.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
               const SizedBox(height: 32),
 
               Container(
@@ -54,19 +64,46 @@ class _SignupScreenState extends State<SignupScreen> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(28),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 24, offset: const Offset(0, 8)),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                    ),
                   ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildField('Full Name', _nameController, 'Alex Johnson', Icons.person_outline_rounded),
+                    _buildField(
+                      'Full Name',
+                      _nameController,
+                      'Alex Johnson',
+                      Icons.person_outline_rounded,
+                    ),
                     const SizedBox(height: 20),
-                    _buildField('Email', _emailController, 'name@campus.edu', Icons.mail_outline_rounded, type: TextInputType.emailAddress),
+                    _buildField(
+                      'Email',
+                      _emailController,
+                      'name@campus.edu',
+                      Icons.mail_outline_rounded,
+                      type: TextInputType.emailAddress,
+                    ),
                     const SizedBox(height: 20),
-                    _buildField('Password', _passwordController, '••••••••', Icons.lock_outline_rounded, isPassword: true),
+                    _buildField(
+                      'Password',
+                      _passwordController,
+                      '••••••••',
+                      Icons.lock_outline_rounded,
+                      isPassword: true,
+                    ),
                     const SizedBox(height: 20),
-                    _buildField('Confirm Password', _confirmController, '••••••••', Icons.verified_user_outlined, isPassword: true),
+                    _buildField(
+                      'Confirm Password',
+                      _confirmController,
+                      '••••••••',
+                      Icons.verified_user_outlined,
+                      isPassword: true,
+                    ),
                     const SizedBox(height: 24),
 
                     Row(
@@ -78,8 +115,11 @@ class _SignupScreenState extends State<SignupScreen> {
                           child: Checkbox(
                             value: _isAgreed,
                             activeColor: AppTheme.primary,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-                            onChanged: (val) => setState(() => _isAgreed = val ?? false),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            onChanged: (val) =>
+                                setState(() => _isAgreed = val ?? false),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -87,11 +127,25 @@ class _SignupScreenState extends State<SignupScreen> {
                           child: Text.rich(
                             TextSpan(
                               text: 'I agree to the ',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 13),
+                              style: Theme.of(
+                                context,
+                              ).textTheme.bodyMedium?.copyWith(fontSize: 13),
                               children: const [
-                                TextSpan(text: 'Terms', style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.w700)),
+                                TextSpan(
+                                  text: 'Terms',
+                                  style: TextStyle(
+                                    color: AppTheme.primary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                                 TextSpan(text: ' and '),
-                                TextSpan(text: 'Privacy Policy', style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.w700)),
+                                TextSpan(
+                                  text: 'Privacy Policy',
+                                  style: TextStyle(
+                                    color: AppTheme.primary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -104,13 +158,26 @@ class _SignupScreenState extends State<SignupScreen> {
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainScreen()));
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const MainScreen(),
+                            ),
+                          );
                         },
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
-                        child: const Text('Create Account', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                        child: const Text(
+                          'Create Account',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -121,10 +188,20 @@ class _SignupScreenState extends State<SignupScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('Already have an account? ', style: Theme.of(context).textTheme.bodyMedium),
+                    Text(
+                      'Already have an account? ',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: Text('Sign In', style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.w700, fontSize: 15)),
+                      child: Text(
+                        'Sign In',
+                        style: TextStyle(
+                          color: AppTheme.primary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -137,7 +214,14 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  Widget _buildField(String label, TextEditingController controller, String hint, IconData icon, {bool isPassword = false, TextInputType type = TextInputType.text}) {
+  Widget _buildField(
+    String label,
+    TextEditingController controller,
+    String hint,
+    IconData icon, {
+    bool isPassword = false,
+    TextInputType type = TextInputType.text,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

@@ -8,12 +8,12 @@ class ChatMessage {
   final DateTime timestamp;
   final bool isRead;
   final bool isFromMe; // Local UI helper
-  
+
   // Phase 2 Expressive features
   final Map<String, int> reactions;
   final bool isGif;
   final bool isSticker;
-  
+
   // Phase 3 Campus Social Layer features
   final SharedCardType sharedCardType;
   final Map<String, dynamic>? sharedData;

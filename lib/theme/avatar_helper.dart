@@ -14,7 +14,8 @@ Color avatarColor(String name) {
     const Color(0xFF8B5CF6), // Violet
     const Color(0xFF06B6D4), // Cyan
   ];
-  final index = name.codeUnits.fold<int>(0, (prev, c) => prev + c) % colors.length;
+  final index =
+      name.codeUnits.fold<int>(0, (prev, c) => prev + c) % colors.length;
   return colors[index];
 }
 
@@ -44,7 +45,11 @@ Widget avatarWidget(String name, {double radius = 22}) {
 }
 
 /// Placeholder for image cards — gradient with icon
-Widget imagePlaceholder({double height = 150, IconData icon = Icons.image_rounded, List<Color>? colors}) {
+Widget imagePlaceholder({
+  double height = 150,
+  IconData icon = Icons.image_rounded,
+  List<Color>? colors,
+}) {
   return Container(
     height: height,
     width: double.infinity,

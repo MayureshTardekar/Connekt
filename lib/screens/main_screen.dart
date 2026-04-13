@@ -39,7 +39,11 @@ class MainScreenState extends State<MainScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 24, offset: const Offset(0, 4)),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 24,
+              offset: const Offset(0, 4),
+            ),
           ],
         ),
         child: ClipRRect(
@@ -51,8 +55,14 @@ class MainScreenState extends State<MainScreen> {
             backgroundColor: Colors.white,
             selectedItemColor: AppTheme.primary,
             unselectedItemColor: const Color(0xFFBFC6D2),
-            selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11),
-            unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 11),
+            selectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 11,
+            ),
+            unselectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 11,
+            ),
             elevation: 0,
             items: [
               _buildNavItem(Icons.dashboard_rounded, 'Home', 0),
@@ -67,7 +77,11 @@ class MainScreenState extends State<MainScreen> {
     );
   }
 
-  BottomNavigationBarItem _buildNavItem(IconData icon, String label, int index) {
+  BottomNavigationBarItem _buildNavItem(
+    IconData icon,
+    String label,
+    int index,
+  ) {
     final isSelected = _currentIndex == index;
     return BottomNavigationBarItem(
       icon: AnimatedContainer(
