@@ -56,6 +56,72 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     });
   }
 
+  void _toggleReaction(int index, String emoji) {
+    if (index < 0 || index >= _localMessages.length) return;
+    
+    setState(() {
+      final msg = _localMessages[index];
+      final currentReactions = Map<String, int>.from(msg.reactions);
+      
+      // Simple toggle logic for demo
+      if (currentReactions.containsKey(emoji) && currentReactions[emoji]! > 0) {
+        currentReactions[emoji] = currentReactions[emoji]! - 1;
+        if (currentReactions[emoji] == 0) currentReactions.remove(emoji);
+      } else {
+        currentReactions[emoji] = (currentReactions[emoji] ?? 0) + 1;
+      }
+      
+      _localMessages[index] = msg.copyWith(reactions: currentReactions);
+    });
+  }
+
+  void _showAttachmentPanel() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: AppColors.background,
+            borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.textHint.withOpacity(0.3), borderRadius: BorderRadius.circular(2))),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                   _buildAttachOption(Icons.image_rounded, 'Gallery', Colors.purple),
+                   _buildAttachOption(Icons.camera_alt_rounded, 'Camera', Colors.blue),
+                   _buildAttachOption(Icons.insert_drive_file_rounded, 'Document', Colors.orange),
+                   _buildAttachOption(Icons.location_on_rounded, 'Location', Colors.green),
+                ],
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      }
+    );
+  }
+
+  Widget _buildAttachOption(IconData icon, String label, Color color) {
+    return Column(
+      children: [
+        Container(
+          width: 56, height: 56,
+          decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+          child: Icon(icon, color: color, size: 28),
+        ),
+        const SizedBox(height: 8),
+        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondary)),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Watch messages provider
@@ -114,16 +180,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
               loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
               error: (err, stack) => Center(child: Text('Error: $err')),
               data: (serverMessages) {
-                // Populate local state once to allow injecting new mock messages in the view directly
                 if (!_hasLoadedInitialMessages) {
                   _localMessages = List.from(serverMessages);
-                  // We defer the boolean switch to avoid setState during build
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if(mounted) {
-                      setState(() {
-                         _hasLoadedInitialMessages = true;
-                      });
-                      // Scroll to bottom immediately upon loading
+                      setState(() { _hasLoadedInitialMessages = true; });
                        if (_scrollController.hasClients) {
                           _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
                        }
@@ -153,40 +214,88 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                               child: showAvatar ? avatarWidget(widget.conversation.participantName, radius: 14) : const SizedBox(width: 28),
                             ),
                           Flexible(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              decoration: BoxDecoration(
-                                color: isSent ? AppColors.primary : AppColors.surface,
-                                borderRadius: BorderRadius.only(
-                                  topLeft: const Radius.circular(20), topRight: const Radius.circular(20),
-                                  bottomLeft: Radius.circular(isSent ? 20 : 6), bottomRight: Radius.circular(isSent ? 6 : 20),
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                      color: (isSent ? AppColors.primary : Colors.black).withOpacity(0.08), 
-                                      blurRadius: 8, 
-                                      offset: const Offset(0, 2))
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(msg.text, style: TextStyle(color: isSent ? Colors.white : AppColors.textPrimary, fontSize: 15, height: 1.4)),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(timeFormat, style: TextStyle(color: isSent ? Colors.white60 : AppColors.textHint, fontSize: 10)),
-                                      if (isSent) ...[
-                                          const SizedBox(width: 4), 
-                                          Icon(
-                                              msg.isRead ? Icons.done_all_rounded : Icons.check_rounded, 
-                                              size: 14, 
-                                              color: msg.isRead ? AppColors.secondary : Colors.white.withOpacity(0.7)
+                            child: GestureDetector(
+                              onDoubleTap: () => _toggleReaction(index, '👍'), // Quick Like
+                              onLongPress: () {
+                                // Simple bottom sheet reaction picker mock
+                                showModalBottomSheet(
+                                  context: context,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (_) => Container(
+                                    margin: const EdgeInsets.all(20),
+                                    padding: const EdgeInsets.all(20),
+                                    decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(30)),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                        for (final r in ['👍', '👎', '😂', '🔥', '❤️'])
+                                          GestureDetector(
+                                            onTap: () { Navigator.pop(context); _toggleReaction(index, r); },
+                                            child: Text(r, style: const TextStyle(fontSize: 32)),
                                           )
                                       ],
-                                    ],
+                                    ),
                                   ),
+                                );
+                              },
+                              child: Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                    margin: EdgeInsets.only(bottom: msg.reactions.isNotEmpty ? 12 : 0),
+                                    decoration: BoxDecoration(
+                                      color: isSent ? AppColors.primary : AppColors.surface,
+                                      borderRadius: BorderRadius.only(
+                                        topLeft: const Radius.circular(20), topRight: const Radius.circular(20),
+                                        bottomLeft: Radius.circular(isSent ? 20 : 6), bottomRight: Radius.circular(isSent ? 6 : 20),
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                            color: (isSent ? AppColors.primary : Colors.black).withOpacity(0.08), 
+                                            blurRadius: 8, 
+                                            offset: const Offset(0, 2))
+                                      ],
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [
+                                        Text(msg.text, style: TextStyle(color: isSent ? Colors.white : AppColors.textPrimary, fontSize: 15, height: 1.4)),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(timeFormat, style: TextStyle(color: isSent ? Colors.white60 : AppColors.textHint, fontSize: 10)),
+                                            if (isSent) ...[
+                                                const SizedBox(width: 4), 
+                                                Icon(
+                                                    msg.isRead ? Icons.done_all_rounded : Icons.check_rounded, 
+                                                    size: 14, 
+                                                    color: msg.isRead ? AppColors.secondary : Colors.white.withOpacity(0.7)
+                                                )
+                                            ],
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  // Reaction Badge rendering mapped correctly
+                                  if (msg.reactions.isNotEmpty)
+                                    Positioned(
+                                      bottom: 0,
+                                      right: isSent ? 10 : null,
+                                      left: isSent ? null : 10,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))]),
+                                        child: Row(
+                                          children: msg.reactions.entries.map((e) => Padding(
+                                            padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                                            child: Text('${e.key} ${e.value}', style: const TextStyle(fontSize: 10)),
+                                          )).toList(),
+                                        ),
+                                      ),
+                                    ),
                                 ],
                               ),
                             ),
@@ -212,11 +321,13 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
             child: SafeArea(
               child: Row(
                 children: [
-                   // Placeholder piece for future expressive actions (Phase 2 Additions)
-                  Container(
-                      padding: const EdgeInsets.all(10), 
-                      decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(12)), 
-                      child: const Icon(Icons.add_rounded, color: AppColors.textSecondary, size: 22)),
+                  GestureDetector(
+                    onTap: _showAttachmentPanel,
+                    child: Container(
+                        padding: const EdgeInsets.all(10), 
+                        decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(12)), 
+                        child: const Icon(Icons.add_rounded, color: AppColors.textSecondary, size: 22)),
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Container(

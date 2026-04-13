@@ -66,33 +66,78 @@ class ChatTab extends ConsumerWidget {
                     return _buildEmptyState();
                   }
                   
-                  return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    itemCount: conversations.length,
-                    itemBuilder: (context, index) {
-                      final chat = conversations[index];
-                      // Added Swipe to archive feature
-                      return Dismissible(
-                        key: Key(chat.id),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20),
-                          margin: const EdgeInsets.only(bottom: 10),
-                          decoration: BoxDecoration(
-                              color: AppColors.error.withOpacity(0.9), 
-                              borderRadius: BorderRadius.circular(18)),
-                          child: const Icon(Icons.archive_rounded, color: Colors.white),
-                        ),
-                        // Handle removal from UI instantly
-                        onDismissed: (_) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Chat archived')),
-                          );
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Pending Friend Requests Banner
+                      GestureDetector(
+                        onTap: () {
+                          // Placeholder for Friend Requests Screen
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Opening Friend Requests...')));
                         },
-                        child: _buildChatTile(context, chat),
-                      );
-                    },
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+                                child: const Icon(Icons.person_add_alt_1_rounded, color: Colors.white, size: 18),
+                              ),
+                              const SizedBox(width: 12),
+                              const Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Friend Requests', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                                    Text('2 pending requests', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                                  ],
+                                ),
+                              ),
+                              const Icon(Icons.chevron_right_rounded, color: AppColors.primary),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Conversations List
+                      Expanded(
+                        child: ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          itemCount: conversations.length,
+                          itemBuilder: (context, index) {
+                            final chat = conversations[index];
+                            // Added Swipe to archive feature
+                            return Dismissible(
+                              key: Key(chat.id),
+                              direction: DismissDirection.endToStart,
+                              background: Container(
+                                alignment: Alignment.centerRight,
+                                padding: const EdgeInsets.only(right: 20),
+                                margin: const EdgeInsets.only(bottom: 10),
+                                decoration: BoxDecoration(
+                                    color: AppColors.error.withOpacity(0.9), 
+                                    borderRadius: BorderRadius.circular(18)),
+                                child: const Icon(Icons.archive_rounded, color: Colors.white),
+                              ),
+                              // Handle removal from UI instantly
+                              onDismissed: (_) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Chat archived')),
+                                );
+                              },
+                              child: _buildChatTile(context, chat),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   );
                 },
               ),
