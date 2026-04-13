@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repositories/chat_repository.dart';
 import '../models/chat_conversation.dart';
 import '../models/chat_message.dart';
+import '../models/friend_request.dart';
 
 // Provides a singleton instance of our Mock Repository
 final chatRepositoryProvider = Provider<ChatRepository>((ref) {
@@ -21,4 +22,10 @@ final chatMessagesProvider = StreamProvider.family<List<ChatMessage>, String>((
 ) {
   final repository = ref.watch(chatRepositoryProvider);
   return repository.watchMessages(conversationId);
+});
+
+
+final friendRequestsProvider = StreamProvider<List<FriendRequest>>((ref) {
+  final repository = ref.watch(chatRepositoryProvider);
+  return repository.watchFriendRequests();
 });

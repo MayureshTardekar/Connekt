@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/chat_message.dart';
 import '../models/chat_conversation.dart';
+import '../models/friend_request.dart';
 import '../config/app_config.dart';
 import '../network/logger.dart';
 
@@ -61,6 +62,68 @@ class ChatRepository {
         .eq('conversation_id', conversationId)
         .order('timestamp', ascending: true)
         .map((data) => data.map((json) => ChatMessage.fromJson(json)).toList());
+  }
+
+
+  Future<List<FriendRequest>> getFriendRequests() async {
+    if (AppConfig.useMockBackend) {
+      return _mockFriendRequests();
+    }
+
+    final response = await _supabase
+        .from('friend_requests')
+        .select()
+        .eq('status', 'pending')
+        .order('created_at', ascending: false);
+
+    return response.map((json) => FriendRequest.fromJson(json)).toList();
+  }
+
+  Stream<List<FriendRequest>> watchFriendRequests() {
+    if (AppConfig.useMockBackend) {
+      return Stream.fromFuture(getFriendRequests());
+    }
+
+    return _supabase
+        .from('friend_requests')
+        .stream(primaryKey: ['id'])
+        .eq('status', 'pending')
+        .order('created_at', ascending: false)
+        .map((data) => data.map((json) => FriendRequest.fromJson(json)).toList());
+  }
+
+  Future<void> acceptFriendRequest(String requestId) async {
+    if (AppConfig.useMockBackend) return;
+    await _supabase
+        .from('friend_requests')
+        .update({'status': 'accepted'})
+        .eq('id', requestId);
+  }
+
+  Future<void> declineFriendRequest(String requestId) async {
+    if (AppConfig.useMockBackend) return;
+    await _supabase
+        .from('friend_requests')
+        .update({'status': 'declined'})
+        .eq('id', requestId);
+  }
+
+  List<FriendRequest> _mockFriendRequests() {
+    final now = DateTime.now();
+    return [
+      FriendRequest(
+        id: 'fr_1',
+        name: 'Vikram Singh',
+        mutualText: '3 mutual friends',
+        createdAt: now.subtract(const Duration(hours: 2)),
+      ),
+      FriendRequest(
+        id: 'fr_2',
+        name: 'Riya Mehta',
+        mutualText: '1 mutual friend',
+        createdAt: now.subtract(const Duration(hours: 5)),
+      ),
+    ];
   }
 
   // Send a new message

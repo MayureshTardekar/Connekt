@@ -1,24 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/models/friend_request.dart';
+import '../../core/providers/chat_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../theme/avatar_helper.dart';
 
-class FriendRequestsScreen extends StatefulWidget {
+class FriendRequestsScreen extends ConsumerStatefulWidget {
   const FriendRequestsScreen({super.key});
 
   @override
-  State<FriendRequestsScreen> createState() => _FriendRequestsScreenState();
+  ConsumerState<FriendRequestsScreen> createState() =>
+      _FriendRequestsScreenState();
 }
 
-class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
-  // Mock Data for pending requests
-  final List<Map<String, String>> _pendingRequests = [
-    {'name': 'Vikram Singh', 'mutual': '3 mutual friends', 'time': '2h ago'},
-    {'name': 'Riya Mehta', 'mutual': '1 mutual friend', 'time': '5h ago'},
-  ];
+class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
+  List<FriendRequest>? _localRequests;
 
   @override
   Widget build(BuildContext context) {
+    final requestsAsync = ref.watch(friendRequestsProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -34,25 +36,36 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
         title: Text('Friend Requests', style: AppTypography.heading3),
         centerTitle: true,
       ),
-      body: _pendingRequests.isEmpty
-          ? _buildEmptyState()
-          : ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-              itemCount: _pendingRequests.length,
-              itemBuilder: (context, index) {
-                final req = _pendingRequests[index];
-                return _buildRequestCard(
-                  req['name']!,
-                  req['mutual']!,
-                  req['time']!,
-                  index,
-                );
-              },
-            ),
+      body: requestsAsync.when(
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+        error: (err, _) => Center(child: Text('Error: $err')),
+        data: (requests) {
+          _localRequests ??= List<FriendRequest>.from(requests);
+          final visibleRequests = _localRequests!;
+
+          if (visibleRequests.isEmpty) {
+            return _buildEmptyState();
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            itemCount: visibleRequests.length,
+            itemBuilder: (context, index) {
+              final req = visibleRequests[index];
+              return _buildRequestCard(req, index);
+            },
+          );
+        },
+      ),
     );
   }
 
-  Widget _buildRequestCard(String name, String mutual, String time, int index) {
+  Widget _buildRequestCard(FriendRequest request, int index) {
+    final hoursAgo = DateTime.now().difference(request.createdAt).inHours;
+    final timeLabel = hoursAgo <= 0 ? 'Just now' : '${hoursAgo}h ago';
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -70,7 +83,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          avatarWidget(name, radius: 28),
+          avatarWidget(request.name, radius: 28),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -80,13 +93,13 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      name,
+                      request.name,
                       style: AppTypography.bodyLarge.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     Text(
-                      time,
+                      timeLabel,
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textHint,
@@ -96,7 +109,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  mutual,
+                  request.mutualText,
                   style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.textSecondary,
@@ -107,15 +120,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
                   children: [
                     Expanded(
                       child: GestureDetector(
-                        onTap: () {
-                          // Handle Decline
-                          setState(() {
-                            _pendingRequests.removeAt(index);
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Request declined')),
-                          );
-                        },
+                        onTap: () => _declineRequest(request, index),
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           decoration: BoxDecoration(
@@ -136,17 +141,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: GestureDetector(
-                        onTap: () {
-                          // Handle Accept
-                          setState(() {
-                            _pendingRequests.removeAt(index);
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('You and $name are now friends!'),
-                            ),
-                          );
-                        },
+                        onTap: () => _acceptRequest(request, index),
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           decoration: BoxDecoration(
@@ -181,6 +176,28 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
     );
   }
 
+  Future<void> _acceptRequest(FriendRequest request, int index) async {
+    await ref.read(chatRepositoryProvider).acceptFriendRequest(request.id);
+    setState(() {
+      _localRequests?.removeAt(index);
+    });
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('You and ${request.name} are now friends!')),
+    );
+  }
+
+  Future<void> _declineRequest(FriendRequest request, int index) async {
+    await ref.read(chatRepositoryProvider).declineFriendRequest(request.id);
+    setState(() {
+      _localRequests?.removeAt(index);
+    });
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Request declined')),
+    );
+  }
+
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -200,7 +217,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            "No pending requests",
+            'No pending requests',
             style: AppTypography.heading3.copyWith(
               color: AppColors.textSecondary,
             ),
