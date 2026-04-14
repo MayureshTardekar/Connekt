@@ -23,6 +23,11 @@ class _EventsTabState extends ConsumerState<EventsTab> {
   int _selectedFilter = 0;
   final List<String> _filters = [
     'All',
+    'Workshop',
+    'Fest',
+    'Sports',
+    'Seminar',
+    'Social',
   ];
 
   @override
@@ -115,42 +120,52 @@ class _EventsTabState extends ConsumerState<EventsTab> {
           SliverToBoxAdapter(
             child: Column(
               children: [
-                // Filters and AI Banners removed as requested
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
+                _buildFilterBar(),
+                const SizedBox(height: 10),
               ],
             ),
           ),
           ref.watch(campusEventsProvider).when(
                 data: (events) {
-                  final filteredEvents = events;
+                    final filteredEvents = _selectedFilter == 0
+                        ? events
+                        : events.where((e) => e.category == _filters[_selectedFilter]).toList();
 
-                  if (filteredEvents.isEmpty) {
-                    return SliverToBoxAdapter(
-                      child: Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(40.0),
-                          child: Text(
-                            'No events scheduled yet',
-                            style: TextStyle(
-                              color: Theme.of(context).brightness == Brightness.dark ? Colors.white60 : Colors.black54,
+                    if (filteredEvents.isEmpty) {
+                      return SliverToBoxAdapter(
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(40.0),
+                            child: Column(
+                              children: [
+                                Icon(Icons.event_busy_rounded, size: 64, color: Colors.grey.withValues(alpha: 0.3)),
+                                const SizedBox(height: 16),
+                                Text(
+                                  _selectedFilter == 0 ? 'No events scheduled yet' : 'No ${_filters[_selectedFilter]} events found',
+                                  style: TextStyle(
+                                    color: Theme.of(context).brightness == Brightness.dark ? Colors.white60 : Colors.black54,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
+                      );
+                    }
+
+                    return SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            return _buildEventCard(filteredEvents[index]);
+                          },
+                          childCount: filteredEvents.length,
+                        ),
                       ),
                     );
-                  }
-
-                  return SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          return _buildEventCard(filteredEvents[index]);
-                        },
-                        childCount: filteredEvents.length,
-                      ),
-                    ),
-                  );
                 },
                 loading:
                     () => const SliverToBoxAdapter(

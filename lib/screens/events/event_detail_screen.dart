@@ -162,8 +162,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Friday, 16 April 2026',
-                                    style: TextStyle(
+                                    widget.time,
+                                    style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 15,
                                     ),

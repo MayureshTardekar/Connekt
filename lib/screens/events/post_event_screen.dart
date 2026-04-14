@@ -1,8 +1,122 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../theme/app_theme.dart';
+import '../../core/repositories/campus_repository.dart';
+import '../../core/network/logger.dart';
 
-class PostEventScreen extends StatelessWidget {
+class PostEventScreen extends StatefulWidget {
   const PostEventScreen({super.key});
+
+  @override
+  State<PostEventScreen> createState() => _PostEventScreenState();
+}
+
+class _PostEventScreenState extends State<PostEventScreen> {
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _locationController = TextEditingController();
+  
+  DateTime? _selectedDate;
+  TimeOfDay? _selectedTime;
+  String _selectedCategory = 'General';
+  bool _isPosting = false;
+  XFile? _imageFile;
+
+  final List<String> _categories = [
+    'General',
+    'Workshop',
+    'Fest',
+    'Sports',
+    'Seminar',
+    'Social',
+  ];
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final image = await picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      setState(() => _imageFile = image);
+    }
+  }
+
+  Future<void> _selectDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null) {
+      setState(() => _selectedDate = picked);
+    }
+  }
+
+  Future<void> _selectTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _selectedTime ?? TimeOfDay.now(),
+    );
+    if (picked != null) {
+      setState(() => _selectedTime = picked);
+    }
+  }
+
+  Future<void> _handleSubmit() async {
+    if (_titleController.text.isEmpty || 
+        _selectedDate == null || 
+        _selectedTime == null || 
+        _locationController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all required fields')),
+      );
+      return;
+    }
+
+    setState(() => _isPosting = true);
+
+    try {
+      final finalDateTime = DateTime(
+        _selectedDate!.year,
+        _selectedDate!.month,
+        _selectedDate!.day,
+        _selectedTime!.hour,
+        _selectedTime!.minute,
+      );
+
+      await CampusRepository().createEvent(
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        location: _locationController.text.trim(),
+        dateTime: finalDateTime,
+        category: _selectedCategory,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Event posted successfully!'), backgroundColor: Colors.green),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      AppLogger.info('Failed to post event: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isPosting = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _locationController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,19 +173,11 @@ class PostEventScreen extends StatelessWidget {
               ),
               child: const Column(
                 children: [
-                  Icon(
-                    Icons.celebration_rounded,
-                    size: 44,
-                    color: Colors.white,
-                  ),
+                  Icon(Icons.celebration_rounded, size: 44, color: Colors.white),
                   SizedBox(height: 10),
                   Text(
                     'Create Campus Event',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
                   ),
                   SizedBox(height: 4),
                   Text(
@@ -83,15 +189,38 @@ class PostEventScreen extends StatelessWidget {
             ),
             const SizedBox(height: 28),
 
-            Text('Event Title', style: Theme.of(context).textTheme.labelLarge),
+            Text('Event Title *', style: Theme.of(context).textTheme.labelLarge),
             const SizedBox(height: 10),
             TextFormField(
+              controller: _titleController,
+              enabled: !_isPosting,
               decoration: const InputDecoration(
                 hintText: 'e.g., Annual Hackathon 2026',
-                prefixIcon: Icon(
-                  Icons.title_rounded,
-                  size: 20,
-                  color: AppTheme.textSecondary,
+                prefixIcon: Icon(Icons.title_rounded, size: 20, color: AppTheme.textSecondary),
+              ),
+            ),
+            const SizedBox(height: 22),
+
+            Text('Category', style: Theme.of(context).textTheme.labelLarge),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: AppTheme.softShadow,
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedCategory,
+                  isExpanded: true,
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.primary),
+                  items: _categories.map((String category) {
+                    return DropdownMenuItem(value: category, child: Text(category));
+                  }).toList(),
+                  onChanged: _isPosting ? null : (value) {
+                    if (value != null) setState(() => _selectedCategory = value);
+                  },
                 ),
               ),
             ),
@@ -100,58 +229,67 @@ class PostEventScreen extends StatelessWidget {
             Text('Description', style: Theme.of(context).textTheme.labelLarge),
             const SizedBox(height: 10),
             TextFormField(
+              controller: _descriptionController,
+              enabled: !_isPosting,
               maxLines: 4,
               decoration: InputDecoration(
                 hintText: 'What\'s the event about?',
                 contentPadding: const EdgeInsets.all(18),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                 fillColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1B4B) : AppTheme.inputBg,
                 filled: true,
               ),
             ),
             const SizedBox(height: 22),
 
-            Text('Date & Time', style: Theme.of(context).textTheme.labelLarge),
+            Text('Date & Time *', style: Theme.of(context).textTheme.labelLarge),
             const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
-                  child: TextFormField(
-                    readOnly: true,
-                    decoration: const InputDecoration(
-                      hintText: 'Date',
-                      prefixIcon: Icon(
-                        Icons.calendar_today_rounded,
-                        size: 18,
-                        color: AppTheme.textSecondary,
+                  child: GestureDetector(
+                    onTap: _isPosting ? null : _selectDate,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: AppTheme.softShadow,
                       ),
-                    ),
-                    onTap: () => showDatePicker(
-                      context: context,
-                      initialDate: DateTime.now(),
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.calendar_today_rounded, size: 18, color: AppTheme.textSecondary),
+                          const SizedBox(width: 12),
+                          Text(
+                            _selectedDate == null ? 'Select Date' : DateFormat('MMM dd, yyyy').format(_selectedDate!),
+                            style: TextStyle(color: _selectedDate == null ? Colors.grey : AppTheme.textPrimary),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: TextFormField(
-                    readOnly: true,
-                    decoration: const InputDecoration(
-                      hintText: 'Time',
-                      prefixIcon: Icon(
-                        Icons.access_time_rounded,
-                        size: 18,
-                        color: AppTheme.textSecondary,
+                  child: GestureDetector(
+                    onTap: _isPosting ? null : _selectTime,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: AppTheme.softShadow,
                       ),
-                    ),
-                    onTap: () => showTimePicker(
-                      context: context,
-                      initialTime: TimeOfDay.now(),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.access_time_rounded, size: 18, color: AppTheme.textSecondary),
+                          const SizedBox(width: 12),
+                          Text(
+                            _selectedTime == null ? 'Select Time' : _selectedTime!.format(context),
+                            style: TextStyle(color: _selectedTime == null ? Colors.grey : AppTheme.textPrimary),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -159,16 +297,14 @@ class PostEventScreen extends StatelessWidget {
             ),
             const SizedBox(height: 22),
 
-            Text('Location', style: Theme.of(context).textTheme.labelLarge),
+            Text('Location *', style: Theme.of(context).textTheme.labelLarge),
             const SizedBox(height: 10),
             TextFormField(
+              controller: _locationController,
+              enabled: !_isPosting,
               decoration: const InputDecoration(
                 hintText: 'e.g., Main Auditorium',
-                prefixIcon: Icon(
-                  Icons.location_on_rounded,
-                  size: 20,
-                  color: AppTheme.textSecondary,
-                ),
+                prefixIcon: Icon(Icons.location_on_rounded, size: 20, color: AppTheme.textSecondary),
               ),
             ),
             const SizedBox(height: 30),
@@ -176,11 +312,15 @@ class PostEventScreen extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.event_available_rounded, size: 20),
-                label: const Text('Post Event'),
+                onPressed: _isPosting ? null : _handleSubmit,
+                icon: _isPosting 
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.event_available_rounded, size: 20),
+                label: Text(_isPosting ? 'Posting...' : 'Post Event'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFF59E0B),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
               ),
             ),

@@ -116,7 +116,7 @@ class CampusRepository {
     return _supabase
         .from('campus_events')
         .stream(primaryKey: ['id'])
-        .order('event_date', ascending: true);
+        .order('date_time', ascending: true);
   }
 
   // Real-time lost & found stream
@@ -222,6 +222,53 @@ class CampusRepository {
       'file_url': fileUrl,
       'author': user.email?.split('@')[0] ?? 'Student',
       'pages': 0,
+      'created_at': DateTime.now().toIso8601String(),
+    });
+  }
+
+  // Create campus event
+  Future<void> createEvent({
+    required String title,
+    required String description,
+    required String location,
+    required DateTime dateTime,
+    required String category,
+    String? imageUrl,
+  }) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw Exception('Not authenticated');
+
+    await _supabase.from('campus_events').insert({
+      'title': title,
+      'description': description,
+      'location': location,
+      'date_time': dateTime.toIso8601String(),
+      'category': category,
+      'organizer': user.email?.split('@')[0] ?? 'Student',
+      'image_url': imageUrl,
+      'attendees': 0,
+    });
+  }
+
+  // Report lost/found item
+  Future<void> reportLostFoundItem({
+    required String title,
+    required String description,
+    required String location,
+    required String type,
+    String? imageUrl,
+  }) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw Exception('Not authenticated');
+
+    await _supabase.from('lost_found').insert({
+      'title': title,
+      'description': description,
+      'location': location,
+      'type': type,
+      'status': 'Open',
+      'image_url': imageUrl,
+      'posted_by': user.id,
       'created_at': DateTime.now().toIso8601String(),
     });
   }
