@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../core/repositories/auth_repository.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/providers/campus_provider.dart';
-import 'post_ghost_screen.dart';
-import 'comments_screen.dart';
 import '../../core/models/ghost_post.dart';
-import '../../core/widgets/app_states.dart';
 
 class GhostTab extends ConsumerStatefulWidget {
   const GhostTab({super.key});
@@ -17,79 +15,90 @@ class GhostTab extends ConsumerStatefulWidget {
 }
 
 class _GhostTabState extends ConsumerState<GhostTab> {
-  int _selectedMood = 0;
-  final List<String> _moods = [
-    'All',
-    'Stressed',
-    'Happy',
-    'Confused',
-    'Venting',
-    'Motivated',
-  ];
-  final List<IconData> _moodIcons = [
-    Icons.grid_view_rounded,
-    Icons.sentiment_very_dissatisfied_rounded,
-    Icons.sentiment_very_satisfied_rounded,
-    Icons.psychology_rounded,
-    Icons.whatshot_rounded,
-    Icons.rocket_launch_rounded,
-  ];
+  final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _sendMessage() async {
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
+
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final post = GhostPost(
+        id: '', 
+        text: text,
+        mood: 'World Chat',
+        createdAt: DateTime.now().toUtc(), // Send in UTC
+        authorId: user.id,
+        authorAlias: AuthRepository().currentGhostAlias,
+      );
+
+      _messageController.clear();
+      await ref.read(ghostRepositoryProvider).createPost(post);
+      
+      // Auto scroll to bottom
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to send: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0A1E),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      resizeToAvoidBottomInset: true, // Fix for keyboard pushing UI
       body: Stack(
         children: [
-          // Background decoration
+          // Background Glow
           Positioned(
             top: -100,
-            right: -60,
+            left: -100,
             child: Container(
-              width: 250,
-              height: 250,
+              width: 400,
+              height: 400,
               decoration: BoxDecoration(
-                color: AppColors.ghostPrimary.withOpacity(0.15),
+                color: AppColors.ghostPrimary.withOpacity(0.08),
                 shape: BoxShape.circle,
               ),
             ),
           ),
           SafeArea(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildHeader(),
-                _buildMoodSelector(),
                 Expanded(
                   child: ref.watch(ghostPostsProvider).when(
                         data: (posts) {
-                          final filteredPosts =
-                              _selectedMood == 0
-                                  ? posts
-                                  : posts
-                                      .where(
-                                        (p) =>
-                                            p.mood == _moods[_selectedMood],
-                                      )
-                                      .toList();
-
-                          if (filteredPosts.isEmpty) {
+                          if (posts.isEmpty) {
                             return Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(
-                                    Icons.visibility_off_rounded,
-                                    color: Colors.white24,
-                                    size: 64,
-                                  ),
+                                  Icon(Icons.chat_bubble_outline_rounded,
+                                      color: Colors.white24, size: 64),
                                   const SizedBox(height: 16),
-                                  Text(
-                                    'No anonymous whispers yet',
-                                    style: TextStyle(
-                                      color: Colors.white54,
-                                      fontSize: 16,
-                                    ),
+                                  const Text(
+                                    'Welcome to World Chat!\nBe the first to speak.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: Colors.white54, fontSize: 13),
                                   ),
                                 ],
                               ),
@@ -97,256 +106,286 @@ class _GhostTabState extends ConsumerState<GhostTab> {
                           }
 
                           return ListView.builder(
+                            controller: _scrollController,
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 10,
-                            ),
-                            itemCount: filteredPosts.length,
+                                horizontal: 16, vertical: 10),
+                            reverse: true,
+                            itemCount: posts.length,
                             itemBuilder: (context, index) {
-                              return _buildGhostCard(filteredPosts[index]);
+                              return _buildChatBubble(posts[index]);
                             },
                           );
                         },
-                        loading:
-                            () => const Center(
-                              child: CircularProgressIndicator(
-                                color: AppColors.ghostPrimary,
-                              ),
-                            ),
-                        error: (err, stack) => AppErrorState(
-                          message: err.toString(),
-                          onRetry: () => ref.invalidate(ghostPostsProvider),
+                        loading: () => const Center(
+                          child: CircularProgressIndicator(
+                              color: AppColors.ghostPrimary),
+                        ),
+                        error: (err, stack) => Center(
+                          child: Text(
+                            'Error: $err',
+                            style: const TextStyle(color: Colors.red),
+                          ),
                         ),
                       ),
                 ),
+                _buildInputArea(),
               ],
             ),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const PostGhostScreen()),
-          );
-        },
-        backgroundColor: AppColors.ghostPrimary,
-        icon: const Icon(Icons.auto_awesome_rounded, color: Colors.white),
-        label: const Text(
-          'Whisper Anonymously',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
     );
   }
 
   Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    final currentAlias = AuthRepository().currentGhostAlias;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF161129) : Colors.white,
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.05)),
+      ),
+      child: Row(
         children: [
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.ghostPrimary.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(
-                  Icons.theater_comedy_rounded,
-                  color: AppColors.ghostPrimary,
-                  size: 28,
-                ),
+              const Text(
+                '🌎 World Chat',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold),
               ),
-              const SizedBox(width: 16),
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(height: 4),
+              Row(
                 children: [
-                  Text(
-                    'Ghost Zone',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                        color: Colors.greenAccent, shape: BoxShape.circle),
                   ),
-                  Text(
-                    '100% Anonymous Peer Support',
-                    style: TextStyle(
-                      color: Colors.white54,
-                      fontSize: 12,
-                    ),
-                  ),
+                  const SizedBox(width: 6),
+                  const Text('Refreshes daily at 12:00 AM UTC',
+                      style: TextStyle(color: Colors.white38, fontSize: 11)),
                 ],
               ),
             ],
+          ),
+          const Spacer(),
+          GestureDetector(
+            onTap: _showAliasDialog,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.ghostPrimary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border:
+                    Border.all(color: AppColors.ghostPrimary.withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    currentAlias != null
+                        ? Icons.face_retouching_natural
+                        : Icons.masks_rounded,
+                    color: AppColors.ghostPrimary,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    currentAlias ?? 'Anon',
+                    style: const TextStyle(
+                        color: AppColors.ghostPrimary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildMoodSelector() {
-    return SizedBox(
-      height: 100,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _moods.length,
-        itemBuilder: (context, index) {
-          final isSelected = _selectedMood == index;
-          return GestureDetector(
-            onTap: () => setState(() => _selectedMood = index),
-            child: Container(
-              width: 80,
-              margin: const EdgeInsets.only(right: 12),
-              decoration: BoxDecoration(
-                color:
-                    isSelected
-                        ? AppColors.ghostPrimary
-                        : Colors.white.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color:
-                      isSelected
-                          ? AppColors.ghostPrimary
-                          : Colors.white.withOpacity(0.1),
-                ),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    _moodIcons[index],
-                    color: isSelected ? Colors.white : Colors.white70,
-                    size: 24,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _moods[index],
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.white70,
-                      fontSize: 10,
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
-                    ),
-                  ),
-                ],
+  Widget _buildChatBubble(GhostPost post) {
+    final isMe =
+        post.authorId == Supabase.instance.client.auth.currentUser?.id;
+    final String displayName = post.authorAlias ??
+        'Anon#${(post.authorId ?? 'anon').substring(0, 4).toUpperCase()}';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Column(
+        crossAxisAlignment:
+            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          if (!isMe)
+            Padding(
+              padding: const EdgeInsets.only(left: 12, bottom: 4),
+              child: Text(
+                displayName,
+                style: const TextStyle(color: Colors.white38, fontSize: 10),
               ),
             ),
-          );
-        },
+          Container(
+            constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.75),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: isMe
+                  ? AppColors.ghostPrimary
+                  : (Theme.of(context).brightness == Brightness.dark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.05)),
+              borderRadius: BorderRadius.only(
+                topLeft: const Radius.circular(20),
+                topRight: const Radius.circular(20),
+                bottomLeft: Radius.circular(isMe ? 20 : 0),
+                bottomRight: Radius.circular(isMe ? 0 : 20),
+              ),
+            ),
+            child: Text(
+              post.text,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            DateFormat('HH:mm').format(post.createdAt),
+            style: const TextStyle(color: Colors.white24, fontSize: 10),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildGhostCard(GhostPost post) {
+  Widget _buildInputArea() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.fromLTRB(
+          16, 8, 16, 8 + MediaQuery.of(context).viewInsets.bottom + 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        color: const Color(0xFF161129),
+        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.05))),
       ),
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => CommentsScreen(
-                postContent: post.text,
-                mood: post.mood,
-                moodColor: AppColors.ghostPrimary,
-                likes: post.likes,
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white.withOpacity(0.1)),
+              ),
+              child: TextField(
+                controller: _messageController,
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+                cursorColor: AppColors.ghostPrimary,
+                decoration: const InputDecoration(
+                  hintText: 'Say something anonymous...',
+                  hintStyle: TextStyle(color: Colors.white24, fontSize: 13),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(vertical: 12),
+                ),
+                onSubmitted: (_) => _sendMessage(),
               ),
             ),
-          );
-        },
-        borderRadius: BorderRadius.circular(24),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.ghostPrimary.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      post.mood,
-                      style: const TextStyle(
-                        color: AppColors.ghostPrimary,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    _formatTime(post.createdAt),
-                    style: const TextStyle(color: Colors.white38, fontSize: 11),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                post.text,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  height: 1.5,
-                ),
-                maxLines: 4,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  _buildStat(Icons.favorite_rounded, '${post.likes}',
-                      Colors.pinkAccent),
-                  const SizedBox(width: 20),
-                  _buildStat(Icons.chat_bubble_outline_rounded,
-                      '${post.commentsCount}', Colors.blueAccent),
-                  const Spacer(),
-                  Icon(Icons.more_horiz_rounded, color: Colors.white24),
-                ],
-              ),
-            ],
           ),
-        ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: _sendMessage,
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.ghostPrimary,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.ghostPrimary.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  )
+                ],
+              ),
+              child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildStat(IconData icon, String value, Color color) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: color.withOpacity(0.8)),
-        const SizedBox(width: 6),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
+  void _showAliasDialog() {
+    final TextEditingController aliasController = TextEditingController(
+      text: AuthRepository().currentGhostAlias,
     );
-  }
 
-  String _formatTime(DateTime dateTime) {
-    return DateFormat('MMM d').format(dateTime);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1F1B2E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text('World Chat Identity',
+            style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Change your display name in world chat. Keep it clean!',
+              style: TextStyle(color: Colors.white60, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: aliasController,
+              autofocus: true,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'e.g. NeonGhost',
+                hintStyle: const TextStyle(color: Colors.white24),
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.05),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child:
+                const Text('Cancel', style: TextStyle(color: Colors.white38)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.ghostPrimary,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () async {
+              final result = await AuthRepository()
+                  .updateGhostAlias(aliasController.text.trim());
+              if (mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(result['message']),
+                    backgroundColor:
+                        result['success'] ? Colors.green : Colors.red,
+                  ),
+                );
+                setState(() {});
+              }
+            },
+            child:
+                const Text('Save Alias', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 }

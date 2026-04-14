@@ -8,6 +8,8 @@ class GhostPost {
   final int likes;
   final int commentsCount;
   final String? colorHex;
+  final String? authorId;
+  final String? authorAlias;
 
   GhostPost({
     required this.id,
@@ -17,17 +19,17 @@ class GhostPost {
     this.likes = 0,
     this.commentsCount = 0,
     this.colorHex,
+    this.authorId,
+    this.authorAlias,
   });
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'text': text,
       'mood': mood,
-      'created_at': createdAt.toIso8601String(),
-      'likes': likes,
-      'comments_count': commentsCount,
       'color_hex': colorHex,
+      'author_id': authorId,
+      'author_alias': authorAlias,
     };
   }
 
@@ -40,6 +42,8 @@ class GhostPost {
       likes: map['likes'] ?? 0,
       commentsCount: map['comments_count'] ?? 0,
       colorHex: map['color_hex'],
+      authorId: map['author_id'],
+      authorAlias: map['author_alias'],
     );
   }
 

@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_theme.dart';
+import '../core/repositories/campus_repository.dart';
 import 'auth/login_screen.dart';
 
-class SplashScreen extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/providers/campus_provider.dart';
+
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
+class _SplashScreenState extends ConsumerState<SplashScreen>
     with TickerProviderStateMixin {
   late AnimationController _fadeController;
   late AnimationController _scaleController;
@@ -56,35 +62,44 @@ class _SplashScreenState extends State<SplashScreen>
     _scaleController.forward();
     Future.delayed(
       const Duration(milliseconds: 400),
-      () => _fadeController.forward(),
+      () {
+        if (mounted) _fadeController.forward();
+      },
     );
     Future.delayed(
       const Duration(milliseconds: 600),
-      () => _slideController.forward(),
+      () {
+        if (mounted) _slideController.forward();
+      },
     );
     Future.delayed(
       const Duration(milliseconds: 800),
-      () => _progressController.forward(),
+      () {
+        if (mounted) _progressController.forward();
+      },
     );
 
-    Future.delayed(const Duration(milliseconds: 3200), () {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const LoginScreen(),
-            transitionsBuilder: (_, animation, __, child) {
-              return FadeTransition(
-                opacity: CurvedAnimation(
-                  parent: animation,
-                  curve: Curves.easeInOut,
-                ),
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 600),
-          ),
-        );
+    Future.delayed(const Duration(milliseconds: 3200), () async {
+      if (!mounted) return;
+      
+      final session = Supabase.instance.client.auth.currentSession;
+      
+      if (session == null) {
+        context.go('/login');
+      } else {
+        final repo = CampusRepository();
+        final isMember = await repo.isMemberOfAnyCampus();
+        if (isMember) {
+          // Initialize selected campus
+          final campuses = await repo.getMyCampuses();
+          if (campuses.isNotEmpty) {
+            final firstCampusId = campuses.first['campus_id']?.toString();
+            ref.read(selectedCampusIdProvider.notifier).state = firstCampusId;
+          }
+          if (mounted) context.go('/dashboard');
+        } else {
+          if (mounted) context.go('/campus-select');
+        }
       }
     });
   }

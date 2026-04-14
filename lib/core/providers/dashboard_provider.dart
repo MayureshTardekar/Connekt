@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'chat_provider.dart';
+import 'auth_provider.dart';
 import 'campus_provider.dart';
+import 'friend_provider.dart';
+import 'chat_provider.dart';
 
 class DashboardStats {
   final int noteCount;

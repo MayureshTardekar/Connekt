@@ -45,10 +45,23 @@ class AppTheme {
     end: Alignment.bottomRight,
   );
 
+  // Text Styles (Convenience)
+  static TextStyle get heading1 => GoogleFonts.inter(
+        color: textPrimary,
+        fontWeight: FontWeight.w800,
+        fontSize: 24,
+      );
+
+  static TextStyle get heading2 => GoogleFonts.inter(
+        color: textPrimary,
+        fontWeight: FontWeight.w700,
+        fontSize: 20,
+      );
+
   // Shadows
   static List<BoxShadow> cardShadow = [
     BoxShadow(
-      color: const Color(0xFF4F46E5).withValues(alpha: 0.08),
+      color: const Color(0xFF4F46E5).withOpacity(0.08),
       blurRadius: 24,
       offset: const Offset(0, 8),
     ),
@@ -163,15 +176,39 @@ class AppTheme {
           vertical: 18,
         ),
       ),
-      appBarTheme: AppBarTheme(
-        backgroundColor: background,
+    );
+  }
+
+  static ThemeData get darkTheme {
+    const darkBg = Color(0xFF0F0A1E);
+    const darkSurface = Color(0xFF1A1528);
+    
+    return ThemeData(
+      brightness: Brightness.dark,
+      primaryColor: primary,
+      scaffoldBackgroundColor: darkBg,
+      textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme).copyWith(
+        displayLarge: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 40),
+        titleLarge: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 18),
+        bodyLarge: GoogleFonts.inter(color: Colors.white, fontSize: 16),
+        bodyMedium: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
+      ),
+      colorScheme: const ColorScheme.dark(
+        primary: primary,
+        surface: darkSurface,
+        secondary: Color(0xFF8B5CF6),
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        titleTextStyle: GoogleFonts.inter(
-          color: textPrimary,
-          fontWeight: FontWeight.w700,
-          fontSize: 18,
-        ),
-        iconTheme: const IconThemeData(color: textPrimary),
+        titleTextStyle: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+        iconTheme: IconThemeData(color: Colors.white),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.05),
+        hintStyle: const TextStyle(color: Colors.white24),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
       ),
     );
   }

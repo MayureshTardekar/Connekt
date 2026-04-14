@@ -1,175 +1,137 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../theme/app_theme.dart';
+import '../../core/providers/campus_provider.dart';
 
-class CreateGroupScreen extends StatelessWidget {
+class CreateGroupScreen extends ConsumerStatefulWidget {
   const CreateGroupScreen({super.key});
+
+  @override
+  ConsumerState<CreateGroupScreen> createState() => _CreateGroupScreenState();
+}
+
+class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
+  final _subjectController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _locationController = TextEditingController();
+  final _maxMembersController = TextEditingController(text: '5');
+  DateTime? _selectedDate;
+  TimeOfDay? _selectedTime;
+  bool _isLoading = false;
+
+  Future<void> _submit() async {
+    if (_subjectController.text.isEmpty || _selectedDate == null || _selectedTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all required fields.')));
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final campus = ref.read(selectedCampusProvider);
+      final user = Supabase.instance.client.auth.currentUser!;
+      
+      final dateTimeStr = '${_selectedDate!.toIso8601String().split('T')[0]} ${_selectedTime!.format(context)}';
+
+      // 1. Create the group
+      final response = await Supabase.instance.client.from('study_groups').insert({
+        'campus_id': campus!['campus_id'],
+        'creator_id': user.id,
+        'creator_name': user.userMetadata?['full_name'] ?? 'Student',
+        'subject': _subjectController.text,
+        'description': _descriptionController.text,
+        'date_time': dateTimeStr,
+        'location': _locationController.text,
+        'max_members': int.tryParse(_maxMembersController.text) ?? 5,
+        'member_count': 1,
+      }).select().single();
+
+      // 2. Add creator as first approved member
+      await Supabase.instance.client.from('study_group_members').insert({
+        'group_id': response['id'],
+        'user_id': user.id,
+        'status': 'approved',
+      });
+
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        backgroundColor: AppTheme.background,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_rounded,
-            color: AppTheme.textPrimary,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Create Study Group',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
+        title: const Text('Create Study Group'),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header illustration
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF1E40AF), Color(0xFF3B82F6)],
-                ),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: const Column(
-                children: [
-                  Icon(Icons.groups_rounded, size: 48, color: Colors.white),
-                  SizedBox(height: 12),
-                  Text(
-                    'Start a Study Session',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Invite classmates to learn together',
-                    style: TextStyle(color: Colors.white70, fontSize: 13),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 28),
-
-            Text('Subject', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
             TextFormField(
-              decoration: const InputDecoration(
-                hintText: 'e.g., Advanced Calculus',
-                prefixIcon: Icon(Icons.book_rounded),
-              ),
+              controller: _subjectController,
+              decoration: const InputDecoration(hintText: 'Subject (e.g., Physics 101)', prefixIcon: Icon(Icons.book)),
             ),
-            const SizedBox(height: 24),
-
-            Text('Description', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             TextFormField(
+              controller: _descriptionController,
               maxLines: 3,
-              decoration: InputDecoration(
-                hintText: 'What will the group focus on?',
-                contentPadding: const EdgeInsets.all(20),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: const BorderSide(
-                    color: AppTheme.primary,
-                    width: 2,
-                  ),
-                ),
-              ),
+              decoration: const InputDecoration(hintText: 'Description', prefixIcon: Icon(Icons.description)),
             ),
-            const SizedBox(height: 24),
-
-            Text('Date & Time', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             Row(
               children: [
                 Expanded(
-                  child: TextFormField(
-                    readOnly: true,
-                    decoration: const InputDecoration(
-                      hintText: 'Select date',
-                      prefixIcon: Icon(Icons.calendar_today_rounded),
-                    ),
+                  child: ListTile(
+                    title: Text(_selectedDate == null ? 'Select Date' : _selectedDate!.toLocal().toString().split(' ')[0]),
+                    leading: const Icon(Icons.calendar_today),
                     onTap: () async {
-                      await showDatePicker(
+                      final picked = await showDatePicker(
                         context: context,
                         initialDate: DateTime.now(),
                         firstDate: DateTime.now(),
                         lastDate: DateTime.now().add(const Duration(days: 30)),
                       );
+                      if (picked != null) setState(() => _selectedDate = picked);
                     },
                   ),
                 ),
-                const SizedBox(width: 12),
                 Expanded(
-                  child: TextFormField(
-                    readOnly: true,
-                    decoration: const InputDecoration(
-                      hintText: 'Select time',
-                      prefixIcon: Icon(Icons.access_time_rounded),
-                    ),
+                  child: ListTile(
+                    title: Text(_selectedTime == null ? 'Select Time' : _selectedTime!.format(context)),
+                    leading: const Icon(Icons.access_time),
                     onTap: () async {
-                      await showTimePicker(
-                        context: context,
-                        initialTime: TimeOfDay.now(),
-                      );
+                      final picked = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+                      if (picked != null) setState(() => _selectedTime = picked);
                     },
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
-
-            Text('Location', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             TextFormField(
-              decoration: const InputDecoration(
-                hintText: 'e.g., Library Room 302',
-                prefixIcon: Icon(Icons.location_on_rounded),
-              ),
+              controller: _locationController,
+              decoration: const InputDecoration(hintText: 'Location (e.g., Library)', prefixIcon: Icon(Icons.location_on)),
             ),
-            const SizedBox(height: 24),
-
-            Text('Max Members', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             TextFormField(
+              controller: _maxMembersController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                hintText: 'e.g., 5',
-                prefixIcon: Icon(Icons.people_rounded),
-              ),
+              decoration: const InputDecoration(hintText: 'Max Members', prefixIcon: Icon(Icons.people)),
             ),
-            const SizedBox(height: 32),
-
+            const SizedBox(height: 40),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  'Create Group',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
+                onPressed: _isLoading ? null : _submit,
+                child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('Create Group'),
               ),
             ),
-            const SizedBox(height: 40),
           ],
         ),
       ),

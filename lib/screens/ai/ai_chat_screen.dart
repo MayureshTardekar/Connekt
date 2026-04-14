@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/providers/ai_provider.dart';
 
 class AIChatScreen extends ConsumerStatefulWidget {
   final String? initialPrompt;
-  const AIChatScreen({super.key, this.initialPrompt});
+  final ScrollController? scrollController;
+  
+  const AIChatScreen({super.key, this.initialPrompt, this.scrollController});
 
   @override
   ConsumerState<AIChatScreen> createState() => _AIChatScreenState();
@@ -34,7 +37,6 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     final text = predefinedText ?? _messageController.text.trim();
     if (text.isEmpty || _isLoading) return;
 
-    // Spam filter: Block rapid user inputs within 2 seconds
     if (_lastInputTime != null && DateTime.now().difference(_lastInputTime!).inSeconds < 2) {
       return;
     }
@@ -57,7 +59,6 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
 
       if (isFailure) {
         if (_lastErrorTime != null && DateTime.now().difference(_lastErrorTime!).inSeconds < 60) {
-          // Already showed failure in <60s window. Show banner ONLY, no repeat bubble.
            setState(() {
               _isLoading = false;
               _showErrorBanner = true;
@@ -69,9 +70,12 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
 
       setState(() {
         _messages.add({'role': 'ai', 'text': response});
-        if (isFailure) _showErrorBanner = true; // Still show banner if we showed the bubble
+        if (isFailure) _showErrorBanner = true;
         _isLoading = false;
       });
+      
+      // Save to history
+      ref.read(aiRepositoryProvider).addToHistory(text, response);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -87,31 +91,48 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF161A25), // Binance Dark Slate
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.auto_awesome, color: Color(0xFF9000FF), size: 20),
-            const SizedBox(width: 8),
-            const Text(
-              'Connekt Ai',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-          ],
-        ),
-        actions: const [],
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF161A25),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      body: Column(
+      child: Column(
         children: [
+          const SizedBox(height: 12),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.history_rounded, color: Colors.white70),
+                  onPressed: _showHistorySheet,
+                ),
+                Row(
+                  children: [
+                    const Icon(Icons.auto_awesome, color: Color(0xFF9000FF), size: 18),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Connekt Ai',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                  ],
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white38),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
           if (_showErrorBanner)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -145,6 +166,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
 
   Widget _buildSuggestionsArea() {
     return SingleChildScrollView(
+      controller: widget.scrollController, // Link to draggable sheet
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,7 +174,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
           const Text(
             "Hi there, here's today's pick for you:",
             style: TextStyle(
-              color: Color(0xFF9000FF), // Soft purple accent
+              color: Color(0xFF9000FF),
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
@@ -233,6 +255,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
 
   Widget _buildChatList() {
     return ListView.builder(
+      controller: widget.scrollController, // Link to draggable sheet
       padding: const EdgeInsets.all(16),
       itemCount: _messages.length + (_isLoading ? 1 : 0),
       itemBuilder: (context, index) {
@@ -287,7 +310,6 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   Widget _buildAIAvatar({bool isThinking = false}) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 500),
-      // If thinking, simulate a small "look down" or shrink effect using scaling
       transform: isThinking ? (Matrix4.identity()..scale(0.9)) : Matrix4.identity(),
       transformAlignment: Alignment.center,
       width: 32,
@@ -320,7 +342,14 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                       color: const Color(0xFF2B313F),
                       borderRadius: BorderRadius.circular(16),
                     ),
-              child: Text(
+              child: isAI ? MarkdownBody(
+                data: text,
+                styleSheet: MarkdownStyleSheet(
+                  p: const TextStyle(color: Colors.white, fontSize: 14, height: 1.5),
+                  strong: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  listBullet: const TextStyle(color: Colors.white, fontSize: 14),
+                ),
+              ) : Text(
                 text,
                 style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.5),
               ),
@@ -353,8 +382,6 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                     hintStyle: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 14),
                     border: InputBorder.none,
                     filled: false,
-                    fillColor: Colors.transparent,
-                    hoverColor: Colors.transparent,
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 8),
                   ),
@@ -375,5 +402,76 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
       ),
     );
   }
-}
 
+  void _showHistorySheet() {
+    final history = ref.read(aiRepositoryProvider).getRecentHistory();
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1F242F),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Recent Sessions (48h)',
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  '${history.length} items',
+                  style: const TextStyle(color: Colors.white38, fontSize: 13),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            if (history.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 30.0),
+                  child: Text('No recent chats in the last 48 hours.', style: TextStyle(color: Colors.white24)),
+                ),
+              )
+            else
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: history.length,
+                  itemBuilder: (context, index) {
+                    final session = history[index];
+                    return ListTile(
+                      onTap: () {
+                        setState(() {
+                           _messages.clear();
+                           _messages.add({'role': 'user', 'text': session['query']});
+                           _messages.add({'role': 'ai', 'text': session['response']});
+                        });
+                        Navigator.pop(context);
+                      },
+                      leading: const Icon(Icons.chat_bubble_outline_rounded, color: Color(0xFF9000FF), size: 20),
+                      title: Text(
+                        session['query'],
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                      ),
+                      subtitle: Text(
+                        '${DateTime.now().difference(session['timestamp'] as DateTime).inHours}h ago',
+                        style: const TextStyle(color: Colors.white24, fontSize: 11),
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white12, size: 14),
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}

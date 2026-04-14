@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/theme/app_theme.dart';
+import 'theme/app_theme.dart' as v2;
 import 'core/routing/app_router.dart';
 import 'core/config/app_config.dart';
+import 'core/providers/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,16 +31,22 @@ void main() async {
   );
 }
 
-class CampusHiveApp extends StatelessWidget {
+class CampusHiveApp extends ConsumerWidget {
   const CampusHiveApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
+
+    final themeMode = ref.watch(themeProvider);
+
     return MaterialApp.router(
       title: 'Connekt',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      routerConfig: appRouter,
+      theme: v2.AppTheme.lightTheme,
+      darkTheme: v2.AppTheme.darkTheme,
+      themeMode: themeMode,
+      routerConfig: router,
     );
   }
 }

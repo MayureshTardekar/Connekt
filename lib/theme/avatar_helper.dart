@@ -28,8 +28,15 @@ String initials(String name) {
   return name.isNotEmpty ? name[0].toUpperCase() : '?';
 }
 
-/// Builds a CircleAvatar with colored initials — no network dependency
-Widget avatarWidget(String name, {double radius = 22}) {
+/// Builds a CircleAvatar with colored initials or network image
+Widget avatarWidget(String name, {double radius = 22, String? imageUrl}) {
+  if (imageUrl != null && imageUrl.isNotEmpty) {
+    return CircleAvatar(
+      radius: radius,
+      backgroundImage: NetworkImage(imageUrl),
+      backgroundColor: Colors.transparent,
+    );
+  }
   return CircleAvatar(
     radius: radius,
     backgroundColor: avatarColor(name),
