@@ -7,6 +7,7 @@ import '../../core/models/lost_item.dart';
 import '../../theme/avatar_helper.dart';
 import 'post_lost_item_screen.dart';
 import 'item_detail_screen.dart';
+import '../../core/widgets/app_states.dart';
 
 class LostFoundTab extends ConsumerStatefulWidget {
   const LostFoundTab({super.key});
@@ -134,10 +135,12 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
                     () => const SliverToBoxAdapter(
                       child: Center(child: CircularProgressIndicator()),
                     ),
-                error:
-                    (err, stack) => SliverToBoxAdapter(
-                      child: Center(child: Text('Error: $err')),
-                    ),
+                error: (err, stack) => SliverToBoxAdapter(
+                  child: AppErrorState(
+                    message: err.toString(),
+                    onRetry: () => ref.invalidate(lostFoundProvider),
+                  ),
+                ),
               ),
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],

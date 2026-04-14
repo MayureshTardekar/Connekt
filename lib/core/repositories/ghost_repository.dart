@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/ghost_post.dart';
+import '../network/logger.dart';
 
 class GhostRepository {
   final _supabase = Supabase.instance.client;
@@ -13,7 +14,7 @@ class GhostRepository {
       
       return (response as List).map((post) => GhostPost.fromMap(post)).toList();
     } catch (e) {
-      print('Error fetching ghost posts: $e');
+      AppLogger.error('Error fetching ghost posts: $e');
       return [];
     }
   }
@@ -30,7 +31,7 @@ class GhostRepository {
     try {
       await _supabase.from('ghost_posts').insert(post.toMap());
     } catch (e) {
-      print('Error creating ghost post: $e');
+      AppLogger.error('Error creating ghost post: $e');
     }
   }
 }

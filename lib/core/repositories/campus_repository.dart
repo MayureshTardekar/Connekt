@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/campus_event.dart';
 import '../models/lost_item.dart';
+import '../network/logger.dart';
 
 class CampusRepository {
   final _supabase = Supabase.instance.client;
@@ -15,7 +16,7 @@ class CampusRepository {
       
       return (response as List).map((e) => CampusEvent.fromMap(e)).toList();
     } catch (e) {
-      print('Error fetching events: $e');
+      AppLogger.error('Error fetching events: $e');
       return [];
     }
   }
@@ -38,7 +39,7 @@ class CampusRepository {
       
       return (response as List).map((i) => LostItem.fromMap(i)).toList();
     } catch (e) {
-      print('Error fetching lost/found: $e');
+      AppLogger.error('Error fetching lost/found: $e');
       return [];
     }
   }
@@ -55,7 +56,7 @@ class CampusRepository {
     try {
       await _supabase.from('lost_found').insert(item.toMap());
     } catch (e) {
-      print('Error reporting item: $e');
+      AppLogger.error('Error reporting item: $e');
     }
   }
 }

@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/providers/campus_provider.dart';
 import '../../core/models/academic_note.dart';
 import '../../theme/avatar_helper.dart';
+import '../../core/widgets/app_states.dart';
 import 'upload_note_screen.dart';
 import 'note_detail_screen.dart';
 
@@ -182,10 +183,12 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                     () => const SliverToBoxAdapter(
                       child: Center(child: CircularProgressIndicator()),
                     ),
-                error:
-                    (err, stack) => SliverToBoxAdapter(
-                      child: Center(child: Text('Error: $err')),
-                    ),
+                error: (err, stack) => SliverToBoxAdapter(
+                  child: AppErrorState(
+                    message: err.toString(),
+                    onRetry: () => ref.invalidate(academicNotesProvider),
+                  ),
+                ),
               ),
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],

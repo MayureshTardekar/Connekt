@@ -6,8 +6,8 @@ import '../../core/theme/app_colors.dart';
 import '../../core/providers/campus_provider.dart';
 import 'post_ghost_screen.dart';
 import 'comments_screen.dart';
-
 import '../../core/models/ghost_post.dart';
+import '../../core/widgets/app_states.dart';
 
 class GhostTab extends ConsumerStatefulWidget {
   const GhostTab({super.key});
@@ -113,9 +113,10 @@ class _GhostTabState extends ConsumerState<GhostTab> {
                                 color: AppColors.ghostPrimary,
                               ),
                             ),
-                        error:
-                            (err, stack) =>
-                                Center(child: Text('Error: $err')),
+                        error: (err, stack) => AppErrorState(
+                          message: err.toString(),
+                          onRetry: () => ref.invalidate(ghostPostsProvider),
+                        ),
                       ),
                 ),
               ],

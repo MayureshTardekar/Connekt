@@ -3,6 +3,8 @@ import '../config/app_config.dart';
 import '../models/academic_note.dart';
 import '../models/campus_event.dart';
 import '../models/lost_item.dart';
+import 'dart:convert';
+import '../ai/ai_prompts.dart';
 
 class AIRepository {
   GenerativeModel? _model;
@@ -53,5 +55,27 @@ class AIRepository {
     ''';
 
     return getChatResponse('Summarize campus activity concisely.', context: context);
+  }
+
+  Future<String> summarizeNote(String noteText) async {
+    if (noteText.trim().isEmpty) return 'No note context provided.';
+    return getChatResponse(AIPrompts.noteSummaryPrompt(noteText));
+  }
+
+  Future<String> generateQuiz(String noteText, String difficulty) async {
+    if (noteText.trim().isEmpty) return 'No note context provided to generate a quiz.';
+    return getChatResponse(AIPrompts.noteQuizPrompt(noteText, difficulty));
+  }
+
+  Future<String> recommendEvents(List<CampusEvent> events, String userContext) async {
+    if (events.isEmpty) return 'No events available for recommendations.';
+    if (userContext.trim().isEmpty) userContext = 'A student looking for fun/educational activities.';
+    final eventsJson = jsonEncode(events.map((e) => {'title': e.title, 'category': e.category, 'date': e.date, 'location': e.location}).toList());
+    return getChatResponse(AIPrompts.eventRecommendationPrompt(eventsJson, userContext));
+  }
+
+  Future<String> lostFoundTips(LostItem item) async {
+    final itemContext = '${item.type}: ${item.title} at ${item.location} on ${item.date}';
+    return getChatResponse(AIPrompts.lostFoundTipsPrompt(itemContext));
   }
 }

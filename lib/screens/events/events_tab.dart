@@ -9,6 +9,7 @@ import 'post_event_screen.dart';
 import 'event_detail_screen.dart';
 import '../ai/ai_chat_screen.dart';
 import '../../core/utils/ai_prompts.dart';
+import '../../core/widgets/app_states.dart';
 
 class EventsTab extends ConsumerStatefulWidget {
   const EventsTab({super.key});
@@ -141,10 +142,12 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                     () => const SliverToBoxAdapter(
                       child: Center(child: CircularProgressIndicator()),
                     ),
-                error:
-                    (err, stack) => SliverToBoxAdapter(
-                      child: Center(child: Text('Error: $err')),
-                    ),
+                error: (err, stack) => SliverToBoxAdapter(
+                  child: AppErrorState(
+                    message: err.toString(),
+                    onRetry: () => ref.invalidate(campusEventsProvider),
+                  ),
+                ),
               ),
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],

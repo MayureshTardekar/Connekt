@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/academic_note.dart';
+import '../network/logger.dart';
 
 class NotesRepository {
   final _supabase = Supabase.instance.client;
@@ -16,7 +17,7 @@ class NotesRepository {
       
       return (response as List).map((note) => AcademicNote.fromMap(note)).toList();
     } catch (e) {
-      print('Error fetching notes: $e');
+      AppLogger.error('Error fetching notes: $e');
       return [];
     }
   }
@@ -33,7 +34,7 @@ class NotesRepository {
     try {
       await _supabase.from(_table).insert(note.toMap());
     } catch (e) {
-      print('Error uploading note: $e');
+      AppLogger.error('Error uploading note: $e');
     }
   }
 }

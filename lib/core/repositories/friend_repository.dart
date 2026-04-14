@@ -1,5 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/friend_request.dart';
+import '../config/app_config.dart';
+import '../mock/mock_datasource.dart';
 
 class FriendRepository {
   final _supabase = Supabase.instance.client;
@@ -11,6 +13,7 @@ class FriendRepository {
   /// Stream of pending requests sent TO the current user.
   /// Uses Supabase Realtime postgres_changes for live updates.
   Stream<List<FriendRequest>> watchPendingRequests() {
+    if (AppConfig.useMockBackend) return Stream.value(MockDatasource.friendRequests);
     if (_currentUserId.isEmpty) return Stream.value([]);
 
     // SupabaseStreamBuilder supports only one .eq() filter.
@@ -28,6 +31,10 @@ class FriendRepository {
 
   /// Accept — optimistic: update status in DB, UI reacts via stream
   Future<void> acceptRequest(String requestId) async {
+    if (AppConfig.useMockBackend) {
+      MockDatasource.friendRequests.removeWhere((r) => r.id == requestId);
+      return;
+    }
     try {
       await _supabase
           .from(_table)
@@ -40,6 +47,10 @@ class FriendRepository {
 
   /// Decline — optimistic: update status in DB, UI reacts via stream
   Future<void> declineRequest(String requestId) async {
+    if (AppConfig.useMockBackend) {
+      MockDatasource.friendRequests.removeWhere((r) => r.id == requestId);
+      return;
+    }
     try {
       await _supabase
           .from(_table)
@@ -55,6 +66,7 @@ class FriendRepository {
     required String receiverId,
     required String senderName,
   }) async {
+    if (AppConfig.useMockBackend) return;
     if (_currentUserId.isEmpty) return;
     try {
       await _supabase.from(_table).insert({

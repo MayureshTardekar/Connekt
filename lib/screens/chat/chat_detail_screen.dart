@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/app_states.dart';
 import '../../core/providers/chat_provider.dart';
 import '../../core/models/chat_conversation.dart';
 import '../../core/models/chat_message.dart';
@@ -381,7 +382,10 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
               loading: () => const Center(
                 child: CircularProgressIndicator(color: AppColors.primary),
               ),
-              error: (err, stack) => Center(child: Text('Error: $err')),
+              error: (err, stack) => AppErrorState(
+                message: err.toString(),
+                onRetry: () => ref.invalidate(chatMessagesProvider(widget.conversationId)),
+              ),
               data: (serverMessages) {
                 // Combine server messages and local (optimistic) ones
                 // In a real app, we would deduplicate by ID
