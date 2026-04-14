@@ -1,48 +1,132 @@
-import 'package:google_generative_ai/google_generative_ai.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../models/academic_note.dart';
 import '../models/campus_event.dart';
 import '../models/lost_item.dart';
-import 'dart:convert';
 import '../ai/ai_prompts.dart';
 
 class AIRepository {
-  static const List<String> _fallbackModels = [
-    'gemini-2.5-flash',
-    'gemini-2.0-flash-lite',
-    'gemini-2.0-flash-lite-001',
-    'gemini-2.5-pro',
-  ];
+  List<String> _availableModels = [];
+  bool _isFetchingModels = false;
+  String? _lastSuccessfulResponse;
+  
+  // Throttle/Debounce parameters
+  DateTime? _lastRequestTime;
+
+  Future<void> _fetchAvailableModels() async {
+    if (_availableModels.isNotEmpty || _isFetchingModels) return;
+    if (AppConfig.geminiApiKey.isEmpty || AppConfig.geminiApiKey == 'YOUR_GEMINI_API_KEY') return;
+
+    _isFetchingModels = true;
+    try {
+      final url = Uri.parse('https://generativelanguage.googleapis.com/v1beta/models?key=\${AppConfig.geminiApiKey}');
+      final response = await http.get(url);
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final models = data['models'] as List;
+        
+        List<String> validModels = [];
+        for (var model in models) {
+          if (model['supportedGenerationMethods']?.contains('generateContent') == true) {
+            String name = model['name'].toString().replaceFirst('models/', '');
+            // Prioritize flash models for free tier
+            if (name.contains('flash')) {
+              validModels.insert(0, name);
+            } else {
+              validModels.add(name);
+            }
+          }
+        }
+        _availableModels = validModels;
+        print('Dynamically loaded Gemini models: \$_availableModels');
+      }
+    } catch (e) {
+      print('Failed to fetch models dynamically: \$e');
+    } finally {
+      _isFetchingModels = false;
+    }
+  }
 
   Future<String> getChatResponse(String message, {String? context}) async {
     if (AppConfig.geminiApiKey.isEmpty || AppConfig.geminiApiKey == 'YOUR_GEMINI_API_KEY') {
-      return 'AI Assistant is currently unavailable. Please check the Gemini API Key configuration.';
+      return 'Oops! Configure your AI connection to continue mapping out the campus.';
     }
 
+    // Basic Debounce/Rate limiting (500ms)
+    final now = DateTime.now();
+    if (_lastRequestTime != null && now.difference(_lastRequestTime!).inMilliseconds < 500) {
+      await Future.delayed(const Duration(milliseconds: 500));
+    }
+    _lastRequestTime = DateTime.now();
+
+    // Fetch models if list is empty
+    if (_availableModels.isEmpty) {
+      await _fetchAvailableModels();
+    }
+    
+    // Fallback if no models available dynamically
+    List<String> modelsToTry = _availableModels.isNotEmpty 
+        ? _availableModels 
+        : ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash-lite'];
+
     final prompt = context != null 
-        ? 'You are the Connekt AI Assistant. Context about the app state: $context\n\nUser: $message'
-        : message;
-        
-    final content = [Content.text(prompt)];
+        ? 'System Instruction: You are the friendly Connekt AI Assistant for a college campus. Help the user concisely. Context: \$context\n\nUser: \$message'
+        : 'System Instruction: You are the friendly Connekt AI Assistant for a college campus. Respond concisely.\n\nUser: \$message';
 
-    String lastError = '';
+    final body = json.encode({
+      "contents": [{
+        "parts": [{"text": prompt}]
+      }]
+    });
 
-    for (String modelName in _fallbackModels) {
-      try {
-        final model = GenerativeModel(
-          model: modelName,
-          apiKey: AppConfig.geminiApiKey,
-        );
-        final response = await model.generateContent(content);
-        return response.text ?? 'I\'m sorry, I couldn\'t generate a response.';
-      } catch (e) {
-        lastError = '($modelName) $e';
-        print('AI Error using $modelName: $e. Falling back...');
-        // Continue to the next fallback model in the list
+    for (String modelName in modelsToTry) {
+      int retries = 0;
+      while (retries < 3) {
+        try {
+          final url = Uri.parse('https://generativelanguage.googleapis.com/v1beta/models/\$modelName:generateContent?key=\${AppConfig.geminiApiKey}');
+          final response = await http.post(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: body,
+          );
+
+          if (response.statusCode == 200) {
+            final data = json.decode(response.body);
+            final text = data['candidates']?[0]?['content']?['parts']?[0]?['text'];
+            if (text != null) {
+               _lastSuccessfulResponse = text;
+               return text; // Success!
+            }
+          } else if (response.statusCode == 429) {
+            // Rate limited: Retry twice with delay
+            retries++;
+            await Future.delayed(Duration(seconds: retries * 2)); // 2s, 4s
+            continue;
+          } else if (response.statusCode == 503) {
+             // Overloaded: delay exactly 3 seconds
+             retries++;
+             await Future.delayed(const Duration(seconds: 3));
+             continue;
+          } else {
+             // Other error (404, 400), don't retry same model
+             print('Model \$modelName failed with \${response.statusCode}: \${response.body}');
+             break;
+          }
+        } catch (e) {
+          print('Network error connecting to \$modelName: \$e');
+          break; // move to next model
+        }
       }
     }
 
-    return 'AI Error (All models exhausted): $lastError';
+    // IF ALL MODELS EXHAUSTED / FAILED: NEVER expose raw errors. Return Connekt specific usable response
+    if (_lastSuccessfulResponse != null) {
+      return "I'm a bit overwhelmed right now, but previously I noticed this: \n\n\$_lastSuccessfulResponse";
+    }
+    
+    return "Campus servers are super busy right now taking a coffee break! ☕\n\nMeanwhile, check out the Lost & Found section or browse upcoming campus events. Please try again in a minute.";
   }
 
   Future<String> summarizeAppState({
@@ -52,9 +136,9 @@ class AIRepository {
   }) async {
     final context = '''
     Connekt App Current State Summary:
-    Recent Notes: ${notes.take(5).map((n) => "${n.title} [Subject: ${n.category}]").join(', ')}
-    Upcoming Events: ${events.take(5).map((e) => "${e.title} at ${e.location}").join(', ')}
-    Lost & Found Items: ${lostFound.take(5).map((i) => "${i.type}: ${i.title} at ${i.location}").join(', ')}
+    Recent Notes: \${notes.take(5).map((n) => "\${n.title} [Subject: \${n.category}]").join(', ')}
+    Upcoming Events: \${events.take(5).map((e) => "\${e.title} at \${e.location}").join(', ')}
+    Lost & Found: \${lostFound.take(5).map((i) => "\${i.type}: \${i.title} at \${i.location}").join(', ')}
     
     Task: Create a friendly 2-3 sentence campus update for the user dashboard. 
     Focus on: What to study (notes), What to attend (events), and any alerts (lost items).
@@ -81,7 +165,7 @@ class AIRepository {
   }
 
   Future<String> lostFoundTips(LostItem item) async {
-    final itemContext = '${item.type}: ${item.title} at ${item.location} on ${item.createdAt}';
+    final itemContext = '\${item.type}: \${item.title} at \${item.location} on \${item.createdAt}';
     return getChatResponse(AIPrompts.lostFoundTipsPrompt(itemContext));
   }
 }
