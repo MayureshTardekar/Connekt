@@ -461,7 +461,7 @@ class _CampusCommunityTile extends StatelessWidget {
                 'LIVE',
                 style: TextStyle(
                   color: Colors.white,
-                  fontWeight: FontWeight.black,
+                  fontWeight: FontWeight.w900,
                   fontSize: 10,
                 ),
               ),

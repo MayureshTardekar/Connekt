@@ -11,6 +11,7 @@ class AIRepository {
   final GenerativeModel _model;
   int _warningCount = 0;
   final List<Map<String, dynamic>> _history = [];
+  dynamic lastError;
 
   static const _systemInstructionText =
       "You are Connekt AI, a professional campus assistant for the Connekt app, developed by Mayuresh Tardekar. "
