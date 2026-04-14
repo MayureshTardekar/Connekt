@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_theme.dart';
 import '../core/repositories/campus_repository.dart';
-import 'auth/login_screen.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/providers/campus_provider.dart';

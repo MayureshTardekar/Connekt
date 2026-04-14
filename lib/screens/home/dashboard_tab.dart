@@ -1,19 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
-import '../../theme/avatar_helper.dart';
 import '../main_screen.dart';
 import '../lost_found/lost_found_tab.dart';
 import '../study_groups/study_groups_tab.dart';
-import '../ai/ai_chat_screen.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/providers/dashboard_provider.dart';
-import '../../core/providers/ai_provider.dart';
-import '../../core/providers/campus_provider.dart';
-import '../../core/repositories/campus_repository.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../profile/profile_screen.dart';
 
 class DashboardTab extends ConsumerStatefulWidget {
   const DashboardTab({super.key});
@@ -42,12 +35,6 @@ class _DashboardTabState extends ConsumerState<DashboardTab>
         'Student';
   }
 
-  String _getUserInitials() {
-    final name = _getUserName();
-    final parts = name.split(' ');
-    if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    return name.isNotEmpty ? name[0].toUpperCase() : 'S';
-  }
 
 
   @override
@@ -267,37 +254,6 @@ class _DashboardTabState extends ConsumerState<DashboardTab>
     );
   }
 
-  Widget _buildStatPill(String count, String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            count,
-            style: TextStyle(
-              color: color,
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: color.withValues(alpha: 0.8),
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildFeatureCard(
     BuildContext context,

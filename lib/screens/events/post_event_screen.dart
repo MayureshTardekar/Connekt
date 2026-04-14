@@ -7,15 +7,15 @@ class PostEventScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(12),
               boxShadow: AppTheme.softShadow,
             ),
@@ -108,6 +108,8 @@ class PostEventScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,
                 ),
+                fillColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1B4B) : AppTheme.inputBg,
+                filled: true,
               ),
             ),
             const SizedBox(height: 22),

@@ -155,22 +155,29 @@ class _GhostTabState extends ConsumerState<GhostTab> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF161129) : Colors.white,
+        color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF161129) : Theme.of(context).cardColor,
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
-        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.05)),
+        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                '🌎 World Chat',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold),
-              ),
+                Text(
+                  '🌎 World Chat',
+                  style: TextStyle(
+                      color: Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.textPrimary,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold),
+                ),
               const SizedBox(height: 4),
               Row(
                 children: [
@@ -281,7 +288,10 @@ class _GhostTabState extends ConsumerState<GhostTab> {
             ),
             child: Text(
               post.text,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
+              style: TextStyle(
+                color: isMe ? Colors.white : (Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.textPrimary), 
+                fontSize: 14,
+              ),
             ),
           ),
           const SizedBox(height: 4),
@@ -296,11 +306,17 @@ class _GhostTabState extends ConsumerState<GhostTab> {
 
   Widget _buildInputArea() {
     return Container(
-      padding: EdgeInsets.fromLTRB(
-          16, 8, 16, 8 + MediaQuery.of(context).viewInsets.bottom + 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF161129),
-        border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+        color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF161129) : Theme.of(context).cardColor,
+        border: Border(top: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1))),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -308,13 +324,15 @@ class _GhostTabState extends ConsumerState<GhostTab> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
+                color: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.02),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
               ),
               child: TextField(
-                controller: _messageController,
-                style: const TextStyle(color: Colors.white, fontSize: 14),
+                style: TextStyle(
+                  color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black, 
+                  fontSize: 14,
+                ),
                 cursorColor: AppColors.ghostPrimary,
                 decoration: const InputDecoration(
                   hintText: 'Say something anonymous...',

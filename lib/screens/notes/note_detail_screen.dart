@@ -73,7 +73,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: widget.subjectColor.withOpacity(0.15),
+                color: widget.subjectColor.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -147,7 +147,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                     child: Center(
                       child: Icon(
                         Icons.article_outlined,
-                        color: AppTheme.textSecondary.withOpacity(0.3),
+                        color: AppTheme.textSecondary.withValues(alpha: 0.3),
                         size: 40,
                       ),
                     ),
@@ -322,9 +322,9 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

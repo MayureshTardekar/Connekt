@@ -23,16 +23,12 @@ class _EventsTabState extends ConsumerState<EventsTab> {
   int _selectedFilter = 0;
   final List<String> _filters = [
     'All',
-    'Official Clubs',
-    'Tech',
-    'Arts',
-    'Sports',
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -61,7 +57,7 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                       child: Icon(
                         Icons.event_available_rounded,
                         size: 200,
-                        color: Colors.white.withOpacity(0.15),
+                        color: Colors.white.withValues(alpha: 0.15),
                       ),
                     ),
                     SafeArea(
@@ -70,19 +66,40 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Campus Events',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                              ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Campus Events',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                IconButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => const PostEventScreen()),
+                                    );
+                                  },
+                                  icon: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.2),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.add_rounded, color: Colors.white),
+                                  ),
+                                ),
+                              ],
                             ),
                             const SizedBox(height: 8),
                             Text(
                               'Stay updated with workshops, fests, and matches.',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.9),
+                                color: Colors.white.withValues(alpha: 0.9),
                                 fontSize: 14,
                               ),
                             ),
@@ -98,9 +115,8 @@ class _EventsTabState extends ConsumerState<EventsTab> {
           SliverToBoxAdapter(
             child: Column(
               children: [
-                _buildDaySelector(),
-                _buildFilterBar(),
-                _buildAIBanner(context),
+                // Filters and AI Banners removed as requested
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -116,11 +132,16 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                               .toList();
 
                   if (filteredEvents.isEmpty) {
-                    return const SliverToBoxAdapter(
+                    return SliverToBoxAdapter(
                       child: Center(
                         child: Padding(
-                          padding: EdgeInsets.all(40.0),
-                          child: Text('No events found for this filter'),
+                          padding: const EdgeInsets.all(40.0),
+                          child: Text(
+                            'No events scheduled yet',
+                            style: TextStyle(
+                              color: Theme.of(context).brightness == Brightness.dark ? Colors.white60 : Colors.black54,
+                            ),
+                          ),
                         ),
                       ),
                     );
@@ -152,20 +173,7 @@ class _EventsTabState extends ConsumerState<EventsTab> {
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const PostEventScreen()),
-          );
-        },
-        backgroundColor: const Color(0xFFF59E0B),
-        icon: const Icon(Icons.add_rounded, color: Colors.white),
-        label: const Text(
-          'Post Event',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-      ),
+      // FAB removed as it is now in the header for visibility and avoids collision with AI bot
     );
   }
 
@@ -190,7 +198,7 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                 boxShadow: [
                   if (isSelected)
                     BoxShadow(
-                      color: const Color(0xFFF59E0B).withOpacity(0.3),
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -242,7 +250,7 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                 setState(() => _selectedFilter = index);
               },
               backgroundColor: Colors.white,
-              selectedColor: const Color(0xFFF59E0B).withOpacity(0.2),
+              selectedColor: const Color(0xFFF59E0B).withValues(alpha: 0.2),
               labelStyle: TextStyle(
                 color: isSelected ? const Color(0xFFB45309) : Colors.grey,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -285,7 +293,7 @@ class _EventsTabState extends ConsumerState<EventsTab> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF8B5CF6).withOpacity(0.3),
+              color: const Color(0xFF8B5CF6).withValues(alpha: 0.3),
               blurRadius: 10,
               offset: const Offset(0, 4),
             )
@@ -328,11 +336,11 @@ class _EventsTabState extends ConsumerState<EventsTab> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.2 : 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -401,10 +409,10 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                         ),
                         Text(
                           DateFormat('dd').format(event.dateTime),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
+                            color: Theme.of(context).brightness == Brightness.dark ? Colors.black : AppColors.textPrimary,
                           ),
                         ),
                       ],
@@ -450,10 +458,10 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                   const SizedBox(height: 12),
                   Text(
                     event.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -514,7 +522,7 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                           ),
                         ),
                         child: const Text(
-                          'Interested',
+                          'Join Event',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,

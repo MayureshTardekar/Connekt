@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
-import 'package:intl/intl.dart';
 
 class HistorySessionsScreen extends StatelessWidget {
   const HistorySessionsScreen({super.key});
@@ -95,11 +94,11 @@ class HistorySessionsScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.transparent),
+        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.transparent),
         boxShadow: isDark ? [] : [
-          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))
+          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))
         ],
       ),
       child: Row(
@@ -107,7 +106,7 @@ class HistorySessionsScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: item.color.withOpacity(0.15),
+              color: item.color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(item.icon, color: item.color, size: 20),

@@ -104,9 +104,9 @@ class _PostGhostScreenState extends ConsumerState<PostGhostScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withOpacity(0.1)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               ),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
@@ -137,9 +137,9 @@ class _PostGhostScreenState extends ConsumerState<PostGhostScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
-                      color: isSelected ? (mood['color'] as Color) : Colors.white.withOpacity(0.08),
+                      color: isSelected ? (mood['color'] as Color) : Colors.white.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: isSelected ? Colors.transparent : Colors.white.withOpacity(0.15)),
+                      border: Border.all(color: isSelected ? Colors.transparent : Colors.white.withValues(alpha: 0.15)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -162,16 +162,16 @@ class _PostGhostScreenState extends ConsumerState<PostGhostScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('What\'s on your mind?', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                Text('${_charCount}/$_maxChars', 
+                Text('$_charCount/$_maxChars', 
                   style: TextStyle(color: _charCount > _maxChars ? AppColors.error : Colors.white54, fontSize: 12)),
               ],
             ),
             const SizedBox(height: 16),
             Container(
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.08),
+                color: Colors.white.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withOpacity(0.1)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               ),
               child: TextField(
                 controller: _textController,
@@ -180,7 +180,7 @@ class _PostGhostScreenState extends ConsumerState<PostGhostScreen> {
                 style: const TextStyle(color: Colors.white, fontSize: 16, height: 1.6),
                 decoration: InputDecoration(
                   hintText: 'Share your thoughts, feelings, or just vent...',
-                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                  hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.all(20),
                 ),

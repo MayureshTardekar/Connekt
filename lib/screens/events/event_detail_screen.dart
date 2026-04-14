@@ -236,8 +236,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    widget.description +
-                        '\n\nJoin us for an exciting day of building and networking. Free food and swags provided for all attendees!',
+                    '${widget.description}\n\nJoin us for an exciting day of building and networking. Free food and swags provided for all attendees!',
                     style: const TextStyle(
                       height: 1.6,
                       color: AppTheme.textPrimary,

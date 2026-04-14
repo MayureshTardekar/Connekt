@@ -58,7 +58,7 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
                       child: Icon(
                         Icons.search_rounded,
                         size: 160,
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withValues(alpha: 0.1),
                       ),
                     ),
                     SafeArea(
@@ -79,7 +79,7 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
                             Text(
                               'Report items or help others find theirs.',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
+                                color: Colors.white.withValues(alpha: 0.8),
                                 fontSize: 14,
                               ),
                             ),
@@ -210,7 +210,7 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -265,7 +265,7 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: statusColor.withOpacity(0.1),
+                            color: statusColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(

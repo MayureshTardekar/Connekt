@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../config/app_config.dart';
 
 class AuthRepository {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -37,7 +36,7 @@ class AuthRepository {
   Future<bool> signInWithOAuth(OAuthProvider provider) async {
     return await _supabase.auth.signInWithOAuth(
       provider,
-      redirectTo: kIsWeb ? null : 'io.supabase.connekt://login-callback/',
+      redirectTo: kIsWeb ? null : 'io.supabase.connekt://login-callback',
     );
   }
 

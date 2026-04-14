@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'core/theme/app_theme.dart';
 import 'theme/app_theme.dart' as v2;
 import 'core/routing/app_router.dart';
 import 'core/config/app_config.dart';

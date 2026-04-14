@@ -24,15 +24,15 @@ class _UploadNoteScreenState extends State<UploadNoteScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(12),
               boxShadow: AppTheme.softShadow,
             ),
@@ -63,12 +63,14 @@ class _UploadNoteScreenState extends State<UploadNoteScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 36),
                 decoration: BoxDecoration(
-                  color: _fileSelected ? const Color(0xFFEEF2FF) : Colors.white,
+                  color: _fileSelected 
+                      ? (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1B4B) : const Color(0xFFEEF2FF)) 
+                      : Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(22),
                   border: Border.all(
                     color: _fileSelected
                         ? AppTheme.primary
-                        : AppTheme.cardBorder,
+                        : (Theme.of(context).brightness == Brightness.dark ? Colors.white10 : AppTheme.cardBorder),
                     width: 2,
                   ),
                   boxShadow: AppTheme.softShadow,
@@ -174,7 +176,7 @@ class _UploadNoteScreenState extends State<UploadNoteScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: AppTheme.inputBg,
+                color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1B4B) : AppTheme.inputBg,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: DropdownButtonHideUnderline(

@@ -61,7 +61,7 @@ class AppTheme {
   // Shadows
   static List<BoxShadow> cardShadow = [
     BoxShadow(
-      color: const Color(0xFF4F46E5).withOpacity(0.08),
+      color: const Color(0xFF4F46E5).withValues(alpha: 0.08),
       blurRadius: 24,
       offset: const Offset(0, 8),
     ),
@@ -206,7 +206,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white.withOpacity(0.05),
+        fillColor: Colors.white.withValues(alpha: 0.05),
         hintStyle: const TextStyle(color: Colors.white24),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
       ),

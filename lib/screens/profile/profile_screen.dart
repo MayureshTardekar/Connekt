@@ -39,7 +39,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       return name.isNotEmpty ? name[0].toUpperCase() : 'S';
     }
 
-    Future<void> _pickAndUploadImage() async {
+    Future<void> pickAndUploadImage() async {
       final picker = ImagePicker();
       final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
       
@@ -47,15 +47,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         final bytes = await image.readAsBytes();
         final extension = image.path.split('.').last;
         
-        if (mounted) {
+        if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Uploading profile photo...')),
           );
         }
+
         
         final url = await AuthRepository().uploadProfilePhoto(bytes, extension);
         
-        if (mounted && url != null) {
+        if (url != null && context.mounted) {
           setState(() {}); 
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Profile photo updated! ✨')),
@@ -105,7 +106,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         bottom: 0,
                         right: 0,
                         child: GestureDetector(
-                          onTap: _pickAndUploadImage,
+                          onTap: pickAndUploadImage,
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: const BoxDecoration(
@@ -156,7 +157,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
                 IconButton.filled(
                   style: IconButton.styleFrom(
-                    backgroundColor: AppTheme.primary.withOpacity(0.1),
+                    backgroundColor: AppTheme.primary.withValues(alpha: 0.1),
                     foregroundColor: AppTheme.primary,
                   ),
                   onPressed: () => GoRouter.of(context).push('/campus-select'),
@@ -191,7 +192,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: Theme.of(context).brightness == Brightness.dark ? [] : AppTheme.softShadow,
                         border: Border.all(
-                          color: isSelected ? AppTheme.primary.withOpacity(0.5) : AppTheme.cardBorder,
+                          color: isSelected ? AppTheme.primary.withValues(alpha: 0.5) : AppTheme.cardBorder,
                           width: isSelected ? 2 : 1,
                         ),
                       ),

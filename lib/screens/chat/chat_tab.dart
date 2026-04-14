@@ -47,7 +47,7 @@ class _ChatTabState extends ConsumerState<ChatTab> {
     final pendingCount = ref.watch(pendingRequestsCountProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -57,16 +57,18 @@ class _ChatTabState extends ConsumerState<ChatTab> {
                 children: [
                   Row(
                     children: [
-                      Text('Messages', style: AppTypography.heading1),
+                      Text('Messages', style: AppTypography.heading1.copyWith(
+                        color: Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.textPrimary,
+                      )),
                       const Spacer(),
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: AppColors.surface,
+                          color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1B4B) : AppColors.surface,
                           borderRadius: BorderRadius.circular(14),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
+                              color: Colors.black.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.2 : 0.05),
                               blurRadius: 10,
                             ),
                           ],
@@ -80,17 +82,23 @@ class _ChatTabState extends ConsumerState<ChatTab> {
                     ],
                   ),
                   const SizedBox(height: 18),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Search conversations...',
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1B4B) : AppColors.surface,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: TextField(
+                        style: TextStyle(
+                          color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
+                        ),
+                        decoration: const InputDecoration(
+                          hintText: 'Search conversations...',
+                          prefixIcon: Icon(Icons.search, color: Colors.grey),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(vertical: 12),
+                        ),
                       ),
                     ),
-                  ),
                   const SizedBox(height: 20),
                 ],
               ),
@@ -113,13 +121,17 @@ class _ChatTabState extends ConsumerState<ChatTab> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // ── Campus Community Chat (New)
+                      _CampusCommunityTile(),
+                      const SizedBox(height: 8),
+
                       // ── Friend Requests Banner (only shown when pending > 0)
                       if (pendingCount > 0)
                         _FriendRequestBanner(count: pendingCount),
 
                       // ── Conversations List
                       Expanded(
-                        child: visible.isEmpty
+                        child: visible.isEmpty && pendingCount == 0
                             ? const AppEmptyState(
                                 icon: Icons.chat_bubble_outline_rounded,
                                 title: 'No messages yet',
@@ -274,11 +286,11 @@ class _ChatTile extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
+              color: Colors.black.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.2 : 0.02),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -301,6 +313,7 @@ class _ChatTile extends StatelessWidget {
                             chat.participantName,
                             style: AppTypography.bodyLarge.copyWith(
                               fontWeight: FontWeight.w700,
+                              color: Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.textPrimary,
                             ),
                           ),
                           if (chat.isPinned)
@@ -368,6 +381,89 @@ class _ChatTile extends StatelessWidget {
                     ],
                   ),
                 ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CampusCommunityTile extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        // This will navigate to a dedicated Campus Chat view
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Opening Campus Community Chat... 🏢'))
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF4F46E5), Color(0xFF7C3AED)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF4F46E5).withValues(alpha: 0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.groups_rounded, color: Colors.white, size: 24),
+            ),
+            const SizedBox(width: 16),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Campus Community',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Text(
+                    'Chat with everyone in your campus',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Text(
+                'LIVE',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.black,
+                  fontSize: 10,
+                ),
               ),
             ),
           ],

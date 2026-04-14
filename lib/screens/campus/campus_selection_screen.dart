@@ -72,7 +72,7 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -85,7 +85,7 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'Enter your college details to join the community.',
-                  style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14),
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 14),
                 ),
                 const SizedBox(height: 24),
                 
@@ -165,18 +165,18 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+        labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
         prefixIcon: Icon(icon, color: AppTheme.primary),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: AppTheme.primary),
         ),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.05),
+        fillColor: Colors.white.withValues(alpha: 0.05),
       ),
     );
   }
@@ -185,14 +185,14 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: selectedValue,
-          hint: Text(hint, style: TextStyle(color: Colors.white.withOpacity(0.5))),
+          hint: Text(hint, style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
           dropdownColor: const Color(0xFF1E293B),
           isExpanded: true,
           icon: const Icon(Icons.keyboard_arrow_down, color: AppTheme.primary),
@@ -226,7 +226,7 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
               background: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [AppTheme.primary.withOpacity(0.3), Colors.transparent],
+                    colors: [AppTheme.primary.withValues(alpha: 0.3), Colors.transparent],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
@@ -283,15 +283,15 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
                   return Container(
                     margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
+                      color: Colors.white.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withOpacity(0.1)),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                     ),
                     child: ListTile(
                       contentPadding: const EdgeInsets.all(16),
                       leading: Container(
                         padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(color: AppTheme.primary.withOpacity(0.1), shape: BoxShape.circle),
+                        decoration: BoxDecoration(color: AppTheme.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
                         child: const Icon(Icons.location_city_rounded, color: AppTheme.primary),
                       ),
                       title: Text(campus.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),

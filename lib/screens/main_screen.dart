@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:connekt/core/repositories/auth_repository.dart';
-import 'dart:typed_data';
 import '../theme/app_theme.dart';
 import 'home/dashboard_tab.dart';
 import 'notes/notes_tab.dart';
@@ -10,7 +9,6 @@ import 'events/events_tab.dart';
 import 'chat/chat_tab.dart';
 import 'ghost/ghost_tab.dart';
 import 'ai/ai_chat_screen.dart';
-import 'profile/history_sessions_screen.dart';
 import 'profile/profile_screen.dart';
 import '../theme/avatar_helper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -115,7 +113,7 @@ class MainScreenState extends ConsumerState<MainScreen> {
                   ),
                   child: CircleAvatar(
                     radius: 18,
-                    backgroundColor: AppTheme.primary.withOpacity(0.1),
+                    backgroundColor: AppTheme.primary.withValues(alpha: 0.1),
                     child: avatarWidget(initials, radius: 18, imageUrl: avatarUrl),
                   ),
                 ),
@@ -242,7 +240,7 @@ class MainScreenState extends ConsumerState<MainScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
+                          color: Colors.white.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Row(
@@ -303,7 +301,7 @@ class MainScreenState extends ConsumerState<MainScreen> {
                     trailing: Switch.adaptive(
                       value: ref.watch(themeProvider) == ThemeMode.dark,
                       onChanged: (val) => ref.read(themeProvider.notifier).toggleTheme(),
-                      activeColor: const Color(0xFF8B5CF6),
+                      activeThumbColor: const Color(0xFF8B5CF6),
                     ),
                     onTap: () => ref.read(themeProvider.notifier).toggleTheme(),
                   ),
@@ -322,14 +320,15 @@ class MainScreenState extends ConsumerState<MainScreen> {
               padding: const EdgeInsets.all(24.0),
               child: TextButton.icon(
                 onPressed: () async {
+                  final navigator = Navigator.of(context);
                   await Supabase.instance.client.auth.signOut();
-                  if (mounted) Navigator.pop(context); // Close drawer
+                  if (mounted) navigator.pop(); // Close drawer
                 },
                 icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
                 label: const Text('Log Out', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
                 style: TextButton.styleFrom(
                   minimumSize: const Size(double.infinity, 50),
-                  backgroundColor: Colors.redAccent.withOpacity(0.1),
+                  backgroundColor: Colors.redAccent.withValues(alpha: 0.1),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
@@ -357,7 +356,7 @@ class MainScreenState extends ConsumerState<MainScreen> {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(Theme.of(context).brightness == Brightness.dark ? 0.3 : 0.08),
+              color: Colors.black.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.3 : 0.08),
               blurRadius: 24,
               offset: const Offset(0, 4),
             ),
@@ -433,7 +432,7 @@ class MainScreenState extends ConsumerState<MainScreen> {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withOpacity(0.05) : AppTheme.primary.withOpacity(0.05),
+          color: isDark ? Colors.white.withValues(alpha: 0.05) : AppTheme.primary.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, color: isDark ? Colors.white70 : AppTheme.primary, size: 22),

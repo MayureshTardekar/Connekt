@@ -21,7 +21,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  List<ChatMessage> _localMessages = [];
+  final List<ChatMessage> _localMessages = [];
   bool _hasLoadedInitialMessages = false;
 
   @override
@@ -224,7 +224,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.textHint.withOpacity(0.3),
+                  color: AppColors.textHint.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -269,7 +269,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
           width: 56,
           height: 56,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(icon, color: color, size: 28),
@@ -295,9 +295,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     );
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(
@@ -332,7 +332,10 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
               children: [
                 Text(
                   widget.conversation.participantName,
-                  style: AppTypography.heading3.copyWith(fontSize: 16),
+                  style: AppTypography.heading3.copyWith(
+                    fontSize: 16,
+                    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.textPrimary,
+                  ),
                 ),
                 const Text(
                   'Online',
@@ -389,10 +392,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
               data: (serverMessages) {
                 // Combine server messages and local (optimistic) ones
                 // In a real app, we would deduplicate by ID
-                final displayMessages = serverMessages; 
+                final displayMessages = serverMessages.reversed.toList(); 
 
                 return ListView.builder(
                   controller: _scrollController,
+                  reverse: true,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 20,
@@ -438,7 +442,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                     margin: const EdgeInsets.all(20),
                                     padding: const EdgeInsets.all(20),
                                     decoration: BoxDecoration(
-                                      color: AppColors.surface,
+                                      color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1B4B) : AppColors.surface,
                                       borderRadius: BorderRadius.circular(30),
                                     ),
                                     child: Row(
@@ -483,7 +487,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                     decoration: BoxDecoration(
                                       color: isSent
                                           ? AppColors.primary
-                                          : AppColors.surface,
+                                          : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1B4B) : AppColors.surface),
                                       borderRadius: BorderRadius.only(
                                         topLeft: const Radius.circular(20),
                                         topRight: const Radius.circular(20),
@@ -500,7 +504,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                               (isSent
                                                       ? AppColors.primary
                                                       : Colors.black)
-                                                  .withOpacity(0.08),
+                                                  .withValues(alpha: 0.08),
                                           blurRadius: 8,
                                           offset: const Offset(0, 2),
                                         ),
@@ -520,20 +524,20 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                             padding: const EdgeInsets.all(12),
                                             decoration: BoxDecoration(
                                               color: isSent
-                                                  ? Colors.white.withOpacity(
-                                                      0.15,
+                                                  ? Colors.white.withValues(
+                                                      alpha: 0.15,
                                                     )
                                                   : AppColors.primary
-                                                        .withOpacity(0.05),
+                                                        .withValues(alpha: 0.05),
                                               borderRadius:
                                                   BorderRadius.circular(12),
                                               border: Border.all(
                                                 color: isSent
-                                                    ? Colors.white.withOpacity(
-                                                        0.2,
+                                                    ? Colors.white.withValues(
+                                                        alpha: 0.2,
                                                       )
                                                     : AppColors.primary
-                                                          .withOpacity(0.2),
+                                                          .withValues(alpha: 0.2),
                                               ),
                                             ),
                                             child: Column(
@@ -579,8 +583,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                                             style: TextStyle(
                                                               color: isSent
                                                                   ? Colors.white
-                                                                  : AppColors
-                                                                        .textPrimary,
+                                                                  : (Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.textPrimary),
                                                               fontWeight:
                                                                   FontWeight
                                                                       .bold,
@@ -665,20 +668,20 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                             padding: const EdgeInsets.all(12),
                                             decoration: BoxDecoration(
                                               color: isSent
-                                                  ? Colors.white.withOpacity(
-                                                      0.15,
+                                                  ? Colors.white.withValues(
+                                                      alpha: 0.15,
                                                     )
                                                   : AppColors.accent
-                                                        .withOpacity(0.1),
+                                                        .withValues(alpha: 0.1),
                                               borderRadius:
                                                   BorderRadius.circular(12),
                                               border: Border.all(
                                                 color: isSent
-                                                    ? Colors.white.withOpacity(
-                                                        0.2,
+                                                    ? Colors.white.withValues(
+                                                        alpha: 0.2,
                                                       )
                                                     : AppColors.accent
-                                                          .withOpacity(0.3),
+                                                          .withValues(alpha: 0.3),
                                               ),
                                             ),
                                             child: Column(
@@ -841,7 +844,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                                 size: 14,
                                                 color: msg.isRead
                                                     ? AppColors.accent
-                                                    : Colors.white.withOpacity(
+                                                    : Colors.white.withValues(alpha: 
                                                         0.7,
                                                       ),
                                               ),
@@ -869,7 +872,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                           ),
                                           boxShadow: [
                                             BoxShadow(
-                                              color: Colors.black.withOpacity(
+                                              color: Colors.black.withValues(alpha: 
                                                 0.05,
                                               ),
                                               blurRadius: 4,
@@ -914,10 +917,10 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1B4B) : AppColors.surface,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.2 : 0.04),
                   blurRadius: 10,
                   offset: const Offset(0, -2),
                 ),
@@ -931,7 +934,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: AppColors.background,
+                        color: Theme.of(context).brightness == Brightness.dark ? Colors.white10 : AppColors.background,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
@@ -946,7 +949,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       decoration: BoxDecoration(
-                        color: AppColors.background,
+                        color: Theme.of(context).brightness == Brightness.dark ? Colors.white10 : AppColors.background,
                         borderRadius: BorderRadius.circular(24),
                       ),
                       child: Row(
@@ -954,6 +957,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                           Expanded(
                             child: TextField(
                               controller: _messageController,
+                              style: TextStyle(
+                                color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
+                              ),
                               decoration: const InputDecoration(
                                 border: InputBorder.none,
                                 hintText: 'Type a message...',
@@ -987,7 +993,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withOpacity(0.3),
+                            color: AppColors.primary.withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),

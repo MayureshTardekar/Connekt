@@ -22,15 +22,12 @@ class _NotesTabState extends ConsumerState<NotesTab> {
     'All',
     'Downloaded',
     'Bookmarks',
-    'Math',
-    'Physics',
-    'CS',
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -59,7 +56,7 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                       child: Icon(
                         Icons.menu_book_rounded,
                         size: 180,
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withValues(alpha: 0.1),
                       ),
                     ),
                     SafeArea(
@@ -68,19 +65,40 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Knowledge Hub',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                              ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Knowledge Hub',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                IconButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => const UploadNoteScreen()),
+                                    );
+                                  },
+                                  icon: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.2),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.upload_file_rounded, color: Colors.white),
+                                  ),
+                                ),
+                              ],
                             ),
                             const SizedBox(height: 8),
                             Text(
                               'Explore, download, and share academic resources.',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
+                                color: Colors.white.withValues(alpha: 0.8),
                                 fontSize: 14,
                               ),
                             ),
@@ -88,22 +106,27 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 16),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: Theme.of(context).brightness == Brightness.dark 
+                                    ? const Color(0xFF1E1B4B) 
+                                    : Colors.white,
                                 borderRadius: BorderRadius.circular(16),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
+                                    color: Colors.black.withValues(alpha: 0.1),
                                     blurRadius: 10,
                                     offset: const Offset(0, 4),
                                   ),
                                 ],
                               ),
-                              child: const TextField(
-                                decoration: InputDecoration(
+                              child: TextField(
+                                style: TextStyle(
+                                  color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
+                                ),
+                                decoration: const InputDecoration(
                                   icon: Icon(Icons.search, color: Colors.grey),
                                   hintText: 'Search notes, authors, subjects...',
                                   border: InputBorder.none,
-                                  hintStyle: TextStyle(fontSize: 14),
+                                  hintStyle: TextStyle(fontSize: 14, color: Colors.grey),
                                 ),
                               ),
                             ),
@@ -126,12 +149,12 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Recent Uploads',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                          color: Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.textPrimary,
                         ),
                       ),
                       TextButton(
@@ -157,11 +180,16 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                               .toList();
 
                   if (filteredNotes.isEmpty) {
-                    return const SliverToBoxAdapter(
+                    return SliverToBoxAdapter(
                       child: Center(
                         child: Padding(
-                          padding: EdgeInsets.all(40.0),
-                          child: Text('No notes found for this category'),
+                          padding: const EdgeInsets.all(40.0),
+                          child: Text(
+                            'No notes found for this category',
+                            style: TextStyle(
+                              color: Theme.of(context).brightness == Brightness.dark ? Colors.white60 : Colors.black54,
+                            ),
+                          ),
                         ),
                       ),
                     );
@@ -193,20 +221,7 @@ class _NotesTabState extends ConsumerState<NotesTab> {
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const UploadNoteScreen()),
-          );
-        },
-        backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.upload_file_rounded, color: Colors.white),
-        label: const Text(
-          'Upload Note',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-      ),
+      // FAB removed as it is now in the header for visibility and avoids collision with AI bot
     );
   }
 
@@ -232,11 +247,11 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                 color: isSelected ? Colors.white : AppColors.textSecondary,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
-              backgroundColor: Colors.white,
+              backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1B4B) : Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: BorderSide(
-                  color: isSelected ? AppColors.primary : Colors.grey.shade200,
+                  color: isSelected ? AppColors.primary : (Theme.of(context).brightness == Brightness.dark ? Colors.white10 : Colors.grey.shade200),
                 ),
               ),
             ),
@@ -250,11 +265,11 @@ class _NotesTabState extends ConsumerState<NotesTab> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.2 : 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -284,7 +299,7 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                 width: 60,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: _getCategoryColor(note.category).withOpacity(0.1),
+                  color: _getCategoryColor(note.category).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -306,15 +321,15 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
+                            color: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.1) : Colors.grey.shade100,
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             note.category,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.textSecondary,
+                              color: Theme.of(context).brightness == Brightness.dark ? Colors.white70 : AppColors.textSecondary,
                             ),
                           ),
                         ),
@@ -337,10 +352,10 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                     const SizedBox(height: 6),
                     Text(
                       note.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                        color: Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

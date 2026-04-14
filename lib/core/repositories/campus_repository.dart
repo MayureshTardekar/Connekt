@@ -96,7 +96,7 @@ class CampusRepository {
         .select('*, campuses(*)')
         .eq('user_id', user.id);
     
-    return response as List<Map<String, dynamic>>;
+    return response;
   }
 
   Future<List<Map<String, dynamic>>> getMyMemberships() async {
@@ -108,7 +108,7 @@ class CampusRepository {
         .select('*, campuses(name)')
         .eq('user_id', user.id);
     
-    return response as List<Map<String, dynamic>>;
+    return response;
   }
 
   // Real-time events stream

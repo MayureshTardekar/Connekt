@@ -176,7 +176,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                           ),
                         ),
                         const SizedBox(height: 14),
-                        Divider(color: Colors.white.withOpacity(0.1)),
+                        Divider(color: Colors.white.withValues(alpha: 0.1)),
                         const SizedBox(height: 8),
                         Row(
                           children: [
@@ -207,7 +207,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.1),
+                                color: Colors.white.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Row(

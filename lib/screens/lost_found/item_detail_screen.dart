@@ -206,7 +206,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [AppTheme.teal, AppTheme.teal.withOpacity(0.7)],
+                            colors: [AppTheme.teal, AppTheme.teal.withValues(alpha: 0.7)],
                           ),
                           borderRadius: BorderRadius.circular(16),
                         ),
