@@ -15,6 +15,9 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final List<Map<String, String>> _messages = [];
   bool _isLoading = false;
+  DateTime? _lastInputTime;
+  DateTime? _lastErrorTime;
+  bool _showErrorBanner = false;
 
   @override
   void initState() {
@@ -29,11 +32,18 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
 
   Future<void> _sendMessage([String? predefinedText]) async {
     final text = predefinedText ?? _messageController.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty || _isLoading) return;
+
+    // Spam filter: Block rapid user inputs within 2 seconds
+    if (_lastInputTime != null && DateTime.now().difference(_lastInputTime!).inSeconds < 2) {
+      return;
+    }
+    _lastInputTime = DateTime.now();
 
     setState(() {
       _messages.add({'role': 'user', 'text': text});
       _isLoading = true;
+      _showErrorBanner = false;
     });
     if (predefinedText == null) {
       _messageController.clear();
@@ -42,14 +52,34 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     try {
       final response = await ref.read(aiRepositoryProvider).getChatResponse(text);
       if (!mounted) return;
+      
+      final isFailure = response.contains('Coffee break') || response.contains('super busy') || response.contains('overwhelmed');
+
+      if (isFailure) {
+        if (_lastErrorTime != null && DateTime.now().difference(_lastErrorTime!).inSeconds < 60) {
+          // Already showed failure in <60s window. Show banner ONLY, no repeat bubble.
+           setState(() {
+              _isLoading = false;
+              _showErrorBanner = true;
+           });
+           return;
+        }
+        _lastErrorTime = DateTime.now();
+      }
+
       setState(() {
         _messages.add({'role': 'ai', 'text': response});
+        if (isFailure) _showErrorBanner = true; // Still show banner if we showed the bubble
         _isLoading = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _messages.add({'role': 'ai', 'text': 'Sorry, I encountered an error. Please check your API key.'});
+        _showErrorBanner = true; 
+        if (_lastErrorTime == null || DateTime.now().difference(_lastErrorTime!).inSeconds > 60) {
+          _messages.add({'role': 'ai', 'text': 'Oops, I encountered an error checking the campus intel.'});
+          _lastErrorTime = DateTime.now();
+        }
         _isLoading = false;
       });
     }
@@ -82,6 +112,28 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
       ),
       body: Column(
         children: [
+          if (_showErrorBanner)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              color: const Color(0xFF2B313F),
+              width: double.infinity,
+              child: Row(
+                children: [
+                  const Icon(Icons.warning_amber_rounded, color: Color(0xFFF0B90B), size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'AI temporarily unavailable, use Notes/Event suggestions.',
+                      style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => setState(() => _showErrorBanner = false),
+                    child: Icon(Icons.close, color: Colors.white.withOpacity(0.5), size: 16),
+                  )
+                ],
+              ),
+            ),
           Expanded(
             child: _messages.isEmpty ? _buildSuggestionsArea() : _buildChatList(),
           ),
@@ -310,11 +362,11 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                 ),
               ),
               GestureDetector(
-                onTap: () => _sendMessage(),
+                onTap: _isLoading ? null : () => _sendMessage(),
                 child: Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), shape: BoxShape.circle),
-                  child: const Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 18),
+                  decoration: BoxDecoration(color: _isLoading ? Colors.white.withOpacity(0.05) : Colors.white.withOpacity(0.1), shape: BoxShape.circle),
+                  child: Icon(Icons.arrow_upward_rounded, color: _isLoading ? Colors.white.withOpacity(0.3) : Colors.white, size: 18),
                 ),
               ),
             ],

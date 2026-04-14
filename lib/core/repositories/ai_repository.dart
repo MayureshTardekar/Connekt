@@ -94,21 +94,20 @@ class AIRepository {
 
           if (response.statusCode == 200) {
             final data = json.decode(response.body);
-            final text = data['candidates']?[0]?['content']?['parts']?[0]?['text'];
-            if (text != null) {
-               _lastSuccessfulResponse = text;
-               return text; // Success!
-            }
-          } else if (response.statusCode == 429) {
-            // Rate limited: Retry twice with delay
+            try {
+              final text = data['candidates'][0]['content']['parts'][0]['text'];
+              if (text != null) {
+                 _lastSuccessfulResponse = text;
+                 return text; 
+              }
+            } catch (_) {} // Safety catch for parse
+          } else if (response.statusCode == 429 || response.statusCode == 503) {
+            // Rate limited or overloaded: Retry backoff (1s, 2s, 4s)
             retries++;
-            await Future.delayed(Duration(seconds: retries * 2)); // 2s, 4s
+            // Calculate delay: 1, 2, 4 seconds
+            final delaySeconds = (1 << (retries - 1));
+            await Future.delayed(Duration(seconds: delaySeconds));
             continue;
-          } else if (response.statusCode == 503) {
-             // Overloaded: delay exactly 3 seconds
-             retries++;
-             await Future.delayed(const Duration(seconds: 3));
-             continue;
           } else {
              // Other error (404, 400), don't retry same model
              print('Model \$modelName failed with \${response.statusCode}: \${response.body}');
