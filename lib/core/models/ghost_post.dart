@@ -30,6 +30,7 @@ class GhostPost {
       'color_hex': colorHex,
       'author_id': authorId,
       'author_alias': authorAlias,
+      'created_at': createdAt.toIso8601String(),
     };
   }
 

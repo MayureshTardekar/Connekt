@@ -405,9 +405,10 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                   itemBuilder: (context, index) {
                     final msg = displayMessages[index];
                     final isSent = msg.isFromMe || msg.senderId == 'me';
+                    final isCommunity = widget.conversation.id.startsWith('community_');
                     final showAvatar =
                         !isSent &&
-                        (index == 0 || (displayMessages[index - 1].isFromMe));
+                        (index == 0 || (displayMessages[index - 1].senderId != msg.senderId));
                     final String timeFormat =
                         '${msg.timestamp.hour}:${msg.timestamp.minute.toString().padLeft(2, "0")}';
 
@@ -424,15 +425,30 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                               padding: const EdgeInsets.only(right: 8),
                               child: showAvatar
                                   ? avatarWidget(
-                                      widget.conversation.participantName,
+                                      isCommunity ? (msg.senderName ?? 'User') : widget.conversation.participantName,
                                       radius: 14,
                                     )
                                   : const SizedBox(width: 28),
                             ),
                           Flexible(
-                            child: GestureDetector(
-                              onDoubleTap: () =>
-                                  _toggleReaction(index, '👍'), // Quick Like
+                            child: Column(
+                              crossAxisAlignment: isSent ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                              children: [
+                                if (isCommunity && !isSent && showAvatar)
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 4, bottom: 4),
+                                    child: Text(
+                                      msg.senderName ?? 'User',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.primary.withValues(alpha: 0.8),
+                                      ),
+                                    ),
+                                  ),
+                                GestureDetector(
+                                  onDoubleTap: () =>
+                                      _toggleReaction(index, '👍'), // Quick Like
                               onLongPress: () {
                                 // Simple bottom sheet reaction picker mock
                                 showModalBottomSheet(

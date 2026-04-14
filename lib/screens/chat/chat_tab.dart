@@ -395,9 +395,20 @@ class _CampusCommunityTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        // This will navigate to a dedicated Campus Chat view
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Opening Campus Community Chat... 🏢'))
+        final campusId = ref.watch(selectedCampusIdProvider) ?? 'global';
+        final communityConv = ChatConversation(
+          id: 'community_$campusId',
+          participantName: 'Campus Community',
+          participantId: campusId,
+          lastMessage: 'Welcome to the community chat!',
+          lastMessageTime: DateTime.now(),
+        );
+        
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ChatDetailScreen(conversation: communityConv),
+          ),
         );
       },
       child: Container(

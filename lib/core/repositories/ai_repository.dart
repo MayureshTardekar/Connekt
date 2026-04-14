@@ -34,10 +34,13 @@ class AIRepository {
         );
 
   // General chat response
-  Future<String> getChatResponse(String message) async {
+  Future<String> getChatResponse(String message, {String? context}) async {
     if (_warningCount >= 3) {
       return "⚠️ ACCESS RESTRICTED: You have received 3 warnings for policy violations.";
     }
+
+    final fullSystemInstruction = _systemInstructionText + 
+        (context != null ? "\n\nACTUAL CAMPUS DATA (TRUST THIS AS GROUND TRUTH):\n$context" : "");
 
     // --- PHASE 1 & 2: GROK/GROQ/NVIDIA (NATIVE ONLY) ---
     // These fail on Web due to CORS. We skip them to avoid "Failed to fetch" lag.
@@ -55,7 +58,7 @@ class AIRepository {
             body: jsonEncode({
               'model': 'grok-beta',
               'messages': [
-                {'role': 'system', 'content': _systemInstructionText},
+                {'role': 'system', 'content': fullSystemInstruction},
                 {'role': 'user', 'content': message},
               ],
               'stream': false,
@@ -87,7 +90,7 @@ class AIRepository {
             body: jsonEncode({
               'model': 'llama3-70b-8192',
               'messages': [
-                {'role': 'system', 'content': _systemInstructionText},
+                {'role': 'system', 'content': fullSystemInstruction},
                 {'role': 'user', 'content': message},
               ],
               'temperature': 0.1,
@@ -104,11 +107,11 @@ class AIRepository {
             return responseText;
           }
         } catch (e) {
-          debugPrint('Groq Error: $e');
+          debugPrint('Groq Secondary Error: $e');
         }
       }
 
-      // 3. Try NVIDIA (NIM)
+      // 3. Try NVIDIA
       if (AppConfig.nvidiaApiKey.isNotEmpty) {
         try {
           final response = await http.post(
@@ -120,7 +123,7 @@ class AIRepository {
             body: jsonEncode({
               'model': 'meta/llama-3.1-8b-instruct',
               'messages': [
-                {'role': 'system', 'content': _systemInstructionText},
+                {'role': 'system', 'content': fullSystemInstruction},
                 {'role': 'user', 'content': message},
               ],
               'temperature': 0.2,
@@ -143,90 +146,100 @@ class AIRepository {
       }
     }
 
-    // --- PHASE 4: FALLBACK TO GEMINI (DIRECT v1 HTTP) ---
-    // We bypass the SDK here because it forces v1beta, which is currently failing.
-    final keys = [
-      AppConfig.geminiApiKey,
-      AppConfig.geminiApiKeyBackup,
-      AppConfig.geminiApiKeyTertiary,
-    ];
-
-    Object? lastError;
-
-    for (var key in keys) {
-      if (key.isEmpty || key.contains('AIza')) {
-        // Double check it's a real key (placeholder check)
-        if (key.length < 20) continue;
-      } else {
-        continue;
-      }
-
+    // --- PHASE 3: GEMINI (NATIVE & WEB) ---
+    // Last resort or browser-only fallback.
+    if (AppConfig.geminiApiKey.isNotEmpty) {
       try {
-        final response = await http.post(
-          Uri.parse(
-              'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$key'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'contents': [
-              {
-                'parts': [
-                  {'text': message}
-                ]
-              }
-            ],
-            'systemInstruction': {
-              'parts': [
-                {'text': _systemInstructionText}
-              ]
-            },
-            'generationConfig': {
-              'temperature': 0.7,
-              'topK': 40,
-              'topP': 0.95,
-              'maxOutputTokens': 1024,
+        // We iterate through available keys if primary fails
+        final keys = [
+          AppConfig.geminiApiKey,
+          AppConfig.geminiApiKeyBackup,
+          AppConfig.geminiApiKeyTertiary
+        ];
+
+        for (var key in keys) {
+          if (key.isEmpty || key.contains('YOUR_API_KEY')) continue;
+
+          try {
+            final generativeModel = GenerativeModel(
+              model: 'gemini-1.5-flash-latest',
+              apiKey: key,
+              systemInstruction: Content.system(fullSystemInstruction),
+            );
+            
+            final geminiResponse = await generativeModel.generateContent(
+              [Content.text(message)],
+            );
+            
+            if (geminiResponse.text != null) {
+              final text = geminiResponse.text!;
+              if (text.contains('WARNING')) _warningCount++;
+              return text;
             }
-          }),
-        );
-
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-          final responseText =
-              data['candidates'][0]['content']['parts'][0]['text'] as String;
-          if (responseText.contains('WARNING')) _warningCount++;
-          return responseText;
-        } else {
-          // If v1beta fails, try v1 stable
-          final v1Response = await http.post(
-            Uri.parse(
-                'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=$key'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'contents': [
-                {
+          } catch (e) {
+            debugPrint('Gemini SDK Error for key: ${key.substring(0, 5)}... $e');
+            // Try REST fallback for this specific key before moving to next key
+            final v1betaResponse = await http.post(
+              Uri.parse(
+                  'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=$key'),
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({
+                'contents': [
+                  {
+                    'parts': [
+                      {'text': message}
+                    ]
+                  }
+                ],
+                'systemInstruction': {
                   'parts': [
-                    {'text': message}
+                    {'text': fullSystemInstruction}
                   ]
-                }
-              ],
-              // Note: v1 stable might have different system instruction support
-              'generationConfig': {
-                'temperature': 0.7,
-                'maxOutputTokens': 1024,
-              }
-            }),
-          );
+                },
+              }),
+            );
 
-          if (v1Response.statusCode == 200) {
-            final data = jsonDecode(v1Response.body);
-            final responseText =
-                data['candidates'][0]['content']['parts'][0]['text'] as String;
-            if (responseText.contains('WARNING')) _warningCount++;
-            return responseText;
+            if (v1betaResponse.statusCode == 200) {
+              final data = jsonDecode(v1betaResponse.body);
+              final responseText =
+                  data['candidates'][0]['content']['parts'][0]['text'] as String;
+              if (responseText.contains('WARNING')) _warningCount++;
+              return responseText;
+            } else {
+              // If v1beta fails, try v1 stable
+              final v1Response = await http.post(
+                Uri.parse(
+                    'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=$key'),
+                headers: {'Content-Type': 'application/json'},
+                body: jsonEncode({
+                  'contents': [
+                    {
+                      'parts': [
+                        {'text': message}
+                      ]
+                    }
+                  ],
+                  // Note: v1 stable might have different system instruction support
+                  'generationConfig': {
+                    'temperature': 0.7,
+                    'maxOutputTokens': 1024,
+                  }
+                }),
+              );
+
+              if (v1Response.statusCode == 200) {
+                final data = jsonDecode(v1Response.body);
+                final responseText =
+                    data['candidates'][0]['content']['parts'][0]['text'] as String;
+                if (responseText.contains('WARNING')) _warningCount++;
+                return responseText;
+              }
+              debugPrint('Gemini HTTP v1/v1beta Failed for key: ${key.substring(0, 5)}... Status: ${v1Response.statusCode}');
+            }
           }
-          debugPrint('Gemini HTTP v1/v1beta Failed for key: ${key.substring(0, 5)}... Status: ${v1Response.statusCode}');
         }
       } catch (e) {
-        debugPrint('Gemini HTTP Error: $e');
+        debugPrint('Gemini Total Failure: $e');
         lastError = e;
       }
     }
@@ -244,57 +257,24 @@ class AIRepository {
   }) async {
     try {
       final prompt = """
-      Please provide a very short (max 2 sentences) summary of what's happening on campus based on this data:
-      - New notes: ${notes.length}
-      - Upcoming events: ${events.length}
-      - Lost & Found items: ${lostFound.length}
-
-      If there is nothing new, encourage the student to start a group or post a note.
-      """;
-
-      final response = await _model.generateContent([Content.text(prompt)]);
-      return response.text ?? "Connecting to campus life...";
-    } catch (e) {
-      return "Stay connected with your campus peers!";
-    }
-  }
-
-  Future<String> getAnalysis({
-    required String query,
-    required List<AcademicNote> notes,
-    required List<CampusEvent> events,
-    required List<LostItem> items,
-  }) async {
-    try {
-      if (_warningCount >= 3) {
-        return "⚠️ ACCESS RESTRICTED: You have received 3 warnings for policy violations.";
-      }
-
-      final context = """
-      Campus Activity Data:
-      - Notes: ${notes.map((n) => n.title).join(', ')}
-      - Lost Items: ${items.map((i) => i.title).join(', ')}
-      - Events: ${events.map((e) => e.title).join(', ')}
-      """;
-
-      final content = [Content.text("$context\n\nUser Question: $query")];
-      final response = await _model.generateContent(content);
+      Please provide a very short (max 2 sentences) summary of what's happening on campus based on this data. 
+      If a user asks about lost items later, use this data to answer them accurately.
       
-      final responseText = response.text ?? "I'm having trouble thinking right now. Try again!";
+      NEW NOTES: ${notes.map((n) => "${n.title} by ${n.author}").join(", ")}
+      UPCOMING EVENTS: ${events.map((e) => "${e.title} on ${e.date}").join(", ")}
+      LOST & FOUND ITEMS: ${lostFound.map((i) => "${i.name} found at ${i.location}").join(", ")}
+      """;
 
-      if (responseText.contains('WARNING')) {
-        _warningCount++;
-      }
+      final generativeModel = GenerativeModel(
+        model: 'gemini-1.5-flash-latest',
+        apiKey: AppConfig.geminiApiKey,
+      );
 
-      return responseText;
+      final response = await generativeModel.generateContent([Content.text(prompt)]);
+      return response.text ?? "Successfully synced with campus data.";
     } catch (e) {
-      debugPrint('AI Analysis Error: $e');
-      return "AI service is temporarily unavailable.";
+      return "Campus data synced. I'm ready to help!";
     }
-  }
-
-  void resetChat() {
-    _warningCount = 0;
   }
 
   void addToHistory(String query, String response) {
@@ -303,13 +283,12 @@ class AIRepository {
       'response': response,
       'timestamp': DateTime.now(),
     });
-    // Cleanup internal
-    _history.removeWhere((session) => 
-      DateTime.now().difference(session['timestamp'] as DateTime).inHours > 48);
+    // Keep only last 20
+    if (_history.length > 20) _history.removeLast();
   }
 
   List<Map<String, dynamic>> getRecentHistory() {
-     return _history.where((session) => 
-      DateTime.now().difference(session['timestamp'] as DateTime).inHours <= 48).toList();
+    final cutoff = DateTime.now().subtract(const Duration(hours: 48));
+    return _history.where((s) => (s['timestamp'] as DateTime).isAfter(cutoff)).toList();
   }
 }

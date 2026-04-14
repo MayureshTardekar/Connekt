@@ -58,7 +58,10 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     }
 
     try {
-      final response = await ref.read(aiRepositoryProvider).getChatResponse(text);
+      // Fetch actual campus data context to ground the AI's response in reality
+      final campusContext = await ref.read(campusSummaryProvider.future);
+      
+      final response = await ref.read(aiRepositoryProvider).getChatResponse(text, context: campusContext);
       if (!mounted) return;
       
       final isFailure = response.contains('Coffee break') || response.contains('super busy') || response.contains('overwhelmed');

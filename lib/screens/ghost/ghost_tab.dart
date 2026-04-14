@@ -329,6 +329,7 @@ class _GhostTabState extends ConsumerState<GhostTab> {
                 border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
               ),
               child: TextField(
+                controller: _messageController,
                 style: TextStyle(
                   color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black, 
                   fontSize: 14,
