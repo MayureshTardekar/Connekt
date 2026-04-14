@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import '../../core/theme/app_theme.dart';
 import '../../core/providers/ai_provider.dart';
 
 class AIChatScreen extends ConsumerStatefulWidget {
@@ -21,6 +20,13 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   DateTime? _lastInputTime;
   DateTime? _lastErrorTime;
   bool _showErrorBanner = false;
+
+  static final MarkdownStyleSheet _markdownStyle = MarkdownStyleSheet(
+    p: const TextStyle(color: Colors.white, fontSize: 14, height: 1.5),
+    strong: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+    listBullet: const TextStyle(color: Colors.white, fontSize: 14),
+  );
+
 
   @override
   void initState() {
@@ -75,8 +81,11 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
       });
       
       // Save to history
-      ref.read(aiRepositoryProvider).addToHistory(text, response);
+      if (mounted) {
+        ref.read(aiRepositoryProvider).addToHistory(text, response);
+      }
     } catch (e) {
+
       if (!mounted) return;
       setState(() {
         _showErrorBanner = true; 
@@ -91,75 +100,78 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF161A25),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Column(
-        children: [
-          const SizedBox(height: 12),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.history_rounded, color: Colors.white70),
-                  onPressed: _showHistorySheet,
-                ),
-                Row(
-                  children: [
-                    const Icon(Icons.auto_awesome, color: Color(0xFF9000FF), size: 18),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Connekt Ai',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                  ],
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white38),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-          ),
-          if (_showErrorBanner)
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF161A25),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: const Color(0xFF2B313F),
-              width: double.infinity,
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Icon(Icons.warning_amber_rounded, color: Color(0xFFF0B90B), size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'AI temporarily unavailable, use Notes/Event suggestions.',
-                      style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13),
-                    ),
+                  IconButton(
+                    icon: const Icon(Icons.history_rounded, color: Colors.white70),
+                    onPressed: _showHistorySheet,
                   ),
-                  GestureDetector(
-                    onTap: () => setState(() => _showErrorBanner = false),
-                    child: Icon(Icons.close, color: Colors.white.withOpacity(0.5), size: 16),
-                  )
+                  Row(
+                    children: [
+                      const Icon(Icons.auto_awesome, color: Color(0xFF9000FF), size: 18),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Connekt Ai',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white38),
+                    onPressed: () => Navigator.pop(context),
+                  ),
                 ],
               ),
             ),
-          Expanded(
-            child: _messages.isEmpty ? _buildSuggestionsArea() : _buildChatList(),
-          ),
-          _buildInputArea(),
-        ],
+            if (_showErrorBanner)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                color: const Color(0xFF2B313F),
+                width: double.infinity,
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: Color(0xFFF0B90B), size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'AI temporarily unavailable, use Notes/Event suggestions.',
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => setState(() => _showErrorBanner = false),
+                      child: Icon(Icons.close, color: Colors.white.withValues(alpha: 0.5), size: 16),
+                    )
+                  ],
+                ),
+              ),
+            Expanded(
+              child: _messages.isEmpty ? _buildSuggestionsArea() : _buildChatList(),
+            ),
+            _buildInputArea(),
+          ],
+        ),
       ),
     );
   }
@@ -228,7 +240,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
               Container(
                 margin: const EdgeInsets.only(right: 12),
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: color.withOpacity(0.15), shape: BoxShape.circle),
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.15), shape: BoxShape.circle),
                 child: Icon(icon, color: color, size: 20),
               ),
             Expanded(
@@ -282,24 +294,19 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
             children: [
               Row(
                 children: [
-                  Text('Thought for a sec', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 13)),
-                  Icon(Icons.chevron_right, color: Colors.white.withOpacity(0.5), size: 16),
+                  Text('Thought for a sec', style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13)),
+                  Icon(Icons.chevron_right, color: Colors.white.withValues(alpha: 0.5), size: 16),
                 ],
               ),
               const SizedBox(height: 8),
-              Row(
-                children: List.generate(3, (index) {
-                  return Container(
-                    margin: const EdgeInsets.only(right: 4),
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.3),
-                      shape: BoxShape.circle,
-                    ),
-                  );
-                }),
+              const Row(
+                children: [
+                  _TypingDot(delay: 0),
+                  _TypingDot(delay: 1),
+                  _TypingDot(delay: 2),
+                ],
               )
+
             ],
           ),
         ],
@@ -310,7 +317,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   Widget _buildAIAvatar({bool isThinking = false}) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 500),
-      transform: isThinking ? (Matrix4.identity()..scale(0.9)) : Matrix4.identity(),
+      transform: isThinking ? Matrix4.diagonal3Values(0.9, 0.9, 1.0) : Matrix4.identity(),
       transformAlignment: Alignment.center,
       width: 32,
       height: 32,
@@ -344,12 +351,9 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                     ),
               child: isAI ? MarkdownBody(
                 data: text,
-                styleSheet: MarkdownStyleSheet(
-                  p: const TextStyle(color: Colors.white, fontSize: 14, height: 1.5),
-                  strong: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                  listBullet: const TextStyle(color: Colors.white, fontSize: 14),
-                ),
+                styleSheet: _markdownStyle,
               ) : Text(
+
                 text,
                 style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.5),
               ),
@@ -379,7 +383,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                   style: const TextStyle(color: Colors.white, fontSize: 14),
                   decoration: InputDecoration(
                     hintText: 'Ask Connekt Ai...',
-                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 14),
+                    hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 14),
                     border: InputBorder.none,
                     filled: false,
                     isDense: true,
@@ -392,8 +396,8 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                 onTap: _isLoading ? null : () => _sendMessage(),
                 child: Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: _isLoading ? Colors.white.withOpacity(0.05) : Colors.white.withOpacity(0.1), shape: BoxShape.circle),
-                  child: Icon(Icons.arrow_upward_rounded, color: _isLoading ? Colors.white.withOpacity(0.3) : Colors.white, size: 18),
+                  decoration: BoxDecoration(color: _isLoading ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.1), shape: BoxShape.circle),
+                  child: Icon(Icons.arrow_upward_rounded, color: _isLoading ? Colors.white.withValues(alpha: 0.3) : Colors.white, size: 18),
                 ),
               ),
             ],
@@ -438,10 +442,10 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                 ),
               )
             else
-              Flexible(
+              Expanded(
                 child: ListView.builder(
-                  shrinkWrap: true,
                   itemCount: history.length,
+
                   itemBuilder: (context, index) {
                     final session = history[index];
                     return ListTile(
@@ -471,6 +475,24 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _TypingDot extends StatelessWidget {
+  final int delay;
+  const _TypingDot({required this.delay});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(right: 4),
+      width: 6,
+      height: 6,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.3),
+        shape: BoxShape.circle,
       ),
     );
   }
