@@ -384,7 +384,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
               ),
               error: (err, stack) => AppErrorState(
                 message: err.toString(),
-                onRetry: () => ref.invalidate(chatMessagesProvider(widget.conversationId)),
+                onRetry: () => ref.invalidate(chatMessagesProvider(widget.conversation.id)),
               ),
               data: (serverMessages) {
                 // Combine server messages and local (optimistic) ones

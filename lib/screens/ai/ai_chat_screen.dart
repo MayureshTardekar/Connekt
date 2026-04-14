@@ -13,12 +13,7 @@ class AIChatScreen extends ConsumerStatefulWidget {
 
 class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   final TextEditingController _messageController = TextEditingController();
-  final List<Map<String, String>> _messages = [
-    {
-      'role': 'ai',
-      'text': 'Hello! I\'m your Connekt AI Assistant. I can help you summarize campus notes, find events, or just chat. How can I help you today?'
-    }
-  ];
+  final List<Map<String, String>> _messages = [];
   bool _isLoading = false;
 
   @override
@@ -32,15 +27,17 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     }
   }
 
-  Future<void> _sendMessage() async {
-    final text = _messageController.text.trim();
+  Future<void> _sendMessage([String? predefinedText]) async {
+    final text = predefinedText ?? _messageController.text.trim();
     if (text.isEmpty) return;
 
     setState(() {
       _messages.add({'role': 'user', 'text': text});
       _isLoading = true;
     });
-    _messageController.clear();
+    if (predefinedText == null) {
+      _messageController.clear();
+    }
 
     try {
       final response = await ref.read(aiRepositoryProvider).getChatResponse(text);
@@ -58,144 +55,273 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A), // Deep dark slate
+      backgroundColor: const Color(0xFF161A25), // Binance Dark Slate
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        centerTitle: true,
         title: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Colors.cyan, Colors.blueAccent],
-                ),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.bolt_rounded, color: Colors.white, size: 20),
-            ),
-            const SizedBox(width: 12),
+            const Icon(Icons.auto_awesome, color: Color(0xFF9000FF), size: 20),
+            const SizedBox(width: 8),
             const Text(
-              'Connekt AI',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              'Connekt Ai',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.info_outline_rounded, color: Colors.white60),
-            onPressed: () {},
-          ),
-        ],
+        actions: const [],
       ),
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(20),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final msg = _messages[index];
-                final isAI = msg['role'] == 'ai';
-                return _buildMessageBubble(msg['text']!, isAI);
-              },
-            ),
+            child: _messages.isEmpty ? _buildSuggestionsArea() : _buildChatList(),
           ),
-          if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 10),
-              child: Center(
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.cyan),
-                ),
-              ),
-            ),
           _buildInputArea(),
         ],
       ),
     );
   }
 
-  Widget _buildMessageBubble(String text, bool isAI) {
-    return Align(
-      alignment: isAI ? Alignment.centerLeft : Alignment.centerRight,
+  Widget _buildSuggestionsArea() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Hi there, here's today's pick for you:",
+            style: TextStyle(
+              color: Color(0xFF9000FF), // Soft purple accent
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 24),
+          _buildSuggestionCard(
+            title: "Today's Campus News",
+            subtitle: "Library hours extended. Upcoming sports meet. Registration deadline approaching...",
+            icon: Icons.article_rounded,
+            color: Colors.transparent,
+            onTap: () => _sendMessage("What is today's campus news?"),
+          ),
+          _buildSuggestionCard(
+            title: "Lost & Found Alerts",
+            subtitle: "Check recent items found on campus",
+            icon: Icons.notifications_active_rounded,
+            color: const Color(0xFFFCD535),
+            onTap: () => _sendMessage("Show me the latest lost and found items."),
+          ),
+          _buildSuggestionCard(
+            title: "Campus Events Update",
+            subtitle: "View latest technical and cultural events",
+            icon: Icons.event_available_rounded,
+            color: const Color(0xFFF0B90B),
+            onTap: () => _sendMessage("What are the upcoming events on campus?"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuggestionCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
+        margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
-        ),
         decoration: BoxDecoration(
-          color: isAI ? const Color(0xFF1E293B) : Colors.cyan.withOpacity(0.15),
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(20),
-            topRight: const Radius.circular(20),
-            bottomLeft: Radius.circular(isAI ? 4 : 20),
-            bottomRight: Radius.circular(isAI ? 20 : 4),
-          ),
-          border: isAI 
-              ? Border.all(color: Colors.white.withOpacity(0.05))
-              : Border.all(color: Colors.cyan.withOpacity(0.3)),
+          color: const Color(0xFF2B313F),
+          borderRadius: BorderRadius.circular(16),
         ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: isAI ? Colors.white.withOpacity(0.9) : Colors.cyanAccent,
-            fontSize: 14,
-            height: 1.5,
-          ),
+        child: Row(
+          children: [
+            if (color != Colors.transparent)
+              Container(
+                margin: const EdgeInsets.only(right: 12),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: color.withOpacity(0.15), shape: BoxShape.circle),
+                child: Icon(icon, color: color, size: 20),
+              ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(color: Color(0xFF848E9C), fontSize: 13),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Color(0xFF848E9C), size: 20),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildChatList() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _messages.length + (_isLoading ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == _messages.length) {
+          return _buildTypingIndicator();
+        }
+        final msg = _messages[index];
+        final isAI = msg['role'] == 'ai';
+        return _buildMessageBubble(msg['text']!, isAI);
+      },
+    );
+  }
+
+  Widget _buildTypingIndicator() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildAIAvatar(isThinking: true),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text('Thought for a sec', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 13)),
+                  Icon(Icons.chevron_right, color: Colors.white.withOpacity(0.5), size: 16),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: List.generate(3, (index) {
+                  return Container(
+                    margin: const EdgeInsets.only(right: 4),
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.3),
+                      shape: BoxShape.circle,
+                    ),
+                  );
+                }),
+              )
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAIAvatar({bool isThinking = false}) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 500),
+      // If thinking, simulate a small "look down" or shrink effect using scaling
+      transform: isThinking ? (Matrix4.identity()..scale(0.9)) : Matrix4.identity(),
+      transformAlignment: Alignment.center,
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: const Color(0xFF2B313F),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Icon(Icons.auto_awesome, color: Color(0xFF9000FF), size: 18),
+    );
+  }
+
+  Widget _buildMessageBubble(String text, bool isAI) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Row(
+        mainAxisAlignment: isAI ? MainAxisAlignment.start : MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (isAI) ...[
+            _buildAIAvatar(),
+            const SizedBox(width: 12),
+          ],
+          Flexible(
+            child: Container(
+              padding: isAI ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: isAI
+                  ? null
+                  : BoxDecoration(
+                      color: const Color(0xFF2B313F),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+              child: Text(
+                text,
+                style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.5),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildInputArea() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      decoration: const BoxDecoration(color: Color(0xFF161A25)),
+      child: SafeArea(
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF2B313F),
+            borderRadius: BorderRadius.circular(24),
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _messageController,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Ask anything...',
-                hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
-                border: InputBorder.none,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _messageController,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: 'Ask Connekt Ai...',
+                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 14),
+                    border: InputBorder.none,
+                    filled: false,
+                    fillColor: Colors.transparent,
+                    hoverColor: Colors.transparent,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 8),
+                  ),
+                  onSubmitted: (_) => _sendMessage(),
+                ),
               ),
-              onSubmitted: (_) => _sendMessage(),
-            ),
-          ),
-          Container(
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Colors.cyan, Colors.blueAccent],
+              GestureDetector(
+                onTap: () => _sendMessage(),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), shape: BoxShape.circle),
+                  child: const Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 18),
+                ),
               ),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.send_rounded, color: Colors.white),
-              onPressed: _sendMessage,
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 }
+

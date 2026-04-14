@@ -5,6 +5,7 @@ import 'notes/notes_tab.dart';
 import 'events/events_tab.dart';
 import 'chat/chat_tab.dart';
 import 'ghost/ghost_tab.dart';
+import 'ai/ai_chat_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -33,6 +34,38 @@ class MainScreenState extends State<MainScreen> {
     return Scaffold(
       body: _pages[_currentIndex],
       extendBody: true,
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 60),
+        child: FloatingActionButton(
+          heroTag: 'ai_fab',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AIChatScreen()),
+            );
+          },
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                colors: [Color(0xFF5D3FD3), Color(0xFF9000FF)],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF5D3FD3).withOpacity(0.4),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Icon(Icons.auto_awesome, color: Colors.white),
+          ),
+        ),
+      ),
       bottomNavigationBar: Container(
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         decoration: BoxDecoration(
@@ -40,7 +73,7 @@ class MainScreenState extends State<MainScreen> {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
+              color: Colors.black.withOpacity(0.08),
               blurRadius: 24,
               offset: const Offset(0, 4),
             ),

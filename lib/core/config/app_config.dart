@@ -11,5 +11,6 @@ class AppConfig {
   static const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxZXZzeW1nc2FoYWlqaWpncWlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNTY3OTMsImV4cCI6MjA5MTYzMjc5M30.nfl8ERMTJeSfp3A_6OwagoNWszwJfzNW01rbbtX6PCU';
 
   // Gemini Configuration
-  static const String geminiApiKey = ''; // TODO: Add your Gemini API Key here
+  static const String geminiApiKey = 'AIzaSyD15gKjnQWrbtfAy4deTHVj6IFhIubDk1A'; 
+  static const String geminiApiKeyBackup = 'AIzaSyAfy9TdW6oUFucM6B-BQ9by4HXzim10iVE'; // Use if primary key fails
 }
