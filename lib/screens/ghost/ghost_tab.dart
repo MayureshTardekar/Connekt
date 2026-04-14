@@ -17,6 +17,7 @@ class GhostTab extends ConsumerStatefulWidget {
 class _GhostTabState extends ConsumerState<GhostTab> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  bool _isShadowMode = true; // Default to anonymous
 
   @override
   void dispose() {
@@ -33,13 +34,24 @@ class _GhostTabState extends ConsumerState<GhostTab> {
     if (user == null) return;
 
     try {
+      String? alias;
+      if (_isShadowMode) {
+        alias = AuthRepository().currentGhostAlias ?? 'Anon';
+      } else {
+        // Real Identity Mode: [Name] @ [Campus]
+        final fullName = user.userMetadata?['full_name'] ?? user.userMetadata?['name'] ?? 'Connekt User';
+        final campusData = ref.read(selectedCampusProvider);
+        final campusName = campusData?['campuses']?['name'] ?? 'Global';
+        alias = '$fullName @ $campusName';
+      }
+
       final post = GhostPost(
         id: '', 
         text: text,
         mood: 'World Chat',
-        createdAt: DateTime.now().toUtc(), // Send in UTC
+        createdAt: DateTime.now().toUtc(),
         authorId: user.id,
-        authorAlias: AuthRepository().currentGhostAlias,
+        authorAlias: alias,
       );
 
       _messageController.clear();
@@ -54,6 +66,7 @@ class _GhostTabState extends ConsumerState<GhostTab> {
         );
       }
     } catch (e) {
+      debugPrint('Ghost Send Error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to send: $e'), backgroundColor: Colors.red),
       );
@@ -75,7 +88,7 @@ class _GhostTabState extends ConsumerState<GhostTab> {
               width: 400,
               height: 400,
               decoration: BoxDecoration(
-                color: AppColors.ghostPrimary.withOpacity(0.08),
+                color: AppColors.ghostPrimary.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
             ),
@@ -144,7 +157,7 @@ class _GhostTabState extends ConsumerState<GhostTab> {
       decoration: BoxDecoration(
         color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF161129) : Colors.white,
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
-        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.05)),
+        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.05)),
       ),
       child: Row(
         children: [
@@ -176,35 +189,55 @@ class _GhostTabState extends ConsumerState<GhostTab> {
           ),
           const Spacer(),
           GestureDetector(
-            onTap: _showAliasDialog,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            onTap: () {
+              setState(() => _isShadowMode = !_isShadowMode);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(_isShadowMode ? 'Switched to Shadow Mode 👻' : 'Switched to Public Identity 🆔'),
+                  duration: const Duration(seconds: 1),
+                  behavior: SnackBarBehavior.floating,
+                  backgroundColor: _isShadowMode ? AppColors.ghostPrimary : Colors.blueAccent,
+                ),
+              );
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: AppColors.ghostPrimary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border:
-                    Border.all(color: AppColors.ghostPrimary.withValues(alpha: 0.2)),
+                color: _isShadowMode 
+                    ? AppColors.ghostPrimary.withValues(alpha: 0.1) 
+                    : Colors.blueAccent.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: (_isShadowMode ? AppColors.ghostPrimary : Colors.blueAccent).withValues(alpha: 0.3)
+                ),
               ),
               child: Row(
                 children: [
                   Icon(
-                    currentAlias != null
-                        ? Icons.face_retouching_natural
-                        : Icons.masks_rounded,
-                    color: AppColors.ghostPrimary,
+                    _isShadowMode ? Icons.masks_rounded : Icons.face_retouching_natural,
+                    color: _isShadowMode ? AppColors.ghostPrimary : Colors.blueAccent,
                     size: 16,
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 8),
                   Text(
-                    currentAlias ?? 'Anon',
-                    style: const TextStyle(
-                        color: AppColors.ghostPrimary,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold),
+                    _isShadowMode ? 'Shadow' : 'Identity',
+                    style: TextStyle(
+                      color: _isShadowMode ? AppColors.ghostPrimary : Colors.blueAccent,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold
+                    ),
                   ),
                 ],
               ),
             ),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.settings_outlined, color: Colors.white38, size: 20),
+            onPressed: _showAliasDialog,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
           ),
         ],
       ),
@@ -238,7 +271,7 @@ class _GhostTabState extends ConsumerState<GhostTab> {
             decoration: BoxDecoration(
               color: isMe
                   ? AppColors.ghostPrimary
-                  : (Theme.of(context).brightness == Brightness.dark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.05)),
+                  : (Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05)),
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(20),
                 topRight: const Radius.circular(20),
@@ -267,7 +300,7 @@ class _GhostTabState extends ConsumerState<GhostTab> {
           16, 8, 16, 8 + MediaQuery.of(context).viewInsets.bottom + 8),
       decoration: BoxDecoration(
         color: const Color(0xFF161129),
-        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.05))),
+        border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
       ),
       child: Row(
         children: [
@@ -275,9 +308,9 @@ class _GhostTabState extends ConsumerState<GhostTab> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withOpacity(0.1)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               ),
               child: TextField(
                 controller: _messageController,
@@ -303,7 +336,7 @@ class _GhostTabState extends ConsumerState<GhostTab> {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.ghostPrimary.withOpacity(0.3),
+                    color: AppColors.ghostPrimary.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   )
@@ -345,7 +378,7 @@ class _GhostTabState extends ConsumerState<GhostTab> {
                 hintText: 'e.g. NeonGhost',
                 hintStyle: const TextStyle(color: Colors.white24),
                 filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
+                fillColor: Colors.white.withValues(alpha: 0.05),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -369,7 +402,7 @@ class _GhostTabState extends ConsumerState<GhostTab> {
             onPressed: () async {
               final result = await AuthRepository()
                   .updateGhostAlias(aliasController.text.trim());
-              if (mounted) {
+              if (context.mounted) {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -380,6 +413,7 @@ class _GhostTabState extends ConsumerState<GhostTab> {
                 );
                 setState(() {});
               }
+
             },
             child:
                 const Text('Save Alias', style: TextStyle(color: Colors.white)),

@@ -20,9 +20,9 @@ class GhostRepository {
   }
 
   Stream<List<GhostPost>> watchPosts() {
-    // Cutoff is the start of the current day in UTC (12:00 AM UTC / 5:30 AM IST)
+    // Show posts from the last 24 hours for a more active experience
     final now = DateTime.now().toUtc();
-    final logicCutoff = DateTime.utc(now.year, now.month, now.day);
+    final logicCutoff = now.subtract(const Duration(hours: 24));
     
     return _supabase
         .from('ghost_posts')
@@ -30,7 +30,7 @@ class GhostRepository {
         .order('created_at', ascending: false)
         .map((data) => data
             .map((post) => GhostPost.fromMap(post))
-            .where((post) => post.createdAt.isAfter(logicCutoff.subtract(const Duration(seconds: 1)))) // Buff for same-second posts
+            .where((post) => post.createdAt.toUtc().isAfter(logicCutoff))
             .toList());
   }
 
