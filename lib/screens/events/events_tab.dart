@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/providers/campus_provider.dart';
+import '../../core/widgets/app_states.dart';
 import '../../core/models/campus_event.dart';
 import '../../theme/avatar_helper.dart';
 import 'post_event_screen.dart';
@@ -140,7 +141,7 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                     ),
                 error:
                     (err, stack) => SliverToBoxAdapter(
-                      child: Center(child: Text('Error: $err')),
+                      child: AppErrorState(message: 'Failed to load data.\n$err'),
                     ),
               ),
           const SliverToBoxAdapter(child: SizedBox(height: 100)),

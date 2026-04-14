@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/providers/chat_provider.dart';
+import '../../core/widgets/app_states.dart';
 import '../../core/models/chat_conversation.dart';
 import '../../core/models/chat_message.dart';
 import '../../theme/avatar_helper.dart';
@@ -381,7 +382,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
               loading: () => const Center(
                 child: CircularProgressIndicator(color: AppColors.primary),
               ),
-              error: (err, stack) => Center(child: Text('Error: $err')),
+              error: (err, stack) => AppErrorState(message: 'Failed to load data.\n$err'),
               data: (serverMessages) {
                 // Combine server messages and local (optimistic) ones
                 // In a real app, we would deduplicate by ID

@@ -4,21 +4,14 @@ import '../../core/models/friend_request.dart';
 import '../../core/providers/chat_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/app_states.dart';
 import '../../theme/avatar_helper.dart';
 
-class FriendRequestsScreen extends ConsumerStatefulWidget {
+class FriendRequestsScreen extends ConsumerWidget {
   const FriendRequestsScreen({super.key});
 
   @override
-  ConsumerState<FriendRequestsScreen> createState() =>
-      _FriendRequestsScreenState();
-}
-
-class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
-  List<FriendRequest>? _localRequests;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final requestsAsync = ref.watch(friendRequestsProvider);
 
     return Scaffold(
@@ -37,24 +30,22 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
         centerTitle: true,
       ),
       body: requestsAsync.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
+        loading: () => const AppLoadingState(message: 'Loading friend requests...'),
+        error: (err, _) => AppErrorState(
+          message: 'Failed to load friend requests.\n$err',
+          onRetry: () => ref.invalidate(friendRequestsProvider),
         ),
-        error: (err, _) => Center(child: Text('Error: $err')),
         data: (requests) {
-          _localRequests ??= List<FriendRequest>.from(requests);
-          final visibleRequests = _localRequests!;
-
-          if (visibleRequests.isEmpty) {
+          if (requests.isEmpty) {
             return _buildEmptyState();
           }
 
           return ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            itemCount: visibleRequests.length,
+            itemCount: requests.length,
             itemBuilder: (context, index) {
-              final req = visibleRequests[index];
-              return _buildRequestCard(req, index);
+              final req = requests[index];
+              return _buildRequestCard(context, ref, req);
             },
           );
         },
@@ -62,7 +53,11 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
     );
   }
 
-  Widget _buildRequestCard(FriendRequest request, int index) {
+  Widget _buildRequestCard(
+    BuildContext context,
+    WidgetRef ref,
+    FriendRequest request,
+  ) {
     final hoursAgo = DateTime.now().difference(request.createdAt).inHours;
     final timeLabel = hoursAgo <= 0 ? 'Just now' : '${hoursAgo}h ago';
 
@@ -120,7 +115,7 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
                   children: [
                     Expanded(
                       child: GestureDetector(
-                        onTap: () => _declineRequest(request, index),
+                        onTap: () => _declineRequest(context, ref, request),
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           decoration: BoxDecoration(
@@ -141,7 +136,7 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: GestureDetector(
-                        onTap: () => _acceptRequest(request, index),
+                        onTap: () => _acceptRequest(context, ref, request),
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           decoration: BoxDecoration(
@@ -176,59 +171,35 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
     );
   }
 
-  Future<void> _acceptRequest(FriendRequest request, int index) async {
+  Future<void> _acceptRequest(
+    BuildContext context,
+    WidgetRef ref,
+    FriendRequest request,
+  ) async {
     await ref.read(chatRepositoryProvider).acceptFriendRequest(request.id);
-    setState(() {
-      _localRequests?.removeAt(index);
-    });
-    if (!mounted) return;
+    ref.invalidate(friendRequestsProvider);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('You and ${request.name} are now friends!')),
     );
   }
 
-  Future<void> _declineRequest(FriendRequest request, int index) async {
+  Future<void> _declineRequest(
+    BuildContext context,
+    WidgetRef ref,
+    FriendRequest request,
+  ) async {
     await ref.read(chatRepositoryProvider).declineFriendRequest(request.id);
-    setState(() {
-      _localRequests?.removeAt(index);
-    });
-    if (!mounted) return;
+    ref.invalidate(friendRequestsProvider);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Request declined')),
     );
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.05),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.people_alt_rounded,
-              size: 64,
-              color: AppColors.textHint.withOpacity(0.5),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'No pending requests',
-            style: AppTypography.heading3.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            "You're all caught up! Search for friends above.",
-            style: TextStyle(color: AppColors.textHint),
-          ),
-        ],
-      ),
+    return const AppEmptyState(
+      icon: Icons.people_alt_rounded,
+      title: 'No pending requests',
+      subtitle: "You're all caught up! Search for friends above.",
     );
   }
 }

@@ -4,6 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/providers/chat_provider.dart';
 import '../../core/models/chat_conversation.dart';
+import '../../core/widgets/app_states.dart';
 import '../../theme/avatar_helper.dart';
 import 'chat_detail_screen.dart';
 import 'friend_requests_screen.dart';
@@ -70,10 +71,11 @@ class ChatTab extends ConsumerWidget {
             Expanded(
               // Automatically switch UI based on loading stage
               child: conversationsAsync.when(
-                loading: () => const Center(
-                  child: CircularProgressIndicator(color: AppColors.primary),
+                loading: () => const AppLoadingState(message: 'Loading chats...'),
+                error: (err, stack) => AppErrorState(
+                  message: 'Failed to load chats.\n$err',
+                  onRetry: () => ref.invalidate(chatConversationsProvider),
                 ),
-                error: (err, stack) => Center(child: Text('Error: $err')),
                 data: (conversations) {
                   if (conversations.isEmpty) {
                     return _buildEmptyState();
@@ -186,8 +188,11 @@ class ChatTab extends ConsumerWidget {
                                   color: Colors.white,
                                 ),
                               ),
-                              // Handle removal from UI instantly
-                              onDismissed: (_) {
+                              // Persist archive and refresh stream
+                              onDismissed: (_) async {
+                                await ref.read(chatRepositoryProvider).archiveConversation(chat.id);
+                                ref.invalidate(chatConversationsProvider);
+                                if (!context.mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text('Chat archived'),

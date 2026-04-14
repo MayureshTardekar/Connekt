@@ -19,6 +19,7 @@ class ChatRepository {
     final response = await _supabase
         .from('chat_conversations')
         .select()
+        .eq('is_archived', false)
         .order('last_message_time', ascending: false);
         
     return response.map((json) => ChatConversation.fromJson(json)).toList();
@@ -32,6 +33,7 @@ class ChatRepository {
     return _supabase
         .from('chat_conversations')
         .stream(primaryKey: ['id'])
+        .eq('is_archived', false)
         .order('last_message_time', ascending: false)
         .map((data) => data.map((json) => ChatConversation.fromJson(json)).toList());
   }
@@ -124,6 +126,23 @@ class ChatRepository {
         createdAt: now.subtract(const Duration(hours: 5)),
       ),
     ];
+  }
+
+
+  Future<void> archiveConversation(String conversationId) async {
+    if (AppConfig.useMockBackend) return;
+    await _supabase
+        .from('chat_conversations')
+        .update({'is_archived': true})
+        .eq('id', conversationId);
+  }
+
+  Future<void> unarchiveConversation(String conversationId) async {
+    if (AppConfig.useMockBackend) return;
+    await _supabase
+        .from('chat_conversations')
+        .update({'is_archived': false})
+        .eq('id', conversationId);
   }
 
   // Send a new message

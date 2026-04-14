@@ -7,6 +7,7 @@ import '../../core/providers/campus_provider.dart';
 import 'post_ghost_screen.dart';
 import 'comments_screen.dart';
 
+import '../../core/widgets/app_states.dart';
 import '../../core/models/ghost_post.dart';
 
 class GhostTab extends ConsumerStatefulWidget {
@@ -115,7 +116,7 @@ class _GhostTabState extends ConsumerState<GhostTab> {
                             ),
                         error:
                             (err, stack) =>
-                                Center(child: Text('Error: $err')),
+                                AppErrorState(message: 'Failed to load data.\n$err'),
                       ),
                 ),
               ],
