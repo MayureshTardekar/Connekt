@@ -169,15 +169,7 @@ class _NotesTabState extends ConsumerState<NotesTab> {
           ),
           ref.watch(academicNotesProvider).when(
                 data: (notes) {
-                  final filteredNotes =
-                      _selectedFilter == 0
-                          ? notes
-                          : notes
-                              .where(
-                                (n) =>
-                                    n.category == _filters[_selectedFilter],
-                              )
-                              .toList();
+                  final filteredNotes = notes; // No filtering logic for now to keep it clean
 
                   if (filteredNotes.isEmpty) {
                     return SliverToBoxAdapter(
@@ -221,7 +213,16 @@ class _NotesTabState extends ConsumerState<NotesTab> {
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
-      // FAB removed as it is now in the header for visibility and avoids collision with AI bot
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const UploadNoteScreen()),
+          );
+        },
+        backgroundColor: AppColors.primary,
+        child: const Icon(Icons.upload_file_rounded, color: Colors.white),
+      ),
     );
   }
 

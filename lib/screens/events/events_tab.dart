@@ -122,14 +122,7 @@ class _EventsTabState extends ConsumerState<EventsTab> {
           ),
           ref.watch(campusEventsProvider).when(
                 data: (events) {
-                  final filteredEvents =
-                      _selectedFilter == 0
-                          ? events
-                          : events
-                              .where(
-                                (e) => e.category == _filters[_selectedFilter],
-                              )
-                              .toList();
+                  final filteredEvents = events;
 
                   if (filteredEvents.isEmpty) {
                     return SliverToBoxAdapter(
@@ -173,7 +166,16 @@ class _EventsTabState extends ConsumerState<EventsTab> {
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
-      // FAB removed as it is now in the header for visibility and avoids collision with AI bot
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const PostEventScreen()),
+          );
+        },
+        backgroundColor: const Color(0xFFF59E0B),
+        child: const Icon(Icons.add_rounded, color: Colors.white),
+      ),
     );
   }
 

@@ -14,9 +14,13 @@ class ChatMessage {
   final bool isGif;
   final bool isSticker;
 
-  // Phase 3 Campus Social Layer features
   final SharedCardType sharedCardType;
   final Map<String, dynamic>? sharedData;
+  
+  // Phase 4 Threading
+  final String? replyToId;
+  final String? replyToText;
+  final String? replyToName;
 
   ChatMessage({
     required this.id,
@@ -31,6 +35,9 @@ class ChatMessage {
     this.isSticker = false,
     this.sharedCardType = SharedCardType.none,
     this.sharedData,
+    this.replyToId,
+    this.replyToText,
+    this.replyToName,
   });
 
   ChatMessage copyWith({
@@ -46,6 +53,9 @@ class ChatMessage {
     bool? isSticker,
     SharedCardType? sharedCardType,
     Map<String, dynamic>? sharedData,
+    String? replyToId,
+    String? replyToText,
+    String? replyToName,
   }) {
     return ChatMessage(
       id: id ?? this.id,
@@ -60,6 +70,9 @@ class ChatMessage {
       isSticker: isSticker ?? this.isSticker,
       sharedCardType: sharedCardType ?? this.sharedCardType,
       sharedData: sharedData ?? this.sharedData,
+      replyToId: replyToId ?? this.replyToId,
+      replyToText: replyToText ?? this.replyToText,
+      replyToName: replyToName ?? this.replyToName,
     );
   }
 
@@ -87,6 +100,9 @@ class ChatMessage {
         orElse: () => SharedCardType.none,
       ),
       sharedData: (json['sharedData'] ?? json['shared_data']) as Map<String, dynamic>?,
+      replyToId: (json['replyToId'] ?? json['reply_to_id'])?.toString(),
+      replyToText: (json['replyToText'] ?? json['reply_to_text'])?.toString(),
+      replyToName: (json['replyToName'] ?? json['reply_to_name'])?.toString(),
     );
   }
 
@@ -104,6 +120,9 @@ class ChatMessage {
       'isSticker': isSticker,
       'sharedCardType': sharedCardType.name,
       'sharedData': sharedData,
+      'reply_to_id': replyToId,
+      'reply_to_text': replyToText,
+      'reply_to_name': replyToName,
     };
   }
 }

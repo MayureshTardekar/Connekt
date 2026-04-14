@@ -59,7 +59,11 @@ class ChatRepository {
           .eq('conversation_id', conversationId)
           .order('timestamp', ascending: true);
           
-      return response.map((json) => ChatMessage.fromJson(json)).toList();
+      final userId = _supabase.auth.currentUser?.id;
+      return response.map((json) {
+        final msg = ChatMessage.fromJson(json);
+        return msg.copyWith(isFromMe: msg.senderId == userId || msg.senderId == 'me');
+      }).toList();
     } catch (e) {
       AppLogger.error('Failed to get messages: $e');
       return [];
@@ -71,12 +75,16 @@ class ChatRepository {
     if (AppConfig.useMockBackend) {
       return Stream.value(MockDatasource.chatMessages[conversationId] ?? []);
     }
+    final userId = _supabase.auth.currentUser?.id;
     return _supabase
         .from('chat_messages')
         .stream(primaryKey: ['id'])
         .eq('conversation_id', conversationId)
         .order('timestamp', ascending: true)
-        .map((data) => data.map((json) => ChatMessage.fromJson(json)).toList());
+        .map((data) => data.map((json) {
+              final msg = ChatMessage.fromJson(json);
+              return msg.copyWith(isFromMe: msg.senderId == userId || msg.senderId == 'me');
+            }).toList());
   }
 
   // Send a new message
@@ -84,25 +92,67 @@ class ChatRepository {
     if (AppConfig.useMockBackend) return;
 
     try {
-      await _supabase.from('chat_messages').insert({
-        'conversation_id': conversationId,
-        'sender_id': message.senderId,
-        'sender_name': message.senderName,
-        'text': message.text,
-        'timestamp': message.timestamp.toIso8601String(),
-        'is_read': message.isRead,
-        'shared_card_type': message.sharedCardType.name,
-        'shared_data': message.sharedData,
-      });
+      // 1. Optimistically ensure the conversation exists (important for Community chats)
+      // If conversationId is a campus UUID, we want a row for it in chat_conversations
+      try {
+        await _supabase.from('chat_conversations').upsert({
+          'id': conversationId,
+          'participant_name': 'Campus Community',
+          'participant_id': 'community',
+          'last_message': message.text,
+          'last_message_time': message.timestamp.toIso8601String(),
+        });
+      } catch (e) {
+        AppLogger.info('Conversation upsert skipped or failed: $e');
+      }
+
+      try {
+        // Advanced insert with all features
+        await _supabase.from('chat_messages').insert({
+          'conversation_id': conversationId,
+          'sender_id': message.senderId,
+          'sender_name': message.senderName,
+          'text': message.text,
+          'timestamp': message.timestamp.toIso8601String(),
+          'is_read': message.isRead,
+          'shared_card_type': message.sharedCardType.name,
+          'shared_data': message.sharedData,
+          'reply_to_id': message.replyToId,
+          'reply_to_text': message.replyToText,
+          'reply_to_name': message.replyToName,
+        });
+      } catch (insertError) {
+        // Fallback for missing columns/schema mismatches
+        AppLogger.info('Advanced insert failed, falling back to minimal: $insertError');
+        await _supabase.from('chat_messages').insert({
+          'conversation_id': conversationId,
+          'sender_id': message.senderId,
+          'sender_name': message.senderName,
+          'text': message.text,
+          'timestamp': message.timestamp.toIso8601String(),
+          'is_read': message.isRead,
+        });
+      }
       
-      // Update the last message in the conversation for the list view
-      await _supabase.from('chat_conversations').update({
-        'last_message': message.text,
-        'last_message_time': message.timestamp.toIso8601String(),
-      }).eq('id', conversationId);
     } catch (e) {
-      AppLogger.error('Failed to send message: $e');
-      throw Exception('Failed to send message.');
+      AppLogger.error('Definitive message failure: $e');
+      throw Exception('Failed to send message: $e');
+    }
+  }
+
+  /// Get actual unique member count for a conversation
+  Future<int> getMemberCount(String conversationId) async {
+    if (AppConfig.useMockBackend) return 15;
+    try {
+      final response = await _supabase
+          .from('chat_messages')
+          .select('sender_id')
+          .eq('conversation_id', conversationId);
+      
+      final uniqueSenders = (response as List).map((m) => m['sender_id']).toSet();
+      return uniqueSenders.length;
+    } catch (e) {
+      return 1; // Fallback to 1 (the current user)
     }
   }
 

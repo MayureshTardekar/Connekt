@@ -191,4 +191,38 @@ class CampusRepository {
           return activities.take(10).toList();
         });
   }
+
+  // Upload academic note
+  Future<void> uploadNote({
+    required String title,
+    required String subject,
+    required String description,
+    required String fileName,
+    required List<int> fileBytes,
+  }) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw Exception('Not authenticated');
+
+    // 1. Upload file to storage
+    final storagePath = 'notes/${user.id}/${DateTime.now().millisecondsSinceEpoch}_$fileName';
+    
+    await _supabase.storage.from('academic_resources').uploadBinary(
+      storagePath,
+      fileBytes as dynamic,
+      fileOptions: const FileOptions(contentType: 'application/pdf'),
+    );
+
+    final fileUrl = _supabase.storage.from('academic_resources').getPublicUrl(storagePath);
+
+    // 2. Insert record
+    await _supabase.from('academic_notes').insert({
+      'title': title,
+      'category': subject,
+      'description': description,
+      'file_url': fileUrl,
+      'author': user.email?.split('@')[0] ?? 'Student',
+      'pages': 0,
+      'created_at': DateTime.now().toIso8601String(),
+    });
+  }
 }

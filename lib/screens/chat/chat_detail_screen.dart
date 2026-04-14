@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/app_states.dart';
@@ -7,6 +8,7 @@ import '../../core/providers/chat_provider.dart';
 import '../../core/models/chat_conversation.dart';
 import '../../core/models/chat_message.dart';
 import '../../theme/avatar_helper.dart';
+import '../../core/repositories/chat_repository.dart';
 
 class ChatDetailScreen extends ConsumerStatefulWidget {
   final ChatConversation conversation;
@@ -23,32 +25,105 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
   final List<ChatMessage> _localMessages = [];
   bool _hasLoadedInitialMessages = false;
+  ChatMessage? _replyingTo;
+  int _memberCount = 0;
+  bool _isLoadingCount = true;
 
   @override
-  void dispose() {
-    _messageController.dispose();
-    _scrollController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _fetchMemberCount();
+  }
+
+  Future<void> _fetchMemberCount() async {
+    final count = await ChatRepository().getMemberCount(widget.conversation.id);
+    if (mounted) {
+      setState(() {
+        _memberCount = count;
+        _isLoadingCount = false;
+      });
+    }
+  }
+
+  void _showCommunityInfo() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1B4B) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const CircleAvatar(
+                  backgroundColor: AppColors.primary,
+                  child: Icon(Icons.groups_rounded, color: Colors.white),
+                ),
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Campus Community',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      '$_memberCount Active Members',
+                      style: TextStyle(color: AppColors.success, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'About this Community',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'This is the official space for everyone at your campus. Share updates, ask questions, and connect with fellow students.',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
   }
 
   void _sendMessage() {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
     
+    final user = Supabase.instance.client.auth.currentUser;
+    final senderId = user?.id ?? '00000000-0000-0000-0000-000000000000';
+    final senderName = user?.userMetadata?['full_name'] ?? user?.email?.split('@').first ?? 'User';
+
     final newMessage = ChatMessage(
       id: 'temp-${DateTime.now().millisecondsSinceEpoch}',
-      senderId: 'me', // TODO: Get real user ID
-      senderName: 'Me',
+      senderId: senderId,
+      senderName: senderName,
       text: text,
       timestamp: DateTime.now(),
       isFromMe: true,
       isRead: false,
+      replyToId: _replyingTo?.id,
+      replyToText: _replyingTo?.text,
+      replyToName: _replyingTo?.senderName,
     );
 
     // Optimistic update
     setState(() {
       _localMessages.add(newMessage);
       _messageController.clear();
+      _replyingTo = null; // Clear reply after sending
     });
 
     // Send to Supabase
@@ -69,22 +144,21 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     });
   }
 
-  void _toggleReaction(int index, String emoji) {
-    if (index < 0 || index >= _localMessages.length) return;
-
+  void _toggleReaction(String messageId, String emoji) {
     setState(() {
-      final msg = _localMessages[index];
-      final currentReactions = Map<String, int>.from(msg.reactions);
-
-      // Simple toggle logic for demo
-      if (currentReactions.containsKey(emoji) && currentReactions[emoji]! > 0) {
-        currentReactions[emoji] = currentReactions[emoji]! - 1;
-        if (currentReactions[emoji] == 0) currentReactions.remove(emoji);
-      } else {
-        currentReactions[emoji] = (currentReactions[emoji] ?? 0) + 1;
+      // Find message in local list
+      final localIdx = _localMessages.indexWhere((m) => m.id == messageId);
+      if (localIdx != -1) {
+        final msg = _localMessages[localIdx];
+        final currentReactions = Map<String, int>.from(msg.reactions);
+        if (currentReactions.containsKey(emoji) && currentReactions[emoji]! > 0) {
+          currentReactions[emoji] = currentReactions[emoji]! - 1;
+          if (currentReactions[emoji] == 0) currentReactions.remove(emoji);
+        } else {
+          currentReactions[emoji] = (currentReactions[emoji] ?? 0) + 1;
+        }
+        _localMessages[localIdx] = msg.copyWith(reactions: currentReactions);
       }
-
-      _localMessages[index] = msg.copyWith(reactions: currentReactions);
     });
   }
 
@@ -337,9 +411,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                     color: Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.textPrimary,
                   ),
                 ),
-                const Text(
-                  'Online',
-                  style: TextStyle(
+                Text(
+                  _isLoadingCount ? 'Typing...' : '$_memberCount members • Community',
+                  style: const TextStyle(
                     color: AppColors.success,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -350,32 +424,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
           ],
         ),
         actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.videocam_rounded,
-              color: AppColors.textSecondary,
-              size: 20,
-            ),
+          IconButton(
+            icon: const Icon(Icons.info_outline_rounded),
+            onPressed: _showCommunityInfo,
           ),
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.call_rounded,
-              color: AppColors.textSecondary,
-              size: 20,
-            ),
-          ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Column(
@@ -390,9 +443,23 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                 onRetry: () => ref.invalidate(chatMessagesProvider(widget.conversation.id)),
               ),
               data: (serverMessages) {
-                // Combine server messages and local (optimistic) ones
-                // In a real app, we would deduplicate by ID
-                final displayMessages = serverMessages.reversed.toList(); 
+                // Force messages to come alive by merging server data with local optimistic updates
+                final List<ChatMessage> allMessages = [...serverMessages];
+                final userId = Supabase.instance.client.auth.currentUser?.id;
+
+                for (final local in _localMessages) {
+                  final isAlreadyInServer = allMessages.any((m) => 
+                    m.id == local.id || 
+                    (m.text == local.text && m.timestamp.difference(local.timestamp).inSeconds.abs() < 5)
+                  );
+                  if (!isAlreadyInServer) {
+                    allMessages.add(local);
+                  }
+                }
+                
+                // Sort by timestamp and reverse for reverse ListView
+                allMessages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+                final displayMessages = allMessages.reversed.toList();
 
                 return ListView.builder(
                   controller: _scrollController,
@@ -404,8 +471,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                   itemCount: displayMessages.length,
                   itemBuilder: (context, index) {
                     final msg = displayMessages[index];
-                    final isSent = msg.isFromMe || msg.senderId == 'me';
-                    final isCommunity = widget.conversation.id.startsWith('community_');
+                    final isSent = msg.isFromMe || 
+                                   msg.senderId == 'me' || 
+                                   msg.senderId == '00000000-0000-0000-0000-000000000000' || 
+                                   (userId != null && msg.senderId == userId);
+                    final isCommunity = widget.conversation.participantId == 'community';
                     final showAvatar =
                         !isSent &&
                         (index == 0 || (displayMessages[index - 1].senderId != msg.senderId));
@@ -448,7 +518,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                   ),
                                 GestureDetector(
                                   onDoubleTap: () =>
-                                      _toggleReaction(index, '👍'), // Quick Like
+                                      _toggleReaction(msg.id, '👍'), // Quick Like
                               onLongPress: () {
                                 // Simple bottom sheet reaction picker mock
                                 showModalBottomSheet(
@@ -475,7 +545,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                           GestureDetector(
                                             onTap: () {
                                               Navigator.pop(context);
-                                              _toggleReaction(index, r);
+                                              _toggleReaction(msg.id, r);
                                             },
                                             child: Text(
                                               r,
@@ -484,6 +554,16 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                               ),
                                             ),
                                           ),
+                                        const VerticalDivider(color: Colors.white24, indent: 8, endIndent: 8),
+                                        IconButton(
+                                          icon: const Icon(Icons.reply_rounded, color: Colors.white, size: 28),
+                                          onPressed: () {
+                                            Navigator.pop(context);
+                                            setState(() {
+                                              _replyingTo = msg;
+                                            });
+                                          },
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -530,6 +610,44 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.end,
                                       children: [
+                                        if (msg.replyToId != null)
+                                          Container(
+                                            margin: const EdgeInsets.only(bottom: 8),
+                                            padding: const EdgeInsets.all(8),
+                                            width: double.infinity,
+                                            decoration: BoxDecoration(
+                                              color: (isSent ? Colors.black : AppColors.primary).withValues(alpha: 0.1),
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border(
+                                                left: BorderSide(
+                                                  color: isSent ? Colors.white : AppColors.primary,
+                                                  width: 3,
+                                                ),
+                                              ),
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  msg.replyToName ?? 'User',
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 11,
+                                                    color: isSent ? Colors.white : AppColors.primary,
+                                                  ),
+                                                ),
+                                                Text(
+                                                  msg.replyToText ?? '',
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: isSent ? Colors.white70 : AppColors.textSecondary,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
                                         if (msg.sharedCardType ==
                                                 SharedCardType.note &&
                                             msg.sharedData != null) ...[
@@ -919,15 +1037,17 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                 ],
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    );
-                  },
+                    ],
+                  ),
                 );
               },
-            ),
-          ),
+            );
+          },
+        ),
+      ),
 
           // Chat Input Component
           Container(
@@ -942,8 +1062,52 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                 ),
               ],
             ),
-            child: SafeArea(
-              child: Row(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_replyingTo != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? const Color(0xFF1E1B4B).withValues(alpha: 0.8)
+                        : Colors.grey[100],
+                    child: Row(
+                      children: [
+                        const Icon(Icons.reply_rounded,
+                            color: AppColors.primary, size: 20),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _replyingTo!.senderName,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                    color: AppColors.primary),
+                              ),
+                              Text(
+                                _replyingTo!.text,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    fontSize: 12, color: AppColors.textSecondary),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 20),
+                          onPressed: () => setState(() => _replyingTo = null),
+                        ),
+                      ],
+                    ),
+                  ),
+                SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Row(
                 children: [
                   GestureDetector(
                     onTap: _showAttachmentPanel,
@@ -1028,6 +1192,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
           ),
         ],
       ),
-    );
+    ),
+  ],
+),
+);
   }
 }

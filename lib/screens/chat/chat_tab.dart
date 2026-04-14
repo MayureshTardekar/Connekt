@@ -4,6 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/providers/chat_provider.dart';
 import '../../core/providers/friend_provider.dart';
+import '../../core/providers/campus_provider.dart';
 import '../../core/models/chat_conversation.dart';
 import '../../core/widgets/app_states.dart';
 import '../../theme/avatar_helper.dart';
@@ -390,16 +391,21 @@ class _ChatTile extends StatelessWidget {
   }
 }
 
-class _CampusCommunityTile extends StatelessWidget {
+class _CampusCommunityTile extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onTap: () {
-        final campusId = ref.watch(selectedCampusIdProvider) ?? 'global';
+        final campusId = ref.read(selectedCampusIdProvider);
+        
+        // Use the actual campusId (UUID) as the conversation ID.
+        // If null, we'll use a specific fixed UUID for "Global Community"
+        final String communityId = campusId ?? '00000000-0000-0000-0000-000000000000';
+        
         final communityConv = ChatConversation(
-          id: 'community_$campusId',
-          participantName: 'Campus Community',
-          participantId: campusId,
+          id: communityId,
+          participantName: campusId == null ? 'Global Community' : 'Campus Community',
+          participantId: 'community',
           lastMessage: 'Welcome to the community chat!',
           lastMessageTime: DateTime.now(),
         );
