@@ -26,7 +26,7 @@ final selectedCampusIdProvider = StateProvider<String?>((ref) => null);
 final selectedCampusProvider = Provider<Map<String, dynamic>?>((ref) {
   final id = ref.watch(selectedCampusIdProvider);
   if (id == null) return null;
-  
+
   final memberships = ref.watch(myCampusesProvider).value ?? [];
   try {
     return memberships.firstWhere((m) => m['campus_id'] == id);
@@ -42,21 +42,33 @@ final myMembershipsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) {
 
 // Streams
 final campusEventsProvider = StreamProvider<List<CampusEvent>>((ref) {
-  return ref.watch(campusRepositoryProvider).watchEvents().map(
-    (list) => list.map((json) => CampusEvent.fromMap(json)).toList(),
-  );
+  final selectedCampusId = ref.watch(selectedCampusIdProvider);
+  if (selectedCampusId == null) return Stream.value(const <CampusEvent>[]);
+
+  return ref
+      .watch(campusRepositoryProvider)
+      .watchEvents(campusId: selectedCampusId)
+      .map((list) => list.map((json) => CampusEvent.fromMap(json)).toList());
 });
 
 final lostFoundProvider = StreamProvider<List<LostItem>>((ref) {
-  return ref.watch(campusRepositoryProvider).watchLostFoundItems().map(
-    (list) => list.map((json) => LostItem.fromMap(json)).toList(),
-  );
+  final selectedCampusId = ref.watch(selectedCampusIdProvider);
+  if (selectedCampusId == null) return Stream.value(const <LostItem>[]);
+
+  return ref
+      .watch(campusRepositoryProvider)
+      .watchLostFoundItems(campusId: selectedCampusId)
+      .map((list) => list.map((json) => LostItem.fromMap(json)).toList());
 });
 
 final academicNotesProvider = StreamProvider<List<AcademicNote>>((ref) {
-  return ref.watch(campusRepositoryProvider).watchNotes().map(
-    (list) => list.map((json) => AcademicNote.fromMap(json)).toList(),
-  );
+  final selectedCampusId = ref.watch(selectedCampusIdProvider);
+  if (selectedCampusId == null) return Stream.value(const <AcademicNote>[]);
+
+  return ref
+      .watch(campusRepositoryProvider)
+      .watchNotes(campusId: selectedCampusId)
+      .map((list) => list.map((json) => AcademicNote.fromMap(json)).toList());
 });
 
 final ghostPostsProvider = StreamProvider<List<GhostPost>>((ref) {

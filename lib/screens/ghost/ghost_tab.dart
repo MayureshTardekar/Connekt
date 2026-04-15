@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../core/models/ghost_post.dart';
 import '../../core/repositories/auth_repository.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/providers/campus_provider.dart';
-import '../../core/models/ghost_post.dart';
 
 class GhostTab extends ConsumerStatefulWidget {
   const GhostTab({super.key});
@@ -17,7 +17,6 @@ class GhostTab extends ConsumerStatefulWidget {
 class _GhostTabState extends ConsumerState<GhostTab> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  bool _isShadowMode = true; // Default to anonymous
 
   @override
   void dispose() {
@@ -34,19 +33,10 @@ class _GhostTabState extends ConsumerState<GhostTab> {
     if (user == null) return;
 
     try {
-      String? alias;
-      if (_isShadowMode) {
-        alias = AuthRepository().currentGhostAlias ?? 'Anon';
-      } else {
-        // Real Identity Mode: [Name] @ [Campus]
-        final fullName = user.userMetadata?['full_name'] ?? user.userMetadata?['name'] ?? 'Connekt User';
-        final campusData = ref.read(selectedCampusProvider);
-        final campusName = campusData?['campuses']?['name'] ?? 'Global';
-        alias = '$fullName @ $campusName';
-      }
+      final alias = AuthRepository().currentGhostAlias ?? 'Anon';
 
       final post = GhostPost(
-        id: '', 
+        id: '',
         text: text,
         mood: 'World Chat',
         createdAt: DateTime.now().toUtc(),
@@ -56,7 +46,7 @@ class _GhostTabState extends ConsumerState<GhostTab> {
 
       _messageController.clear();
       await ref.read(ghostRepositoryProvider).createPost(post);
-      
+
       // Auto scroll to bottom
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -68,7 +58,10 @@ class _GhostTabState extends ConsumerState<GhostTab> {
     } catch (e) {
       debugPrint('Ghost Send Error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to send: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Failed to send: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -77,7 +70,7 @@ class _GhostTabState extends ConsumerState<GhostTab> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      resizeToAvoidBottomInset: true, // Fix for keyboard pushing UI
+      resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
           // Background Glow
@@ -98,20 +91,28 @@ class _GhostTabState extends ConsumerState<GhostTab> {
               children: [
                 _buildHeader(),
                 Expanded(
-                  child: ref.watch(ghostPostsProvider).when(
+                  child: ref
+                      .watch(ghostPostsProvider)
+                      .when(
                         data: (posts) {
                           if (posts.isEmpty) {
                             return Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.chat_bubble_outline_rounded,
-                                      color: Colors.white24, size: 64),
+                                  Icon(
+                                    Icons.chat_bubble_outline_rounded,
+                                    color: Colors.white24,
+                                    size: 64,
+                                  ),
                                   const SizedBox(height: 16),
                                   const Text(
-                                    'Welcome to World Chat!\nBe the first to speak.',
+                                    'No messages yet.\nStart the conversation.',
                                     textAlign: TextAlign.center,
-                                    style: TextStyle(color: Colors.white54, fontSize: 13),
+                                    style: TextStyle(
+                                      color: Colors.white54,
+                                      fontSize: 13,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -121,7 +122,9 @@ class _GhostTabState extends ConsumerState<GhostTab> {
                           return ListView.builder(
                             controller: _scrollController,
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 10),
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
                             reverse: true,
                             itemCount: posts.length,
                             itemBuilder: (context, index) {
@@ -131,7 +134,8 @@ class _GhostTabState extends ConsumerState<GhostTab> {
                         },
                         loading: () => const Center(
                           child: CircularProgressIndicator(
-                              color: AppColors.ghostPrimary),
+                            color: AppColors.ghostPrimary,
+                          ),
                         ),
                         error: (err, stack) => Center(
                           child: Text(
@@ -155,9 +159,13 @@ class _GhostTabState extends ConsumerState<GhostTab> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF161129) : Theme.of(context).cardColor,
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF161129)
+            : Theme.of(context).cardColor,
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
-        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -171,77 +179,45 @@ class _GhostTabState extends ConsumerState<GhostTab> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-                Text(
-                  '🌎 World Chat',
-                  style: TextStyle(
-                      color: Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.textPrimary,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold),
+              Text(
+                'World Chat',
+                style: TextStyle(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : AppColors.textPrimary,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
                 ),
+              ),
               const SizedBox(height: 4),
               Row(
                 children: [
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: const BoxDecoration(
-                        color: Colors.greenAccent, shape: BoxShape.circle),
+                  const Text(
+                    'Anonymous campus feed',
+                    style: TextStyle(color: Colors.white38, fontSize: 11),
                   ),
-                  const SizedBox(width: 6),
-                  const Text('Refreshes daily at 12:00 AM UTC',
-                      style: TextStyle(color: Colors.white38, fontSize: 11)),
+                  if (currentAlias != null && currentAlias.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    Text(
+                      '• $currentAlias',
+                      style: const TextStyle(
+                        color: Colors.white38,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ],
           ),
           const Spacer(),
-          GestureDetector(
-            onTap: () {
-              setState(() => _isShadowMode = !_isShadowMode);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(_isShadowMode ? 'Switched to Shadow Mode 👻' : 'Switched to Public Identity 🆔'),
-                  duration: const Duration(seconds: 1),
-                  behavior: SnackBarBehavior.floating,
-                  backgroundColor: _isShadowMode ? AppColors.ghostPrimary : Colors.blueAccent,
-                ),
-              );
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: _isShadowMode 
-                    ? AppColors.ghostPrimary.withValues(alpha: 0.1) 
-                    : Colors.blueAccent.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: (_isShadowMode ? AppColors.ghostPrimary : Colors.blueAccent).withValues(alpha: 0.3)
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    _isShadowMode ? Icons.masks_rounded : Icons.face_retouching_natural,
-                    color: _isShadowMode ? AppColors.ghostPrimary : Colors.blueAccent,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _isShadowMode ? 'Shadow' : 'Identity',
-                    style: TextStyle(
-                      color: _isShadowMode ? AppColors.ghostPrimary : Colors.blueAccent,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
           const SizedBox(width: 8),
           IconButton(
-            icon: const Icon(Icons.settings_outlined, color: Colors.white38, size: 20),
+            icon: const Icon(
+              Icons.settings_outlined,
+              color: Colors.white38,
+              size: 20,
+            ),
             onPressed: _showAliasDialog,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
@@ -252,16 +228,17 @@ class _GhostTabState extends ConsumerState<GhostTab> {
   }
 
   Widget _buildChatBubble(GhostPost post) {
-    final isMe =
-        post.authorId == Supabase.instance.client.auth.currentUser?.id;
-    final String displayName = post.authorAlias ??
+    final isMe = post.authorId == Supabase.instance.client.auth.currentUser?.id;
+    final String displayName =
+        post.authorAlias ??
         'Anon#${(post.authorId ?? 'anon').substring(0, 4).toUpperCase()}';
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(
-        crossAxisAlignment:
-            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: isMe
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           if (!isMe)
             Padding(
@@ -273,12 +250,15 @@ class _GhostTabState extends ConsumerState<GhostTab> {
             ),
           Container(
             constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.75),
+              maxWidth: MediaQuery.of(context).size.width * 0.75,
+            ),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: isMe
                   ? AppColors.ghostPrimary
-                  : (Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05)),
+                  : (Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : Colors.black.withValues(alpha: 0.05)),
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(20),
                 topRight: const Radius.circular(20),
@@ -289,7 +269,11 @@ class _GhostTabState extends ConsumerState<GhostTab> {
             child: Text(
               post.text,
               style: TextStyle(
-                color: isMe ? Colors.white : (Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.textPrimary), 
+                color: isMe
+                    ? Colors.white
+                    : (Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : AppColors.textPrimary),
                 fontSize: 14,
               ),
             ),
@@ -308,8 +292,14 @@ class _GhostTabState extends ConsumerState<GhostTab> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF161129) : Theme.of(context).cardColor,
-        border: Border(top: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1))),
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF161129)
+            : Theme.of(context).cardColor,
+        border: Border(
+          top: BorderSide(
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+          ),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -324,14 +314,20 @@ class _GhostTabState extends ConsumerState<GhostTab> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.02),
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.black.withValues(alpha: 0.02),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
+                border: Border.all(
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+                ),
               ),
               child: TextField(
                 controller: _messageController,
                 style: TextStyle(
-                  color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black, 
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : Colors.black,
                   fontSize: 14,
                 ),
                 cursorColor: AppColors.ghostPrimary,
@@ -358,10 +354,14 @@ class _GhostTabState extends ConsumerState<GhostTab> {
                     color: AppColors.ghostPrimary.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
-                  )
+                  ),
                 ],
               ),
-              child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+              child: const Icon(
+                Icons.send_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
           ),
         ],
@@ -379,8 +379,10 @@ class _GhostTabState extends ConsumerState<GhostTab> {
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1F1B2E),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text('World Chat Identity',
-            style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'World Chat Identity',
+          style: TextStyle(color: Colors.white),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -409,33 +411,39 @@ class _GhostTabState extends ConsumerState<GhostTab> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child:
-                const Text('Cancel', style: TextStyle(color: Colors.white38)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.white38),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.ghostPrimary,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             onPressed: () async {
-              final result = await AuthRepository()
-                  .updateGhostAlias(aliasController.text.trim());
+              final result = await AuthRepository().updateGhostAlias(
+                aliasController.text.trim(),
+              );
               if (context.mounted) {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(result['message']),
-                    backgroundColor:
-                        result['success'] ? Colors.green : Colors.red,
+                    backgroundColor: result['success']
+                        ? Colors.green
+                        : Colors.red,
                   ),
                 );
                 setState(() {});
               }
-
             },
-            child:
-                const Text('Save Alias', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Save Alias',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),

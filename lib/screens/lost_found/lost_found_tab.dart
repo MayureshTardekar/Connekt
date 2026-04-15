@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/providers/campus_provider.dart';
+
 import '../../core/models/lost_item.dart';
+import '../../core/providers/campus_provider.dart';
 import '../../core/routing/app_routes.dart';
-import '../../theme/avatar_helper.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_states.dart';
+import '../../theme/avatar_helper.dart';
 
 class LostFoundTab extends ConsumerStatefulWidget {
   const LostFoundTab({super.key});
@@ -18,11 +19,7 @@ class LostFoundTab extends ConsumerStatefulWidget {
 
 class _LostFoundTabState extends ConsumerState<LostFoundTab> {
   int _selectedFilter = 0;
-  final List<String> _filters = [
-    'All',
-    'Lost',
-    'Found',
-  ];
+  final List<String> _filters = ['All', 'Lost', 'Found'];
 
   @override
   Widget build(BuildContext context) {
@@ -90,21 +87,20 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
               ),
             ),
           ),
-          SliverToBoxAdapter(
-            child: _buildFilterChips(),
-          ),
-          ref.watch(lostFoundProvider).when(
+          SliverToBoxAdapter(child: _buildFilterChips()),
+          ref
+              .watch(lostFoundProvider)
+              .when(
                 data: (items) {
-                  final filteredItems =
-                      _selectedFilter == 0
-                          ? items
-                          : items
-                              .where(
-                                (item) =>
-                                    item.type.toLowerCase() ==
-                                        _filters[_selectedFilter].toLowerCase(),
-                              )
-                              .toList();
+                  final filteredItems = _selectedFilter == 0
+                      ? items
+                      : items
+                            .where(
+                              (item) =>
+                                  item.type.toLowerCase() ==
+                                  _filters[_selectedFilter].toLowerCase(),
+                            )
+                            .toList();
 
                   if (filteredItems.isEmpty) {
                     return const SliverToBoxAdapter(
@@ -120,19 +116,15 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
                   return SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          return _buildItemCard(filteredItems[index]);
-                        },
-                        childCount: filteredItems.length,
-                      ),
+                      delegate: SliverChildBuilderDelegate((context, index) {
+                        return _buildItemCard(filteredItems[index]);
+                      }, childCount: filteredItems.length),
                     ),
                   );
                 },
-                loading:
-                    () => const SliverToBoxAdapter(
-                      child: Center(child: CircularProgressIndicator()),
-                    ),
+                loading: () => const SliverToBoxAdapter(
+                  child: Center(child: CircularProgressIndicator()),
+                ),
                 error: (err, stack) => SliverToBoxAdapter(
                   child: AppErrorState(
                     message: err.toString(),
@@ -299,10 +291,10 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
                     const SizedBox(height: 10),
                     Row(
                       children: [
-                        avatarWidget('Anonymous', radius: 10),
+                        avatarWidget('Campus member', radius: 10),
                         const SizedBox(width: 6),
                         const Text(
-                          'Anonymous',
+                          'Campus member',
                           style: TextStyle(
                             fontSize: 11,
                             color: AppColors.textSecondary,

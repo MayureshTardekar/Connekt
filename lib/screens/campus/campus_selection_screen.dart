@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../core/models/campus_model.dart';
 import '../../core/providers/campus_provider.dart';
 import '../../core/routing/app_routes.dart';
 import '../../theme/app_theme.dart';
-import '../../core/models/campus_model.dart';
 
 class CampusSelectionScreen extends ConsumerStatefulWidget {
   const CampusSelectionScreen({super.key});
 
   @override
-  ConsumerState<CampusSelectionScreen> createState() => _CampusSelectionScreenState();
+  ConsumerState<CampusSelectionScreen> createState() =>
+      _CampusSelectionScreenState();
 }
 
 class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
@@ -19,12 +21,41 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
   final _uidController = TextEditingController();
   final _customCourseController = TextEditingController();
   final _customBranchController = TextEditingController();
-  
+
   String? _selectedCourse;
   String? _selectedBranch;
   bool _isCreating = false;
 
-  final List<String> _courses = ['B.Tech', 'M.Tech', 'BCA', 'MCA', 'B.Sc', 'M.Sc', 'MBA', 'Others'];
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _campusNameController.dispose();
+    _uidController.dispose();
+    _customCourseController.dispose();
+    _customBranchController.dispose();
+    super.dispose();
+  }
+
+  final List<String> _courses = [
+    'B.Tech',
+    'M.Tech',
+    'BCA',
+    'MCA',
+    'B.Sc',
+    'M.Sc',
+    'MBA',
+    'Others',
+  ];
   final List<String> _branches = [
     'Civil Engineering',
     'Computer Engineering',
@@ -36,7 +67,7 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
     'Artificial Intelligence & Data Science',
     'Mathematics & Computing',
     'Industrial Internet of Things (IIoT)',
-    'Others'
+    'Others',
   ];
 
   void _showJoinDialog(Campus campus) {
@@ -81,40 +112,63 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
                 const SizedBox(height: 24),
                 Text(
                   'Join ${campus.name}',
-                  style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Enter your college details to join the community.',
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 14),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontSize: 14,
+                  ),
                 ),
                 const SizedBox(height: 24),
-                
-                _buildTextField(_uidController, 'Roll No / UID', Icons.badge_outlined),
+
+                _buildTextField(
+                  _uidController,
+                  'Roll No / UID',
+                  Icons.badge_outlined,
+                ),
                 const SizedBox(height: 16),
-                
-                _buildDropdown('Select Course', _courses, _selectedCourse, (val) {
+
+                _buildDropdown('Select Course', _courses, _selectedCourse, (
+                  val,
+                ) {
                   setModalState(() {
                     _selectedCourse = val;
                   });
                 }),
                 if (_selectedCourse == 'Others') ...[
                   const SizedBox(height: 12),
-                  _buildTextField(_customCourseController, 'Enter your course', Icons.edit_note_rounded),
+                  _buildTextField(
+                    _customCourseController,
+                    'Enter your course',
+                    Icons.edit_note_rounded,
+                  ),
                 ],
                 const SizedBox(height: 16),
-                
-                _buildDropdown('Select Branch', _branches, _selectedBranch, (val) {
+
+                _buildDropdown('Select Branch', _branches, _selectedBranch, (
+                  val,
+                ) {
                   setModalState(() {
                     _selectedBranch = val;
                   });
                 }),
                 if (_selectedBranch == 'Others') ...[
                   const SizedBox(height: 12),
-                  _buildTextField(_customBranchController, 'Enter your branch/dept', Icons.account_tree_outlined),
+                  _buildTextField(
+                    _customBranchController,
+                    'Enter your branch/dept',
+                    Icons.account_tree_outlined,
+                  ),
                 ],
                 const SizedBox(height: 32),
-                
+
                 SizedBox(
                   width: double.infinity,
                   height: 56,
@@ -122,9 +176,18 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
                     onPressed: () => _joinCampus(campus.id),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
-                    child: const Text('Confirm & Join', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      'Confirm & Join',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -137,30 +200,48 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
   }
 
   Future<void> _joinCampus(String campusId) async {
-    final finalCourse = _selectedCourse == 'Others' ? _customCourseController.text : _selectedCourse;
-    final finalBranch = _selectedBranch == 'Others' ? _customBranchController.text : _selectedBranch;
+    final finalCourse = _selectedCourse == 'Others'
+        ? _customCourseController.text
+        : _selectedCourse;
+    final finalBranch = _selectedBranch == 'Others'
+        ? _customBranchController.text
+        : _selectedBranch;
 
-    if (_uidController.text.isEmpty || finalCourse == null || finalCourse.isEmpty || finalBranch == null || finalBranch.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all details')));
+    if (_uidController.text.isEmpty ||
+        finalCourse == null ||
+        finalCourse.isEmpty ||
+        finalBranch == null ||
+        finalBranch.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please fill all details')));
       return;
     }
 
     try {
-      await ref.read(campusRepositoryProvider).joinCampus(
-        campusId: campusId,
-        uid: _uidController.text,
-        course: finalCourse,
-        branch: finalBranch,
-      );
+      await ref
+          .read(campusRepositoryProvider)
+          .joinCampus(
+            campusId: campusId,
+            uid: _uidController.text,
+            course: finalCourse,
+            branch: finalBranch,
+          );
       if (mounted) {
         context.go(AppRoutes.dashboard);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
 
-  Widget _buildTextField(TextEditingController controller, String label, IconData icon) {
+  Widget _buildTextField(
+    TextEditingController controller,
+    String label,
+    IconData icon,
+  ) {
     return TextField(
       controller: controller,
       style: const TextStyle(color: Colors.white),
@@ -182,7 +263,12 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
     );
   }
 
-  Widget _buildDropdown(String hint, List<String> items, String? selectedValue, Function(String?) onChanged) {
+  Widget _buildDropdown(
+    String hint,
+    List<String> items,
+    String? selectedValue,
+    Function(String?) onChanged,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
@@ -193,7 +279,10 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: selectedValue,
-          hint: Text(hint, style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
+          hint: Text(
+            hint,
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+          ),
           dropdownColor: const Color(0xFF1E293B),
           isExpanded: true,
           icon: const Icon(Icons.keyboard_arrow_down, color: AppTheme.primary),
@@ -212,6 +301,7 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     final allCampuses = ref.watch(allCampusesProvider);
+    final query = _searchController.text.trim().toLowerCase();
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
@@ -223,11 +313,17 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
             pinned: true,
             backgroundColor: const Color(0xFF0F172A),
             flexibleSpace: FlexibleSpaceBar(
-              title: const Text('Find your Campus', style: TextStyle(fontWeight: FontWeight.bold)),
+              title: const Text(
+                'Find your Campus',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               background: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [AppTheme.primary.withValues(alpha: 0.3), Colors.transparent],
+                    colors: [
+                      AppTheme.primary.withValues(alpha: 0.3),
+                      Colors.transparent,
+                    ],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
@@ -241,72 +337,155 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                   _buildTextField(_searchController, 'Search College Name...', Icons.search),
-                   const SizedBox(height: 32),
-                   Row(
-                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                     children: [
-                       const Text('Popular Campuses', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                       TextButton(
-                         onPressed: () => setState(() => _isCreating = !_isCreating),
-                         child: Text(_isCreating ? 'Cancel' : '+ Create New', style: const TextStyle(color: AppTheme.primary)),
-                       ),
-                     ],
-                   ),
-                   if (_isCreating) ...[
-                     const SizedBox(height: 16),
-                     _buildTextField(_campusNameController, 'New Campus Name (e.g. SPIT)', Icons.school_outlined),
-                     const SizedBox(height: 12),
-                     SizedBox(
-                       width: double.infinity,
-                       child: ElevatedButton(
-                         onPressed: () async {
-                           if (_campusNameController.text.isNotEmpty) {
-                             await ref.read(campusRepositoryProvider).createCampus(_campusNameController.text);
-                             ref.invalidate(allCampusesProvider);
-                             setState(() => _isCreating = false);
-                           }
-                         },
-                         style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primary),
-                         child: const Text('Create Campus', style: TextStyle(color: Colors.white)),
-                       ),
-                     ),
-                   ],
+                  _buildTextField(
+                    _searchController,
+                    'Search College Name...',
+                    Icons.search,
+                  ),
+                  const SizedBox(height: 32),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Popular Campuses',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () =>
+                            setState(() => _isCreating = !_isCreating),
+                        child: Text(
+                          _isCreating ? 'Cancel' : '+ Create New',
+                          style: const TextStyle(color: AppTheme.primary),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_isCreating) ...[
+                    const SizedBox(height: 16),
+                    _buildTextField(
+                      _campusNameController,
+                      'New Campus Name (e.g. SPIT)',
+                      Icons.school_outlined,
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          if (_campusNameController.text.isNotEmpty) {
+                            await ref
+                                .read(campusRepositoryProvider)
+                                .createCampus(_campusNameController.text);
+                            ref.invalidate(allCampusesProvider);
+                            setState(() => _isCreating = false);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primary,
+                        ),
+                        child: const Text(
+                          'Create Campus',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
           ),
           allCampuses.when(
-            data: (campuses) => SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final campus = campuses[index];
+            data: (campuses) {
+              final filteredCampuses = query.isEmpty
+                  ? campuses
+                  : campuses
+                        .where(
+                          (campus) => campus.name.toLowerCase().contains(query),
+                        )
+                        .toList();
+
+              if (filteredCampuses.isEmpty) {
+                return SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Center(
+                      child: Text(
+                        'No campuses match your search.',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              return SliverList(
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final campus = filteredCampuses[index];
                   return Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.1),
+                      ),
                     ),
                     child: ListTile(
                       contentPadding: const EdgeInsets.all(16),
                       leading: Container(
                         padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(color: AppTheme.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
-                        child: const Icon(Icons.location_city_rounded, color: AppTheme.primary),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primary.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.location_city_rounded,
+                          color: AppTheme.primary,
+                        ),
                       ),
-                      title: Text(campus.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-                      subtitle: const Text('Tap to join this community', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                      trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white24, size: 16),
+                      title: Text(
+                        campus.name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                      subtitle: const Text(
+                        'Tap to join this community',
+                        style: TextStyle(color: Colors.white54, fontSize: 12),
+                      ),
+                      trailing: const Icon(
+                        Icons.arrow_forward_ios,
+                        color: Colors.white24,
+                        size: 16,
+                      ),
                       onTap: () => _showJoinDialog(campus),
                     ),
                   );
-                },
-                childCount: campuses.length,
+                }, childCount: filteredCampuses.length),
+              );
+            },
+            loading: () => const SliverToBoxAdapter(
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (err, stack) => SliverToBoxAdapter(
+              child: Center(
+                child: Text(
+                  'Error: $err',
+                  style: const TextStyle(color: Colors.red),
+                ),
               ),
             ),
-            loading: () => const SliverToBoxAdapter(child: Center(child: CircularProgressIndicator())),
-            error: (err, stack) => SliverToBoxAdapter(child: Center(child: Text('Error: $err', style: const TextStyle(color: Colors.red)))),
           ),
         ],
       ),

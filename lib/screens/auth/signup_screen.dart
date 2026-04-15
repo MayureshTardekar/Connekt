@@ -1,7 +1,7 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../core/providers/auth_provider.dart';
 import '../../core/routing/app_routes.dart';
 import '../../theme/app_theme.dart';
@@ -21,7 +21,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
   static final RegExp _emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
 
-  bool _isAgreed = false;
   bool _isLoading = false;
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
@@ -37,22 +36,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   Future<void> _handleSignup() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (!_isAgreed) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please agree to the terms')),
-      );
-      return;
-    }
-
     final fullName = _nameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     final confirm = _confirmController.text.trim();
 
     if (password != confirm) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Passwords do not match')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Passwords do not match')));
       return;
     }
 
@@ -70,7 +62,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await ref.read(authRepositoryProvider).signUpWithEmail(
+      await ref
+          .read(authRepositoryProvider)
+          .signUpWithEmail(
             fullName: fullName,
             email: email,
             password: password,
@@ -88,9 +82,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -141,10 +135,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 8),
-                Text(
-                  'Create Account',
-                  style: theme.textTheme.displaySmall,
-                ),
+                Text('Create Account', style: theme.textTheme.displaySmall),
                 const SizedBox(height: 8),
                 Text(
                   'Join Connekt and connect with your campus.',
@@ -216,61 +207,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                         isStrong: _isPasswordStrong(_passwordController.text),
                       ),
                       const SizedBox(height: 24),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(
-                            height: 22,
-                            width: 22,
-                            child: Checkbox(
-                              value: _isAgreed,
-                              activeColor: AppTheme.primary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                              onChanged: (val) =>
-                                  setState(() => _isAgreed = val ?? false),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text.rich(
-                              TextSpan(
-                                text: 'I agree to the ',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  fontSize: 13,
-                                ),
-                                children: [
-                                  TextSpan(
-                                    text: 'Terms',
-                                    style: const TextStyle(
-                                      color: AppTheme.primary,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                    recognizer: TapGestureRecognizer()
-                                      ..onTap = () => _showLegalNotice(
-                                            context,
-                                            'Terms',
-                                          ),
-                                  ),
-                                  const TextSpan(text: ' and '),
-                                  TextSpan(
-                                    text: 'Privacy Policy',
-                                    style: const TextStyle(
-                                      color: AppTheme.primary,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                    recognizer: TapGestureRecognizer()
-                                      ..onTap = () => _showLegalNotice(
-                                            context,
-                                            'Privacy Policy',
-                                          ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
+                      Text(
+                        'By creating an account, you agree to the app policies once they are published.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppTheme.textSecondary,
+                          fontSize: 13,
+                        ),
                       ),
                       const SizedBox(height: 28),
                       SizedBox(
@@ -387,33 +329,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       ],
     );
   }
-
-  void _showLegalNotice(BuildContext context, String label) {
-    showDialog<void>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(label),
-          content: Text(
-            '$label content is not wired to a hosted document yet. Before a real production release, connect this to your published policy page.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
-            ),
-          ],
-        );
-      },
-    );
-  }
 }
 
 class _PasswordStrengthHint extends StatelessWidget {
-  const _PasswordStrengthHint({
-    required this.password,
-    required this.isStrong,
-  });
+  const _PasswordStrengthHint({required this.password, required this.isStrong});
 
   final String password;
   final bool isStrong;
@@ -431,8 +350,8 @@ class _PasswordStrengthHint extends StatelessWidget {
     final color = isStrong
         ? Colors.green
         : metCount >= 2
-            ? Colors.orange
-            : Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey;
+        ? Colors.orange
+        : Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey;
 
     return Text(
       isStrong

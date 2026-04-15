@@ -1,33 +1,36 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/chat_message.dart';
-import '../models/chat_conversation.dart';
+
 import '../config/app_config.dart';
-import '../network/logger.dart';
 import '../mock/mock_datasource.dart';
+import '../models/chat_conversation.dart';
+import '../models/chat_message.dart';
+import '../network/logger.dart';
 
 class ChatRepository {
   final _supabase = Supabase.instance.client;
 
   // Fetch all conversations
   Future<List<ChatConversation>> getConversations() async {
-    AppLogger.info('Fetching conversations... [useMockBackend: ${AppConfig.useMockBackend}]');
+    AppLogger.info(
+      'Fetching conversations... [useMockBackend: ${AppConfig.useMockBackend}]',
+    );
     if (AppConfig.useMockBackend) {
       return MockDatasource.chatConversations;
     }
-    
+
     try {
       final response = await _supabase
           .from('chat_conversations')
           .select()
           .order('last_message_time', ascending: false);
-          
+
       return response
           .where((json) => json['is_archived'] != true)
           .map((json) => ChatConversation.fromJson(json))
           .toList();
     } catch (e) {
       AppLogger.error('Failed to get conversations: $e');
-      return [];
+      throw Exception('Failed to load conversations: $e');
     }
   }
 
@@ -40,10 +43,12 @@ class ChatRepository {
         .from('chat_conversations')
         .stream(primaryKey: ['id'])
         .order('last_message_time', ascending: false)
-        .map((data) => data
-            .where((json) => json['is_archived'] != true)
-            .map((json) => ChatConversation.fromJson(json))
-            .toList());
+        .map(
+          (data) => data
+              .where((json) => json['is_archived'] != true)
+              .map((json) => ChatConversation.fromJson(json))
+              .toList(),
+        );
   }
 
   // Fetch all messages for a specific conversation
@@ -58,15 +63,17 @@ class ChatRepository {
           .select()
           .eq('conversation_id', conversationId)
           .order('timestamp', ascending: true);
-          
+
       final userId = _supabase.auth.currentUser?.id;
       return response.map((json) {
         final msg = ChatMessage.fromJson(json);
-        return msg.copyWith(isFromMe: msg.senderId == userId || msg.senderId == 'me');
+        return msg.copyWith(
+          isFromMe: msg.senderId == userId || msg.senderId == 'me',
+        );
       }).toList();
     } catch (e) {
       AppLogger.error('Failed to get messages: $e');
-      return [];
+      throw Exception('Failed to load messages: $e');
     }
   }
 
@@ -81,10 +88,14 @@ class ChatRepository {
         .stream(primaryKey: ['id'])
         .eq('conversation_id', conversationId)
         .order('timestamp', ascending: true)
-        .map((data) => data.map((json) {
-              final msg = ChatMessage.fromJson(json);
-              return msg.copyWith(isFromMe: msg.senderId == userId || msg.senderId == 'me');
-            }).toList());
+        .map(
+          (data) => data.map((json) {
+            final msg = ChatMessage.fromJson(json);
+            return msg.copyWith(
+              isFromMe: msg.senderId == userId || msg.senderId == 'me',
+            );
+          }).toList(),
+        );
   }
 
   // Send a new message
@@ -127,7 +138,9 @@ class ChatRepository {
         });
       } catch (insertError) {
         // Fallback for missing columns/schema mismatches
-        AppLogger.info('Advanced insert failed, falling back to minimal: $insertError');
+        AppLogger.info(
+          'Advanced insert failed, falling back to minimal: $insertError',
+        );
         await _supabase.from('chat_messages').insert({
           'conversation_id': conversationId,
           'sender_id': message.senderId,
@@ -137,7 +150,6 @@ class ChatRepository {
           'is_read': message.isRead,
         });
       }
-      
     } catch (e) {
       AppLogger.error('Definitive message failure: $e');
       throw Exception('Failed to send message: $e');
@@ -152,8 +164,10 @@ class ChatRepository {
           .from('chat_messages')
           .select('sender_id')
           .eq('conversation_id', conversationId);
-      
-      final uniqueSenders = (response as List).map((m) => m['sender_id']).toSet();
+
+      final uniqueSenders = (response as List)
+          .map((m) => m['sender_id'])
+          .toSet();
       return uniqueSenders.length;
     } catch (e) {
       return 1; // Fallback to 1 (the current user)
@@ -170,7 +184,9 @@ class ChatRepository {
           .update({'is_archived': true})
           .eq('id', conversationId);
     } catch (e) {
-      AppLogger.error('Failed to archive conversation, column might be missing: $e');
+      AppLogger.error(
+        'Failed to archive conversation, column might be missing: $e',
+      );
     }
   }
 
