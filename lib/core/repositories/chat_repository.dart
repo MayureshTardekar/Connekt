@@ -88,17 +88,21 @@ class ChatRepository {
   }
 
   // Send a new message
-  Future<void> sendMessage(String conversationId, ChatMessage message) async {
+  Future<void> sendMessage(
+    String conversationId,
+    ChatMessage message, {
+    ChatConversation? conversation,
+  }) async {
     if (AppConfig.useMockBackend) return;
 
     try {
-      // 1. Optimistically ensure the conversation exists (important for Community chats)
-      // If conversationId is a campus UUID, we want a row for it in chat_conversations
+      // Keep conversation metadata real instead of overwriting every thread with
+      // a hardcoded "Campus Community" label.
       try {
         await _supabase.from('chat_conversations').upsert({
           'id': conversationId,
-          'participant_name': 'Campus Community',
-          'participant_id': 'community',
+          'participant_name': conversation?.participantName ?? 'Conversation',
+          'participant_id': conversation?.participantId ?? '',
           'last_message': message.text,
           'last_message_time': message.timestamp.toIso8601String(),
         });
@@ -184,4 +188,3 @@ class ChatRepository {
     }
   }
 }
-
