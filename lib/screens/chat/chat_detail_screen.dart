@@ -60,7 +60,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     final message = ChatMessage(
       id: 'local-${DateTime.now().microsecondsSinceEpoch}',
       senderId: user.id,
-      senderName: user.userMetadata?['full_name'] ??
+      senderName:
+          user.userMetadata?['full_name'] ??
           user.userMetadata?['name'] ??
           user.email?.split('@').first ??
           'Student',
@@ -84,7 +85,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     _scrollToLatest();
 
     try {
-      await ref.read(chatRepositoryProvider).sendMessage(
+      await ref
+          .read(chatRepositoryProvider)
+          .sendMessage(
             widget.conversation.id,
             message,
             conversation: widget.conversation,
@@ -96,7 +99,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         _failedIds.add(message.id);
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Message not sent. Check your connection.')),
+        const SnackBar(
+          content: Text('Message not sent. Check your connection.'),
+        ),
       );
     }
   }
@@ -164,7 +169,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final messagesAsync = ref.watch(chatMessagesProvider(widget.conversation.id));
+    final messagesAsync = ref.watch(
+      chatMessagesProvider(widget.conversation.id),
+    );
     final hasInput = _messageController.text.trim().isNotEmpty;
     final isCommunity = widget.conversation.participantId == 'community';
 
@@ -248,7 +255,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                     final message = messages[index];
                     final isMe = _isFromMe(message);
                     final previous = index > 0 ? messages[index - 1] : null;
-                    final startsGroup = previous == null ||
+                    final startsGroup =
+                        previous == null ||
                         previous.senderId != message.senderId;
 
                     return _MessageBubble(
@@ -296,9 +304,12 @@ class _MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bubbleColor =
-        isFromMe ? theme.colorScheme.primary : theme.colorScheme.surface;
-    final textColor = isFromMe ? Colors.white : theme.textTheme.bodyLarge?.color;
+    final bubbleColor = isFromMe
+        ? theme.colorScheme.primary
+        : theme.colorScheme.surface;
+    final textColor = isFromMe
+        ? Colors.white
+        : theme.textTheme.bodyLarge?.color;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -309,8 +320,9 @@ class _MessageBubble extends StatelessWidget {
             maxWidth: MediaQuery.of(context).size.width * 0.78,
           ),
           child: Column(
-            crossAxisAlignment:
-                isFromMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            crossAxisAlignment: isFromMe
+                ? CrossAxisAlignment.end
+                : CrossAxisAlignment.start,
             children: [
               if (showSender) ...[
                 Padding(
@@ -340,8 +352,8 @@ class _MessageBubble extends StatelessWidget {
                     color: hasFailed
                         ? AppTheme.coral
                         : isFromMe
-                            ? Colors.transparent
-                            : theme.dividerColor,
+                        ? Colors.transparent
+                        : theme.dividerColor,
                   ),
                 ),
                 child: Column(

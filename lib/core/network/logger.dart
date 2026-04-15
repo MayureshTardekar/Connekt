@@ -14,14 +14,25 @@ class AppLogger {
 
   static void error(String message, [dynamic error, StackTrace? stackTrace]) {
     if (AppConfig.enableLogging) {
-      developer.log('ERROR: $message', name: 'AppLogger', error: error, stackTrace: stackTrace);
+      developer.log(
+        'ERROR: $message',
+        name: 'AppLogger',
+        error: error,
+        stackTrace: stackTrace,
+      );
     }
   }
 
-  static void analyticsEvent(String eventName, [Map<String, dynamic>? parameters]) {
+  static void analyticsEvent(
+    String eventName, [
+    Map<String, dynamic>? parameters,
+  ]) {
     if (AppConfig.enableLogging) {
       // Stub for actual analytics plugin in production (e.g. FirebaseAnalytics.instance.logEvent)
-      developer.log('ANALYTICS EVENT: $eventName | params: $parameters', name: 'Analytics');
+      developer.log(
+        'ANALYTICS EVENT: $eventName | params: $parameters',
+        name: 'Analytics',
+      );
     }
   }
 }

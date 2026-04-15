@@ -36,15 +36,9 @@ class DashboardTab extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
           children: [
-            Text(
-              _greeting(),
-              style: theme.textTheme.bodyMedium,
-            ),
+            Text(_greeting(), style: theme.textTheme.bodyMedium),
             const SizedBox(height: 4),
-            Text(
-              _userName(),
-              style: theme.textTheme.displaySmall,
-            ),
+            Text(_userName(), style: theme.textTheme.displaySmall),
             const SizedBox(height: 12),
             Text(
               'Open the tools you actually use. Everything here is kept deliberately lean.',
@@ -89,10 +83,7 @@ class DashboardTab extends ConsumerWidget {
               ),
             ],
             const SizedBox(height: 32),
-            Text(
-              'Core tools',
-              style: theme.textTheme.titleLarge,
-            ),
+            Text('Core tools', style: theme.textTheme.titleLarge),
             const SizedBox(height: 14),
             GridView.count(
               crossAxisCount: 2,
@@ -191,22 +182,12 @@ class _DashboardCard extends StatelessWidget {
                 color: theme.colorScheme.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(
-                icon,
-                color: theme.colorScheme.primary,
-                size: 20,
-              ),
+              child: Icon(icon, color: theme.colorScheme.primary, size: 20),
             ),
             const Spacer(),
-            Text(
-              title,
-              style: theme.textTheme.titleMedium,
-            ),
+            Text(title, style: theme.textTheme.titleMedium),
             const SizedBox(height: 6),
-            Text(
-              subtitle,
-              style: theme.textTheme.bodySmall,
-            ),
+            Text(subtitle, style: theme.textTheme.bodySmall),
           ],
         ),
       ),

@@ -8,10 +8,7 @@ import '../../core/utils/ai_prompts.dart';
 import '../../theme/app_theme.dart';
 
 class NoteDetailScreen extends StatelessWidget {
-  const NoteDetailScreen({
-    super.key,
-    required this.note,
-  });
+  const NoteDetailScreen({super.key, required this.note});
 
   final AcademicNote note;
 
@@ -242,9 +239,9 @@ class _NoteInfoCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 12),
           child,
@@ -272,16 +269,13 @@ class _DetailRow extends StatelessWidget {
         Icon(icon, color: AppTheme.primary),
         const SizedBox(width: 12),
         Expanded(
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+          child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
         ),
         Text(
           value,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
         ),
       ],
     );
@@ -320,9 +314,9 @@ class _AICardButton extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               label,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
             ),
           ],
         ),

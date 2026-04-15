@@ -16,7 +16,10 @@ Format it clearly with Question, Options (A, B, C, D), and the correct Answer be
   }
 
   // EVENTS AI Prompts
-  static String recommendEvents(String userInterests, String upcomingEventsContext) {
+  static String recommendEvents(
+    String userInterests,
+    String upcomingEventsContext,
+  ) {
     return '''
 Act as a friendly campus guide. The user likes: $userInterests.
 Here are the upcoming events: 

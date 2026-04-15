@@ -59,17 +59,17 @@ class MainScreenState extends ConsumerState<MainScreen> {
     final extension = image.path.split('.').last;
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Uploading profile photo...')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Uploading profile photo...')));
 
     final url = await AuthRepository().uploadProfilePhoto(bytes, extension);
 
     if (!mounted || url == null) return;
     setState(() {});
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Profile photo updated.')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Profile photo updated.')));
   }
 
   Future<void> _signOut() async {
@@ -86,7 +86,8 @@ class MainScreenState extends ConsumerState<MainScreen> {
     final isDark = theme.brightness == Brightness.dark;
     final user = ref.watch(currentUserProvider);
     final campus = ref.watch(selectedCampusProvider);
-    final name = user?.userMetadata?['full_name'] ??
+    final name =
+        user?.userMetadata?['full_name'] ??
         user?.userMetadata?['name'] ??
         user?.email?.split('@').first ??
         'Student';
@@ -112,11 +113,7 @@ class MainScreenState extends ConsumerState<MainScreen> {
                 border: Border.all(color: theme.dividerColor),
               ),
               child: Center(
-                child: avatarWidget(
-                  initials,
-                  radius: 18,
-                  imageUrl: avatarUrl,
-                ),
+                child: avatarWidget(initials, radius: 18, imageUrl: avatarUrl),
               ),
             ),
           ),
@@ -132,10 +129,7 @@ class MainScreenState extends ConsumerState<MainScreen> {
               ),
             ),
             if (campusName != null && campusName.isNotEmpty)
-              Text(
-                campusName,
-                style: theme.textTheme.bodySmall,
-              ),
+              Text(campusName, style: theme.textTheme.bodySmall),
           ],
         ),
         actions: [
@@ -443,10 +437,7 @@ class _DrawerItem extends StatelessWidget {
       ),
       child: ListTile(
         onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 6,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         leading: Container(
           width: 36,
           height: 36,

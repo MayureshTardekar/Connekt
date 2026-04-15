@@ -15,7 +15,7 @@ class StudyGroupsRepository {
   // Request to join a group
   Future<void> requestToJoin(String groupId) async {
     final userId = _supabase.auth.currentUser!.id;
-    
+
     // Check if already requested or member
     final existing = await _supabase
         .from('study_group_members')
@@ -24,12 +24,14 @@ class StudyGroupsRepository {
         .eq('user_id', userId)
         .maybeSingle();
 
-    if (existing != null) throw Exception('Request already sent or already a member.');
+    if (existing != null) {
+      throw Exception('Request already sent or already a member.');
+    }
 
     await _supabase.from('study_group_members').insert({
       'group_id': groupId,
       'user_id': userId,
-      'status': 'pending', 
+      'status': 'pending',
     });
   }
 
@@ -62,7 +64,7 @@ class StudyGroupsRepository {
         .eq('group_id', groupId)
         .eq('user_id', userId)
         .maybeSingle();
-    
+
     return data?['status'];
   }
 }

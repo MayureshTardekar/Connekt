@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/campus_model.dart';
@@ -5,11 +6,21 @@ import '../models/campus_model.dart';
 class CampusRepository {
   final _supabase = Supabase.instance.client;
 
-  // Fetch all available campuses
   Future<List<Campus>> getAllCampuses() async {
-    final response = await _supabase.from('campuses').select().order('name');
-
-    return (response as List).map((json) => Campus.fromJson(json)).toList();
+    try {
+      final response = await _supabase.from('campuses').select().order('name');
+      return (response as List).map((json) {
+        try {
+          return Campus.fromJson(json);
+        } catch (e) {
+          debugPrint('Error parsing campus: $e');
+          return null;
+        }
+      }).whereType<Campus>().toList();
+    } catch (e) {
+      debugPrint('Failed to fetch campuses: $e');
+      return []; // Return empty list instead of crashing
+    }
   }
 
   // Check how many campuses user has joined
@@ -87,17 +98,21 @@ class CampusRepository {
     });
   }
 
-  // Get user's joined campuses
   Future<List<Map<String, dynamic>>> getMyCampuses() async {
-    final user = _supabase.auth.currentUser;
-    if (user == null) return [];
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) return [];
 
-    final response = await _supabase
-        .from('campus_members')
-        .select('*, campuses(*)')
-        .eq('user_id', user.id);
+      final response = await _supabase
+          .from('campus_members')
+          .select('*, campuses(*)')
+          .eq('user_id', user.id);
 
-    return response;
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      debugPrint('Error getting my campuses: $e');
+      return [];
+    }
   }
 
   Future<List<Map<String, dynamic>>> getMyMemberships() async {
@@ -116,7 +131,9 @@ class CampusRepository {
   Stream<List<Map<String, dynamic>>> watchEvents({String? campusId}) {
     var query = _supabase.from('campus_events').stream(primaryKey: ['id']);
     if (campusId != null) {
-      query = query.eq('campus_id', campusId);
+      return query
+          .eq('campus_id', campusId)
+          .order('date_time', ascending: true);
     }
     return query.order('date_time', ascending: true);
   }
@@ -125,7 +142,9 @@ class CampusRepository {
   Stream<List<Map<String, dynamic>>> watchLostFoundItems({String? campusId}) {
     var query = _supabase.from('lost_found').stream(primaryKey: ['id']);
     if (campusId != null) {
-      query = query.eq('campus_id', campusId);
+      return query
+          .eq('campus_id', campusId)
+          .order('created_at', ascending: false);
     }
     return query.order('created_at', ascending: false);
   }
@@ -134,7 +153,9 @@ class CampusRepository {
   Stream<List<Map<String, dynamic>>> watchNotes({String? campusId}) {
     var query = _supabase.from('academic_notes').stream(primaryKey: ['id']);
     if (campusId != null) {
-      query = query.eq('campus_id', campusId);
+      return query
+          .eq('campus_id', campusId)
+          .order('created_at', ascending: false);
     }
     return query.order('created_at', ascending: false);
   }
@@ -159,14 +180,15 @@ class CampusRepository {
   }) {
     // For Dashboard Recent Activity, we combine multiple sources
     // Note: In production, a database view is better, but this works for development.
-    var notesQuery = _supabase
+    final rawStream = _supabase
         .from('academic_notes')
         .stream(primaryKey: ['id']);
-    if (campusId != null) {
-      notesQuery = notesQuery.eq('campus_id', campusId);
-    }
 
-    return notesQuery.order('created_at', ascending: false).limit(10).asyncMap((
+    final notesStream = campusId != null
+        ? rawStream.eq('campus_id', campusId)
+        : rawStream;
+
+    return notesStream.order('created_at', ascending: false).limit(10).asyncMap((
       notes,
     ) async {
       final List<Map<String, dynamic>> activities = [];
@@ -212,6 +234,7 @@ class CampusRepository {
 
   // Upload academic note
   Future<void> uploadNote({
+    required String campusId,
     required String title,
     required String subject,
     required String description,
@@ -239,6 +262,7 @@ class CampusRepository {
 
     // 2. Insert record
     await _supabase.from('academic_notes').insert({
+      'campus_id': campusId,
       'title': title,
       'category': subject,
       'description': description,
@@ -251,6 +275,7 @@ class CampusRepository {
 
   // Create campus event
   Future<void> createEvent({
+    required String campusId,
     required String title,
     required String description,
     required String location,
@@ -262,6 +287,7 @@ class CampusRepository {
     if (user == null) throw Exception('Not authenticated');
 
     await _supabase.from('campus_events').insert({
+      'campus_id': campusId,
       'title': title,
       'description': description,
       'location': location,
@@ -275,6 +301,7 @@ class CampusRepository {
 
   // Report lost/found item
   Future<void> reportLostFoundItem({
+    required String campusId,
     required String title,
     required String description,
     required String location,
@@ -285,6 +312,7 @@ class CampusRepository {
     if (user == null) throw Exception('Not authenticated');
 
     await _supabase.from('lost_found').insert({
+      'campus_id': campusId,
       'title': title,
       'description': description,
       'location': location,

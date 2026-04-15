@@ -16,7 +16,7 @@ class ChatMessage {
 
   final SharedCardType sharedCardType;
   final Map<String, dynamic>? sharedData;
-  
+
   // Phase 4 Threading
   final String? replyToId;
   final String? replyToText;
@@ -82,24 +82,32 @@ class ChatMessage {
       senderId: (json['senderId'] ?? json['sender_id'])?.toString() ?? '',
       senderName: (json['senderName'] ?? json['sender_name'])?.toString() ?? '',
       text: json['text'] as String? ?? '',
-      timestamp: (json['timestamp'] ?? json['created_at']) != null 
-          ? ((json['timestamp'] ?? json['created_at']) is int 
-              ? DateTime.fromMillisecondsSinceEpoch((json['timestamp'] ?? json['created_at']) as int)
-              : DateTime.parse((json['timestamp'] ?? json['created_at']).toString()))
+      timestamp: (json['timestamp'] ?? json['created_at']) != null
+          ? ((json['timestamp'] ?? json['created_at']) is int
+                ? DateTime.fromMillisecondsSinceEpoch(
+                    (json['timestamp'] ?? json['created_at']) as int,
+                  )
+                : DateTime.parse(
+                    (json['timestamp'] ?? json['created_at']).toString(),
+                  ))
           : DateTime.now(),
       isRead: (json['isRead'] ?? json['is_read']) as bool? ?? false,
       isFromMe: (json['isFromMe'] ?? json['is_from_me']) as bool? ?? false,
-      reactions: (json['reactions'] as Map<String, dynamic>?)?.map(
+      reactions:
+          (json['reactions'] as Map<String, dynamic>?)?.map(
             (k, e) => MapEntry(k, e as int),
           ) ??
           {},
       isGif: (json['isGif'] ?? json['is_gif']) as bool? ?? false,
       isSticker: (json['isSticker'] ?? json['is_sticker']) as bool? ?? false,
       sharedCardType: SharedCardType.values.firstWhere(
-        (e) => e.name == (json['sharedCardType'] ?? json['shared_card_type']) as String?,
+        (e) =>
+            e.name ==
+            (json['sharedCardType'] ?? json['shared_card_type']) as String?,
         orElse: () => SharedCardType.none,
       ),
-      sharedData: (json['sharedData'] ?? json['shared_data']) as Map<String, dynamic>?,
+      sharedData:
+          (json['sharedData'] ?? json['shared_data']) as Map<String, dynamic>?,
       replyToId: (json['replyToId'] ?? json['reply_to_id'])?.toString(),
       replyToText: (json['replyToText'] ?? json['reply_to_text'])?.toString(),
       replyToName: (json['replyToName'] ?? json['reply_to_name'])?.toString(),

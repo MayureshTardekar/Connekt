@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/models/ghost_post.dart';
+import '../../core/providers/campus_provider.dart';
 import '../../core/repositories/auth_repository.dart';
 import '../../core/theme/app_colors.dart';
 
@@ -57,12 +58,14 @@ class _GhostTabState extends ConsumerState<GhostTab> {
       }
     } catch (e) {
       debugPrint('Ghost Send Error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to send: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -193,7 +196,7 @@ class _GhostTabState extends ConsumerState<GhostTab> {
               Row(
                 children: [
                   const Text(
-                    'Anonymous campus feed',
+                    'Global anonymous chat',
                     style: TextStyle(color: Colors.white38, fontSize: 11),
                   ),
                   if (currentAlias != null && currentAlias.isNotEmpty) ...[
@@ -279,9 +282,61 @@ class _GhostTabState extends ConsumerState<GhostTab> {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            DateFormat('HH:mm').format(post.createdAt),
-            style: const TextStyle(color: Colors.white24, fontSize: 10),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                DateFormat('HH:mm').format(post.createdAt),
+                style: const TextStyle(color: Colors.white24, fontSize: 10),
+              ),
+              if (!isMe) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => _showReportDialog(post.id),
+                  child: const Text(
+                    'Report',
+                    style: TextStyle(color: Colors.white24, fontSize: 10),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showReportDialog(String postId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1F1B2E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text('Report Message', style: TextStyle(color: Colors.white)),
+        content: const Text(
+          'Is this message inappropriate or offensive?',
+          style: TextStyle(color: Colors.white60),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white38)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () async {
+              await ref.read(ghostRepositoryProvider).reportPost(postId);
+              if (context.mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Report submitted. Thank you.')),
+                );
+              }
+            },
+            child: const Text('Report', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

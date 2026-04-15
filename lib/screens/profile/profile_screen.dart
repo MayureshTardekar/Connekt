@@ -18,7 +18,6 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
@@ -36,29 +35,33 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     String getUserInitials() {
       final name = getUserName();
       final parts = name.split(' ');
-      if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+      if (parts.length >= 2) {
+        return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+      }
       return name.isNotEmpty ? name[0].toUpperCase() : 'S';
     }
 
     Future<void> pickAndUploadImage() async {
       final picker = ImagePicker();
-      final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
-      
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 70,
+      );
+
       if (image != null) {
         final bytes = await image.readAsBytes();
         final extension = image.path.split('.').last;
-        
+
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Uploading profile photo...')),
           );
         }
 
-        
         final url = await AuthRepository().uploadProfilePhoto(bytes, extension);
-        
+
         if (url != null && context.mounted) {
-          setState(() {}); 
+          setState(() {});
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Profile photo updated! ✨')),
           );
@@ -69,7 +72,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('My Profile', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'My Profile',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         actions: [
@@ -100,7 +106,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                         child: Hero(
                           tag: 'profile-pic',
-                          child: avatarWidget(getUserInitials(), radius: 46, imageUrl: avatarUrl),
+                          child: avatarWidget(
+                            getUserInitials(),
+                            radius: 46,
+                            imageUrl: avatarUrl,
+                          ),
                         ),
                       ),
                       Positioned(
@@ -113,9 +123,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             decoration: const BoxDecoration(
                               color: AppTheme.primary,
                               shape: BoxShape.circle,
-                              boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                              boxShadow: [
+                                BoxShadow(color: Colors.black26, blurRadius: 4),
+                              ],
                             ),
-                            child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 20),
+                            child: const Icon(
+                              Icons.camera_alt_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                           ),
                         ),
                       ),
@@ -125,14 +141,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   Text(
                     getUserName(),
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   Text(
                     user?.email ?? '',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppTheme.textSecondary,
-                        ),
+                      color: AppTheme.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -174,7 +190,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   return _buildEmptyState();
                 }
                 final selectedId = ref.watch(selectedCampusIdProvider);
-                
+
                 return ListView.separated(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -182,18 +198,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   separatorBuilder: (_, __) => const SizedBox(height: 16),
                   itemBuilder: (context, index) {
                     final membership = list[index];
-                    final campusName = membership['campuses']?['name'] ?? 'Unknown';
+                    final campusName =
+                        membership['campuses']?['name'] ?? 'Unknown';
                     final campusId = membership['campus_id']?.toString();
                     final isSelected = selectedId == campusId;
-                    
+
                     return Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).brightness == Brightness.dark ? Color(0xFF161129) : Colors.white,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Color(0xFF161129)
+                            : Colors.white,
                         borderRadius: BorderRadius.circular(20),
-                        boxShadow: Theme.of(context).brightness == Brightness.dark ? [] : AppTheme.softShadow,
+                        boxShadow:
+                            Theme.of(context).brightness == Brightness.dark
+                            ? []
+                            : AppTheme.softShadow,
                         border: Border.all(
-                          color: isSelected ? AppTheme.primary.withValues(alpha: 0.5) : AppTheme.cardBorder,
+                          color: isSelected
+                              ? AppTheme.primary.withValues(alpha: 0.5)
+                              : AppTheme.cardBorder,
                           width: isSelected ? 2 : 1,
                         ),
                       ),
@@ -213,23 +237,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               ),
                               if (isSelected)
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: AppTheme.primary,
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: const Text(
                                     'Active',
-                                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 )
                               else
                                 TextButton.icon(
                                   onPressed: () {
-                                    ref.read(selectedCampusIdProvider.notifier).state = campusId;
+                                    ref
+                                            .read(
+                                              selectedCampusIdProvider.notifier,
+                                            )
+                                            .state =
+                                        campusId;
                                     context.go(AppRoutes.dashboard);
                                   },
-                                  icon: const Icon(Icons.swap_horiz_rounded, size: 18),
+                                  icon: const Icon(
+                                    Icons.swap_horiz_rounded,
+                                    size: 18,
+                                  ),
                                   label: const Text('Switch'),
                                   style: TextButton.styleFrom(
                                     foregroundColor: AppTheme.primary,
@@ -244,9 +283,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             spacing: 8,
                             runSpacing: 8,
                             children: [
-                              _buildTag(Icons.badge_rounded, 'UID: ${membership['uid']}'),
-                              _buildTag(Icons.school_outlined, membership['course']),
-                              _buildTag(Icons.account_tree_outlined, membership['branch']),
+                              _buildTag(
+                                Icons.badge_rounded,
+                                'UID: ${membership['uid']}',
+                              ),
+                              _buildTag(
+                                Icons.school_outlined,
+                                membership['course'],
+                              ),
+                              _buildTag(
+                                Icons.account_tree_outlined,
+                                membership['branch'],
+                              ),
                             ],
                           ),
                         ],
@@ -294,9 +342,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark ? Color(0xFF161129) : Colors.white,
+        color: Theme.of(context).brightness == Brightness.dark
+            ? Color(0xFF161129)
+            : Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Theme.of(context).dividerColor, style: BorderStyle.solid),
+        border: Border.all(
+          color: Theme.of(context).dividerColor,
+          style: BorderStyle.solid,
+        ),
       ),
       child: const Column(
         children: [
@@ -304,7 +357,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           SizedBox(height: 16),
           Text(
             'No campuses joined yet',
-            style: TextStyle(color: AppTheme.textSecondary, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              color: AppTheme.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),

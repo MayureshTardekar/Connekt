@@ -34,10 +34,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     setState(() => _isLoading = true);
 
     try {
-      await ref.read(authRepositoryProvider).signInWithEmail(
-            email: email,
-            password: password,
-          );
+      await ref
+          .read(authRepositoryProvider)
+          .signInWithEmail(email: email, password: password);
       if (mounted) context.go(AppRoutes.dashboard);
     } catch (e) {
       if (mounted) {
@@ -82,9 +81,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Reset failed: ${e.toString()}')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Reset failed: ${e.toString()}')));
     }
   }
 
@@ -156,10 +155,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     ),
                   ),
                   const SizedBox(height: 28),
-                  Text(
-                    'Welcome back',
-                    style: theme.textTheme.displaySmall,
-                  ),
+                  Text('Welcome back', style: theme.textTheme.displaySmall),
                   const SizedBox(height: 8),
                   Text(
                     'Sign in to your Connekt account',
@@ -184,10 +180,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Email',
-                            style: theme.textTheme.labelLarge,
-                          ),
+                          Text('Email', style: theme.textTheme.labelLarge),
                           const SizedBox(height: 10),
                           TextFormField(
                             controller: _emailController,
@@ -220,8 +213,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 style: theme.textTheme.labelLarge,
                               ),
                               TextButton(
-                                onPressed:
-                                    _isLoading ? null : _handleForgotPassword,
+                                onPressed: _isLoading
+                                    ? null
+                                    : _handleForgotPassword,
                                 style: TextButton.styleFrom(
                                   minimumSize: Size.zero,
                                   padding: EdgeInsets.zero,
@@ -258,8 +252,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               ),
                               suffixIcon: IconButton(
                                 onPressed: () => setState(
-                                  () => _isPasswordVisible =
-                                      !_isPasswordVisible,
+                                  () =>
+                                      _isPasswordVisible = !_isPasswordVisible,
                                 ),
                                 icon: Icon(
                                   _isPasswordVisible
@@ -277,8 +271,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             child: ElevatedButton(
                               onPressed: _isLoading ? null : _handleLogin,
                               style: ElevatedButton.styleFrom(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),

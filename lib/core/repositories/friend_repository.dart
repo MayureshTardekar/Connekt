@@ -7,13 +7,14 @@ class FriendRepository {
   final _supabase = Supabase.instance.client;
   static const _table = 'friend_requests';
 
-  String get _currentUserId =>
-      _supabase.auth.currentUser?.id ?? '';
+  String get _currentUserId => _supabase.auth.currentUser?.id ?? '';
 
   /// Stream of pending requests sent TO the current user.
   /// Uses Supabase Realtime postgres_changes for live updates.
   Stream<List<FriendRequest>> watchPendingRequests() {
-    if (AppConfig.useMockBackend) return Stream.value(MockDatasource.friendRequests);
+    if (AppConfig.useMockBackend) {
+      return Stream.value(MockDatasource.friendRequests);
+    }
     if (_currentUserId.isEmpty) return Stream.value([]);
 
     // SupabaseStreamBuilder supports only one .eq() filter.
@@ -23,10 +24,12 @@ class FriendRepository {
         .stream(primaryKey: ['id'])
         .eq('receiver_id', _currentUserId)
         .order('created_at', ascending: false)
-        .map((data) => data
-            .map(FriendRequest.fromMap)
-            .where((r) => r.status == 'pending')
-            .toList());
+        .map(
+          (data) => data
+              .map(FriendRequest.fromMap)
+              .where((r) => r.status == 'pending')
+              .toList(),
+        );
   }
 
   /// Accept — optimistic: update status in DB, UI reacts via stream

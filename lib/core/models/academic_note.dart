@@ -49,5 +49,6 @@ class AcademicNote {
 
   String toJson() => json.encode(toMap());
 
-  factory AcademicNote.fromJson(String source) => AcademicNote.fromMap(json.decode(source));
+  factory AcademicNote.fromJson(String source) =>
+      AcademicNote.fromMap(json.decode(source));
 }

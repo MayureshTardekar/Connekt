@@ -36,11 +36,7 @@ class AppEmptyState extends StatelessWidget {
                 borderRadius: BorderRadius.circular(28),
                 border: Border.all(color: theme.dividerColor),
               ),
-              child: Icon(
-                icon,
-                size: 34,
-                color: theme.colorScheme.primary,
-              ),
+              child: Icon(icon, size: 34, color: theme.colorScheme.primary),
             ),
             const SizedBox(height: 22),
             Text(
@@ -58,10 +54,7 @@ class AppEmptyState extends StatelessWidget {
             ],
             if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: onAction,
-                child: Text(actionLabel!),
-              ),
+              ElevatedButton(onPressed: onAction, child: Text(actionLabel!)),
             ],
           ],
         ),
@@ -71,11 +64,7 @@ class AppEmptyState extends StatelessWidget {
 }
 
 class AppErrorState extends StatelessWidget {
-  const AppErrorState({
-    super.key,
-    required this.message,
-    this.onRetry,
-  });
+  const AppErrorState({super.key, required this.message, this.onRetry});
 
   final String message;
   final VoidCallback? onRetry;

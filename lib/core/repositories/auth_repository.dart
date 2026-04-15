@@ -15,10 +15,18 @@ class AuthRepository {
     required String email,
     required String password,
   }) async {
-    return await _supabase.auth.signInWithPassword(
-      email: email,
-      password: password,
-    );
+    try {
+      return await _supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+    } on AuthException catch (e) {
+      debugPrint('Auth error: ${e.message}');
+      rethrow;
+    } catch (e) {
+      debugPrint('Unexpected sign in error: $e');
+      throw Exception('Could not connect to server. Please try again.');
+    }
   }
 
   // Email & Password Sign Up
@@ -27,23 +35,37 @@ class AuthRepository {
     required String email,
     required String password,
   }) async {
-    return await _supabase.auth.signUp(
-      email: email,
-      password: password,
-      data: {'full_name': fullName},
-    );
+    try {
+      return await _supabase.auth.signUp(
+        email: email,
+        password: password,
+        data: {'full_name': fullName},
+      );
+    } on AuthException catch (e) {
+      debugPrint('Registration error: ${e.message}');
+      rethrow;
+    } catch (e) {
+      debugPrint('Unexpected sign up error: $e');
+      throw Exception('Sign up failed. Check your connection.');
+    }
   }
 
   Future<void> sendPasswordResetEmail(String email) async {
     await _supabase.auth.resetPasswordForEmail(email);
   }
 
-  // Social Sign In (Google / Discord)
   Future<bool> signInWithOAuth(OAuthProvider provider) async {
-    return await _supabase.auth.signInWithOAuth(
-      provider,
-      redirectTo: kIsWeb ? null : 'io.supabase.connekt://login-callback',
-    );
+    try {
+      return await _supabase.auth.signInWithOAuth(
+        provider,
+        redirectTo: kIsWeb 
+          ? 'http://localhost:3000' 
+          : 'io.supabase.connekt://login-callback',
+      );
+    } catch (e) {
+      debugPrint('OAuth error ($provider): $e');
+      return false;
+    }
   }
 
   // Update Ghost Alias (with 7-day cooldown)
@@ -80,7 +102,8 @@ class AuthRepository {
     final user = _supabase.auth.currentUser;
     if (user == null) throw Exception('Not logged in');
 
-    final fileName = '${user.id}_${DateTime.now().millisecondsSinceEpoch}.$extension';
+    final fileName =
+        '${user.id}_${DateTime.now().millisecondsSinceEpoch}.$extension';
     final path = 'avatars/$fileName';
 
     try {
@@ -92,9 +115,7 @@ class AuthRepository {
 
       // Update user metadata
       await _supabase.auth.updateUser(
-        UserAttributes(
-          data: {'avatar_url': imageUrl},
-        ),
+        UserAttributes(data: {'avatar_url': imageUrl}),
       );
 
       return imageUrl;
@@ -104,7 +125,8 @@ class AuthRepository {
     }
   }
 
-  String? get currentGhostAlias => _supabase.auth.currentUser?.userMetadata?['ghost_alias'];
+  String? get currentGhostAlias =>
+      _supabase.auth.currentUser?.userMetadata?['ghost_alias'];
 
   // Sign Out
   Future<void> signOut() async {

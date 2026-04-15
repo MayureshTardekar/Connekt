@@ -61,9 +61,9 @@ class _ChatTabState extends ConsumerState<ChatTab> {
   Future<void> _archiveConversation(ChatConversation conversation) async {
     setState(() => _archivedIds.add(conversation.id));
     try {
-      await ref.read(chatRepositoryProvider).archiveConversation(
-            conversation.id,
-          );
+      await ref
+          .read(chatRepositoryProvider)
+          .archiveConversation(conversation.id);
     } catch (_) {
       if (!mounted) return;
       setState(() => _archivedIds.remove(conversation.id));
@@ -123,16 +123,19 @@ class _ChatTabState extends ConsumerState<ChatTab> {
                   onRetry: () => ref.invalidate(chatConversationsProvider),
                 ),
                 data: (conversations) {
-                  final hasCampusConversation = selectedCampusId != null &&
+                  final hasCampusConversation =
+                      selectedCampusId != null &&
                       conversations.any((chat) => chat.id == selectedCampusId);
-                  final showCommunityShortcut = selectedCampusId != null &&
+                  final showCommunityShortcut =
+                      selectedCampusId != null &&
                       !hasCampusConversation &&
                       _matchesCommunityQuery(campusName, query);
                   final visible = conversations
                       .where((chat) => !_archivedIds.contains(chat.id))
                       .where((chat) => _matchesConversation(chat, query))
                       .toList();
-                  final hasAnyContent = pendingCount > 0 ||
+                  final hasAnyContent =
+                      pendingCount > 0 ||
                       showCommunityShortcut ||
                       visible.isNotEmpty;
 
@@ -145,7 +148,7 @@ class _ChatTabState extends ConsumerState<ChatTab> {
                           _FriendRequestBanner(count: pendingCount),
                           const SizedBox(height: 14),
                         ],
-                        if (showCommunityShortcut && selectedCampusId != null) ...[
+                        if (showCommunityShortcut) ...[
                           _CampusCommunityShortcut(
                             campusId: selectedCampusId,
                             campusName: campusName,
@@ -408,8 +411,9 @@ class _ConversationTile extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.bodySmall?.copyWith(
-                              fontStyle:
-                                  hasLastMessage ? null : FontStyle.italic,
+                              fontStyle: hasLastMessage
+                                  ? null
+                                  : FontStyle.italic,
                               fontWeight: conversation.unreadCount > 0
                                   ? FontWeight.w600
                                   : FontWeight.w400,

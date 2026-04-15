@@ -25,9 +25,8 @@ class _EventsTabState extends ConsumerState<EventsTab> {
     final eventsAsync = ref.watch(campusEventsProvider);
 
     return eventsAsync.when(
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, _) => Scaffold(
         body: Center(
           child: AppErrorState(
@@ -39,10 +38,13 @@ class _EventsTabState extends ConsumerState<EventsTab> {
       data: (events) {
         final categories = <String>{
           'All',
-          ...events.map((event) => event.category.trim()).where((it) => it.isNotEmpty),
+          ...events
+              .map((event) => event.category.trim())
+              .where((it) => it.isNotEmpty),
         }.toList();
-        final effectiveCategory =
-            categories.contains(_selectedCategory) ? _selectedCategory : 'All';
+        final effectiveCategory = categories.contains(_selectedCategory)
+            ? _selectedCategory
+            : 'All';
         final today = DateTime.now();
         final selectedDate = DateTime(
           today.year,
@@ -60,8 +62,7 @@ class _EventsTabState extends ConsumerState<EventsTab> {
           final matchesCategory =
               effectiveCategory == 'All' || event.category == effectiveCategory;
           return matchesDay && matchesCategory;
-        }).toList()
-          ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+        }).toList()..sort((a, b) => a.dateTime.compareTo(b.dateTime));
 
         return Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -101,9 +102,10 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
-                  height: 68,
+                  height: 84,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(vertical: 4),
                     itemBuilder: (context, index) {
                       final date = DateTime.now().add(Duration(days: index));
                       final isSelected = _selectedDayIndex == index;
@@ -132,20 +134,26 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                             children: [
                               Text(
                                 DateFormat('EEE').format(date),
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
                                       color: isSelected
-                                          ? Theme.of(context).colorScheme.primary
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.primary
                                           : Theme.of(
-                                            context,
-                                          ).textTheme.bodySmall?.color,
+                                              context,
+                                            ).textTheme.bodySmall?.color,
                                     ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 DateFormat('d').format(date),
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(
                                       color: isSelected
-                                          ? Theme.of(context).colorScheme.primary
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.primary
                                           : null,
                                     ),
                               ),
@@ -173,18 +181,25 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                           onSelected: (_) {
                             setState(() => _selectedCategory = category);
                           },
-                          backgroundColor:
-                              Theme.of(context).colorScheme.surface,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.surface,
                           selectedColor: Theme.of(
                             context,
                           ).colorScheme.primary.withValues(alpha: 0.12),
-                          side: BorderSide(color: Theme.of(context).dividerColor),
-                          labelStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          side: BorderSide(
+                            color: Theme.of(context).dividerColor,
+                          ),
+                          labelStyle: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
                                 color: isSelected
                                     ? Theme.of(context).colorScheme.primary
-                                    : Theme.of(context).textTheme.bodySmall?.color,
-                                fontWeight:
-                                    isSelected ? FontWeight.w600 : FontWeight.w500,
+                                    : Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall?.color,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
                               ),
                         );
                       },

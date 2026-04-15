@@ -1,24 +1,26 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
 import '../../theme/app_theme.dart';
 import '../../core/repositories/campus_repository.dart';
+import '../../core/providers/campus_provider.dart';
 import '../../core/network/logger.dart';
 
-class UploadNoteScreen extends StatefulWidget {
+class UploadNoteScreen extends ConsumerStatefulWidget {
   const UploadNoteScreen({super.key});
 
   @override
-  State<UploadNoteScreen> createState() => _UploadNoteScreenState();
+  ConsumerState<UploadNoteScreen> createState() => _UploadNoteScreenState();
 }
 
-class _UploadNoteScreenState extends State<UploadNoteScreen> {
+class _UploadNoteScreenState extends ConsumerState<UploadNoteScreen> {
   final _titleController = TextEditingController();
   final _subjectController = TextEditingController();
   final _descriptionController = TextEditingController();
-  
+
   PlatformFile? _selectedFile;
   bool _isUploading = false;
 
@@ -37,18 +39,18 @@ class _UploadNoteScreenState extends State<UploadNoteScreen> {
     } catch (e) {
       AppLogger.info('Error picking file: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error picking file: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error picking file: $e')));
       }
     }
   }
 
   Future<void> _handleUpload() async {
     if (_selectedFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a PDF file')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please select a PDF file')));
       return;
     }
 
@@ -73,7 +75,16 @@ class _UploadNoteScreenState extends State<UploadNoteScreen> {
         throw Exception('File data is empty. Please select the file again.');
       }
 
+      final campus = ref.read(selectedCampusProvider);
+
+      if (campus == null) {
+        throw Exception(
+          'No campus selected. Please select a campus and try again.',
+        );
+      }
+
       await CampusRepository().uploadNote(
+        campusId: campus['campus_id'],
         title: _titleController.text.trim(),
         subject: _subjectController.text.trim(),
         description: _descriptionController.text.trim(),
@@ -83,7 +94,10 @@ class _UploadNoteScreenState extends State<UploadNoteScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Note uploaded successfully!'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('Note uploaded successfully!'),
+            backgroundColor: Colors.green,
+          ),
         );
         context.pop();
       }
@@ -91,7 +105,10 @@ class _UploadNoteScreenState extends State<UploadNoteScreen> {
       AppLogger.info('Upload failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload failed: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Upload failed: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -149,14 +166,18 @@ class _UploadNoteScreenState extends State<UploadNoteScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 36),
                 decoration: BoxDecoration(
-                  color: _selectedFile != null 
-                      ? (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1B4B) : const Color(0xFFEEF2FF)) 
+                  color: _selectedFile != null
+                      ? (Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF1E1B4B)
+                            : const Color(0xFFEEF2FF))
                       : Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(22),
                   border: Border.all(
                     color: _selectedFile != null
                         ? AppTheme.primary
-                        : (Theme.of(context).brightness == Brightness.dark ? Colors.white10 : AppTheme.cardBorder),
+                        : (Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white10
+                              : AppTheme.cardBorder),
                     width: 2,
                   ),
                   boxShadow: AppTheme.softShadow,
@@ -286,7 +307,9 @@ class _UploadNoteScreenState extends State<UploadNoteScreen> {
               decoration: InputDecoration(
                 hintText: 'Brief description of the notes...',
                 contentPadding: const EdgeInsets.all(18),
-                fillColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1B4B) : AppTheme.inputBg,
+                fillColor: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF1E1B4B)
+                    : AppTheme.inputBg,
                 filled: true,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -301,12 +324,21 @@ class _UploadNoteScreenState extends State<UploadNoteScreen> {
               height: 56,
               child: ElevatedButton.icon(
                 onPressed: _isUploading ? null : _handleUpload,
-                icon: _isUploading 
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                icon: _isUploading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
                     : const Icon(Icons.upload_rounded, size: 20),
                 label: Text(_isUploading ? 'Uploading...' : 'Upload Note'),
                 style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
               ),
             ),

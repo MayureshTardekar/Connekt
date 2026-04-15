@@ -1,6 +1,6 @@
 # Connekt — Smart Campus Companion
 
-Connekt is an all-in-one smart campus companion app for college students. It combines academic tools, social features, and a unique anonymous peer support zone—all in one beautiful app, built with Flutter and Firebase.
+Connekt is an all-in-one smart campus companion app for college students. It combines academic tools, social features, and a unique anonymous peer support zone—all in one beautiful app, built with Flutter and Supabase.
 
 ## 🚀 Features
 
@@ -16,16 +16,16 @@ Connekt is an all-in-one smart campus companion app for college students. It com
 
 - **Frontend**: Flutter (Dart)
 - **Backend / Database**: 
-  - Firebase Authentication (Email/password management)
-  - Cloud Firestore (Real-time NoSQL Database)
-  - Firebase Storage (Media, PDFs, and images)
+  - Supabase Auth (Email/password and OAuth)
+  - Supabase Database (PostgreSQL with real-time capabilities)
+  - Supabase Storage (Media, PDFs, and images)
 - **UI Architecture**: Features custom staggering animations, glassmorphic overlays, and a curated indigo/purple color palette.
 
 ## 🏃‍♂️ Getting Started
 
 ### Prerequisites
 - [Flutter SDK](https://docs.flutter.dev/get-started/install) installed.
-- Valid `google-services.json` configured in `android/app` via your Firebase project.
+- A Supabase project (URL and Anon Key).
 
 ### Installation
 1. Clone the repository.
@@ -40,10 +40,13 @@ Connekt is an all-in-one smart campus companion app for college students. It com
    ```bash
    flutter pub get
    ```
-4. Run the app.
+4. Run the app with environment variables.
    ```bash
-   flutter run
+   flutter run \
+     --dart-define=SUPABASE_URL=https://jqevsymgsahaijijgqif.supabase.co \
+     --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxZXZzeW1nc2FoYWlqaWpncWlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNTY3OTMsImV4cCI6MjA5MTYzMjc5M30.nfl8ERMTJeSfp3A_6OwagoNWszwJfzNW01rbbtX6PCU \
+     --dart-define=GEMINI_API_KEY=AIzaSyAfy9TdW6oUFucM6B-BQ9by4HXzim10iVE
    ```
 
 ## 🔐 Security & Anonymity
-The standout feature of Connekt—the **Ghost Zone**—is architected from the database-level to keep interactions 100% anonymous. User identifiers (UIDs) are never attached to posts or comments in the backend. Comprehensive Firebase Security Rules restrict read/write access securely to ensure complete privacy across all app interactions.
+The standout feature of Connekt—the **Ghost Zone**—is architected from the database-level to keep interactions 100% anonymous. User identifiers (UIDs) are never attached to posts or comments in the backend. Row Level Security (RLS) policies in Supabase ensure secure data access while maintaining privacy across all app interactions.

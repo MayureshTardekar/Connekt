@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/network/logger.dart';
 import '../../core/repositories/campus_repository.dart';
+import '../../core/providers/campus_provider.dart';
 import '../../theme/app_theme.dart';
 
-class PostEventScreen extends StatefulWidget {
+class PostEventScreen extends ConsumerStatefulWidget {
   const PostEventScreen({super.key});
 
   @override
-  State<PostEventScreen> createState() => _PostEventScreenState();
+  ConsumerState<PostEventScreen> createState() => _PostEventScreenState();
 }
 
-class _PostEventScreenState extends State<PostEventScreen> {
+class _PostEventScreenState extends ConsumerState<PostEventScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _locationController = TextEditingController();
@@ -76,7 +78,16 @@ class _PostEventScreenState extends State<PostEventScreen> {
         _selectedTime!.minute,
       );
 
+      final campus = ref.read(selectedCampusProvider);
+
+      if (campus == null) {
+        throw Exception(
+          'No campus selected. Please select a campus and try again.',
+        );
+      }
+
       await CampusRepository().createEvent(
+        campusId: campus['campus_id'],
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
         location: _locationController.text.trim(),
@@ -237,8 +248,9 @@ class _PostEventScreenState extends State<PostEventScreen> {
                   onChanged: _isPosting
                       ? null
                       : (value) {
-                          if (value != null)
+                          if (value != null) {
                             setState(() => _selectedCategory = value);
+                          }
                         },
                 ),
               ),

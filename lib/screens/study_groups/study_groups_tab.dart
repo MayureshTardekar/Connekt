@@ -21,7 +21,7 @@ class _StudyGroupsTabState extends ConsumerState<StudyGroupsTab> {
   int _selectedTab = 0;
   final _groupRepo = StudyGroupsRepository();
   Map<String, String> _userMemberships = {};
-  bool _isLoadingStatuses = false;
+
 
   @override
   void initState() {
@@ -33,7 +33,7 @@ class _StudyGroupsTabState extends ConsumerState<StudyGroupsTab> {
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId == null) return;
 
-    setState(() => _isLoadingStatuses = true);
+    setState(() {});
     try {
       final List<dynamic> data = await Supabase.instance.client
           .from('study_group_members')
@@ -45,11 +45,11 @@ class _StudyGroupsTabState extends ConsumerState<StudyGroupsTab> {
           _userMemberships = {
             for (var m in data) m['group_id'] as String: m['status'] as String,
           };
-          _isLoadingStatuses = false;
+
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoadingStatuses = false);
+      if (mounted) setState(() {});
     }
   }
 
@@ -74,11 +74,13 @@ class _StudyGroupsTabState extends ConsumerState<StudyGroupsTab> {
                     .select('*, profiles(full_name)')
                     .eq('group_id', group.id),
                 builder: (context, snapshot) {
-                  if (!snapshot.hasData)
+                  if (!snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
+                  }
                   final members = snapshot.data as List;
-                  if (members.isEmpty)
+                  if (members.isEmpty) {
                     return const Center(child: Text('No members yet.'));
+                  }
 
                   return ListView.builder(
                     itemCount: members.length,

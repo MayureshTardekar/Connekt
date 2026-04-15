@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/network/logger.dart';
 import '../../core/repositories/campus_repository.dart';
+import '../../core/providers/campus_provider.dart';
 import '../../theme/app_theme.dart';
 
-class PostLostItemScreen extends StatefulWidget {
+class PostLostItemScreen extends ConsumerStatefulWidget {
   const PostLostItemScreen({super.key});
 
   @override
-  State<PostLostItemScreen> createState() => _PostLostItemScreenState();
+  ConsumerState<PostLostItemScreen> createState() => _PostLostItemScreenState();
 }
 
-class _PostLostItemScreenState extends State<PostLostItemScreen> {
+class _PostLostItemScreenState extends ConsumerState<PostLostItemScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _locationController = TextEditingController();
@@ -31,7 +33,16 @@ class _PostLostItemScreenState extends State<PostLostItemScreen> {
     setState(() => _isPosting = true);
 
     try {
+      final campus = ref.read(selectedCampusProvider);
+
+      if (campus == null) {
+        throw Exception(
+          'No campus selected. Please select a campus and try again.',
+        );
+      }
+
       await CampusRepository().reportLostFoundItem(
+        campusId: campus['campus_id'],
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
         location: _locationController.text.trim(),

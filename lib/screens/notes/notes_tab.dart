@@ -31,9 +31,8 @@ class _NotesTabState extends ConsumerState<NotesTab> {
     final notesAsync = ref.watch(academicNotesProvider);
 
     return notesAsync.when(
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, _) => Scaffold(
         body: Center(
           child: AppErrorState(
@@ -45,16 +44,20 @@ class _NotesTabState extends ConsumerState<NotesTab> {
       data: (notes) {
         final categories = <String>{
           'All',
-          ...notes.map((note) => note.category.trim()).where((it) => it.isNotEmpty),
+          ...notes
+              .map((note) => note.category.trim())
+              .where((it) => it.isNotEmpty),
         }.toList();
-        final effectiveCategory =
-            categories.contains(_selectedCategory) ? _selectedCategory : 'All';
+        final effectiveCategory = categories.contains(_selectedCategory)
+            ? _selectedCategory
+            : 'All';
         final query = _searchController.text.trim().toLowerCase();
 
         final filteredNotes = notes.where((note) {
           final matchesCategory =
               effectiveCategory == 'All' || note.category == effectiveCategory;
-          final matchesSearch = query.isEmpty ||
+          final matchesSearch =
+              query.isEmpty ||
               note.title.toLowerCase().contains(query) ||
               note.author.toLowerCase().contains(query) ||
               note.category.toLowerCase().contains(query) ||
@@ -122,18 +125,25 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                           onSelected: (_) {
                             setState(() => _selectedCategory = category);
                           },
-                          backgroundColor:
-                              Theme.of(context).colorScheme.surface,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.surface,
                           selectedColor: Theme.of(
                             context,
                           ).colorScheme.primary.withValues(alpha: 0.12),
-                          side: BorderSide(color: Theme.of(context).dividerColor),
-                          labelStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          side: BorderSide(
+                            color: Theme.of(context).dividerColor,
+                          ),
+                          labelStyle: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
                                 color: isSelected
                                     ? Theme.of(context).colorScheme.primary
-                                    : Theme.of(context).textTheme.bodySmall?.color,
-                                fontWeight:
-                                    isSelected ? FontWeight.w600 : FontWeight.w500,
+                                    : Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall?.color,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
                               ),
                         );
                       },
@@ -198,11 +208,7 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                   color: accent.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(18),
                 ),
-                child: Icon(
-                  Icons.description_rounded,
-                  color: accent,
-                  size: 26,
-                ),
+                child: Icon(Icons.description_rounded, color: accent, size: 26),
               ),
               const SizedBox(width: 16),
               Expanded(

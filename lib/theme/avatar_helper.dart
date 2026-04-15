@@ -30,14 +30,7 @@ String initials(String name) {
 
 /// Builds a CircleAvatar with colored initials or network image
 Widget avatarWidget(String name, {double radius = 22, String? imageUrl}) {
-  if (imageUrl != null && imageUrl.isNotEmpty) {
-    return CircleAvatar(
-      radius: radius,
-      backgroundImage: NetworkImage(imageUrl),
-      backgroundColor: Colors.transparent,
-    );
-  }
-  return CircleAvatar(
+  final initialsWidget = CircleAvatar(
     radius: radius,
     backgroundColor: avatarColor(name),
     child: Text(
@@ -49,6 +42,26 @@ Widget avatarWidget(String name, {double radius = 22, String? imageUrl}) {
       ),
     ),
   );
+
+  if (imageUrl != null && imageUrl.isNotEmpty) {
+    return ClipOval(
+      child: Image.network(
+        imageUrl,
+        width: radius * 2,
+        height: radius * 2,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          // If 429 or any error happens, fall back to initials
+          return initialsWidget;
+        },
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return initialsWidget; // Show initials while loading
+        },
+      ),
+    );
+  }
+  return initialsWidget;
 }
 
 /// Placeholder for image cards — gradient with icon

@@ -37,7 +37,9 @@ class StudyGroup {
       location: json['location']?.toString() ?? '',
       memberCount: json['member_count'] as int? ?? 0,
       maxMembers: json['max_members'] as int? ?? 5,
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : DateTime.now(),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : DateTime.now(),
     );
   }
 }

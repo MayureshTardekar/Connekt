@@ -99,10 +99,11 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
 
       if (mounted) context.pop();
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -161,8 +162,9 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                             const Duration(days: 30),
                           ),
                         );
-                        if (picked != null)
+                        if (picked != null) {
                           setState(() => _selectedDate = picked);
+                        }
                       },
                     ),
                   ),
@@ -179,8 +181,9 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                           context: context,
                           initialTime: TimeOfDay.now(),
                         );
-                        if (picked != null)
+                        if (picked != null) {
                           setState(() => _selectedTime = picked);
+                        }
                       },
                     ),
                   ),
@@ -204,8 +207,9 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                 validator: (value) {
                   final parsed = int.tryParse(value?.trim() ?? '');
                   if (parsed == null) return 'Enter a valid number';
-                  if (parsed < 2 || parsed > 50)
+                  if (parsed < 2 || parsed > 50) {
                     return 'Value must be between 2 and 50';
+                  }
                   return null;
                 },
                 decoration: const InputDecoration(

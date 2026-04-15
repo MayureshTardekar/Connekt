@@ -6,10 +6,7 @@ import '../../core/models/campus_event.dart';
 import '../../theme/app_theme.dart';
 
 class EventDetailScreen extends StatelessWidget {
-  const EventDetailScreen({
-    super.key,
-    required this.event,
-  });
+  const EventDetailScreen({super.key, required this.event});
 
   final CampusEvent event;
 
@@ -99,9 +96,7 @@ class EventDetailScreen extends StatelessWidget {
                         color: Colors.white.withValues(alpha: 0.12),
                       ),
                     ),
-                    Center(
-                      child: Icon(_icon, size: 80, color: Colors.white),
-                    ),
+                    Center(child: Icon(_icon, size: 80, color: Colors.white)),
                   ],
                 ),
               ),
@@ -334,16 +329,16 @@ class _EventMetaRow extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.textSecondary,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
               ),
               const SizedBox(height: 2),
               Text(
                 value,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
               ),
             ],
           ),

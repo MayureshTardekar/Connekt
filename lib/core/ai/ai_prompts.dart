@@ -27,7 +27,10 @@ Answer: [Correct Option]
 ''';
   }
 
-  static String eventRecommendationPrompt(String eventsJson, String userContext) {
+  static String eventRecommendationPrompt(
+    String eventsJson,
+    String userContext,
+  ) {
     return '''
 Based on the following events available on campus:
 $eventsJson

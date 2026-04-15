@@ -72,7 +72,7 @@ class MockDatasource {
         sharedData: {
           'title': 'Quantum Physics 101',
           'pages': 12,
-          'author': 'Dr. Quantum'
+          'author': 'Dr. Quantum',
         },
       ),
       ChatMessage(

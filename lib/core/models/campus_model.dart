@@ -1,4 +1,3 @@
-
 class Campus {
   final String id;
   final String name;

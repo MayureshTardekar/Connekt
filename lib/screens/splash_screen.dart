@@ -61,24 +61,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     // Staggered animation sequence
     _scaleController.forward();
-    Future.delayed(
-      const Duration(milliseconds: 400),
-      () {
-        if (mounted) _fadeController.forward();
-      },
-    );
-    Future.delayed(
-      const Duration(milliseconds: 600),
-      () {
-        if (mounted) _slideController.forward();
-      },
-    );
-    Future.delayed(
-      const Duration(milliseconds: 800),
-      () {
-        if (mounted) _progressController.forward();
-      },
-    );
+    Future.delayed(const Duration(milliseconds: 400), () {
+      if (mounted) _fadeController.forward();
+    });
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (mounted) _slideController.forward();
+    });
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (mounted) _progressController.forward();
+    });
 
     _bootstrap();
   }

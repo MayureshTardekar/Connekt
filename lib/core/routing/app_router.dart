@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/auth_provider.dart';
 import 'app_routes.dart';
 
@@ -45,19 +44,17 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: AppRoutes.splash,
     redirect: (context, state) {
-      final isLoggedIn = Supabase.instance.client.auth.currentSession != null;
-      final isAuthRoute = state.matchedLocation == AppRoutes.login ||
-          state.matchedLocation == AppRoutes.signup;
-      final isSplashing = state.matchedLocation == AppRoutes.splash;
-
-      if (!isLoggedIn) {
-        return (isAuthRoute || isSplashing) ? null : AppRoutes.login;
+      final user = ref.watch(currentUserProvider);
+      final isLoggingIn = state.matchedLocation == AppRoutes.login || 
+                         state.matchedLocation == AppRoutes.signup ||
+                         state.matchedLocation == AppRoutes.splash;
+      
+      if (user == null) {
+        return isLoggingIn ? null : AppRoutes.login;
       }
-
-      if (isLoggedIn && isAuthRoute) {
-        return AppRoutes.dashboard;
-      }
-
+      
+      if (isLoggingIn) return AppRoutes.dashboard;
+      
       return null;
     },
     routes: [
@@ -126,7 +123,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.aiChat,
         builder: (context, state) {
-          final initialPrompt = state.extra is String ? state.extra as String : null;
+          final initialPrompt = state.extra is String
+              ? state.extra as String
+              : null;
           return AIChatScreen(initialPrompt: initialPrompt);
         },
       ),
@@ -250,10 +249,7 @@ class _RoutePayloadErrorScreen extends StatelessWidget {
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Text(
-            message,
-            textAlign: TextAlign.center,
-          ),
+          child: Text(message, textAlign: TextAlign.center),
         ),
       ),
     );

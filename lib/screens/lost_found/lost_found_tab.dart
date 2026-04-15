@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import '../../core/models/lost_item.dart';
 import '../../core/providers/campus_provider.dart';
 import '../../core/routing/app_routes.dart';
-import '../../core/theme/app_colors.dart';
+import '../../theme/app_theme.dart';
 import '../../core/widgets/app_states.dart';
 import '../../theme/avatar_helper.dart';
 
@@ -23,71 +23,25 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 180,
-            floating: false,
+            floating: true,
             pinned: true,
-            backgroundColor: AppColors.accent,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color(0xFF10B981),
-                      Color(0xFF059669),
-                      Color(0xFF047857),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Stack(
-                  children: [
-                    Positioned(
-                      right: -30,
-                      bottom: -20,
-                      child: Icon(
-                        Icons.search_rounded,
-                        size: 160,
-                        color: Colors.white.withValues(alpha: 0.1),
-                      ),
-                    ),
-                    SafeArea(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Lost & Found',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Report items or help others find theirs.',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.8),
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            backgroundColor: theme.scaffoldBackgroundColor,
+            elevation: 0,
+            title: Text('Lost & Found', style: theme.textTheme.titleLarge),
+            centerTitle: true,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_rounded),
+              color: AppTheme.textPrimary,
+              onPressed: () => context.pop(),
             ),
           ),
-          SliverToBoxAdapter(child: _buildFilterChips()),
+          SliverToBoxAdapter(child: _buildFilterChips(theme)),
           ref
               .watch(lostFoundProvider)
               .when(
@@ -103,11 +57,25 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
                             .toList();
 
                   if (filteredItems.isEmpty) {
-                    return const SliverToBoxAdapter(
+                    return SliverToBoxAdapter(
                       child: Center(
                         child: Padding(
-                          padding: EdgeInsets.all(40.0),
-                          child: Text('No items found'),
+                          padding: const EdgeInsets.symmetric(vertical: 60.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.inventory_2_outlined,
+                                size: 50,
+                                color: theme.dividerColor,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No items reported yet.',
+                                style: theme.textTheme.bodyLarge,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     );
@@ -117,7 +85,7 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate((context, index) {
-                        return _buildItemCard(filteredItems[index]);
+                        return _buildItemCard(filteredItems[index], theme);
                       }, childCount: filteredItems.length),
                     ),
                   );
@@ -137,7 +105,7 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(AppRoutes.lostFoundPost),
-        backgroundColor: AppColors.accent,
+        backgroundColor: theme.colorScheme.primary,
         icon: const Icon(Icons.add_location_alt_rounded, color: Colors.white),
         label: const Text(
           'Report Item',
@@ -147,7 +115,7 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
     );
   }
 
-  Widget _buildFilterChips() {
+  Widget _buildFilterChips(ThemeData theme) {
     return SizedBox(
       height: 60,
       child: ListView.builder(
@@ -164,16 +132,18 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
               onSelected: (selected) {
                 setState(() => _selectedFilter = index);
               },
-              selectedColor: AppColors.accent,
+              selectedColor: theme.colorScheme.primary,
               labelStyle: TextStyle(
-                color: isSelected ? Colors.white : AppColors.textSecondary,
+                color: isSelected ? Colors.white : AppTheme.textSecondary,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
-              backgroundColor: Colors.white,
+              backgroundColor: theme.cardColor,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: BorderSide(
-                  color: isSelected ? AppColors.accent : Colors.grey.shade200,
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : theme.dividerColor,
                 ),
               ),
             ),
@@ -183,21 +153,15 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
     );
   }
 
-  Widget _buildItemCard(LostItem item) {
+  Widget _buildItemCard(LostItem item, ThemeData theme) {
     final isLost = item.type.toLowerCase() == 'lost';
     final statusColor = isLost ? Colors.red : Colors.green;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: AppTheme.softShadow,
       ),
       child: InkWell(
         onTap: () => context.push(AppRoutes.lostFoundDetail, extra: item),
@@ -215,10 +179,10 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
                         height: 100,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
-                          return _buildPlaceholderImage();
+                          return _buildPlaceholderImage(theme);
                         },
                       )
-                    : _buildPlaceholderImage(),
+                    : _buildPlaceholderImage(theme),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -250,7 +214,7 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
                           _formatDate(item.createdAt),
                           style: const TextStyle(
                             fontSize: 11,
-                            color: AppColors.textHint,
+                            color: AppTheme.textSecondary,
                           ),
                         ),
                       ],
@@ -258,10 +222,12 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
                     const SizedBox(height: 8),
                     Text(
                       item.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                        color:
+                            theme.textTheme.bodyLarge?.color ??
+                            AppTheme.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -280,7 +246,7 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
                             item.location,
                             style: const TextStyle(
                               fontSize: 12,
-                              color: AppColors.textSecondary,
+                              color: AppTheme.textSecondary,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -294,10 +260,10 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
                         avatarWidget('Campus member', radius: 10),
                         const SizedBox(width: 6),
                         const Text(
-                          'Campus member',
+                          'Student',
                           style: TextStyle(
                             fontSize: 11,
-                            color: AppColors.textSecondary,
+                            color: AppTheme.textSecondary,
                           ),
                         ),
                       ],
@@ -312,12 +278,12 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
     );
   }
 
-  Widget _buildPlaceholderImage() {
+  Widget _buildPlaceholderImage(ThemeData theme) {
     return Container(
       width: 100,
       height: 100,
-      color: Colors.grey.shade100,
-      child: Icon(Icons.image, color: Colors.grey.shade400),
+      color: theme.dividerColor.withValues(alpha: 0.2),
+      child: Icon(Icons.image, color: theme.dividerColor),
     );
   }
 

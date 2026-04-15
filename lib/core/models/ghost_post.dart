@@ -50,5 +50,6 @@ class GhostPost {
 
   String toJson() => json.encode(toMap());
 
-  factory GhostPost.fromJson(String source) => GhostPost.fromMap(json.decode(source));
+  factory GhostPost.fromJson(String source) =>
+      GhostPost.fromMap(json.decode(source));
 }

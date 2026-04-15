@@ -21,7 +21,7 @@ final dashboardStatsProvider = Provider<DashboardStats>((ref) {
   final ghostPosts = ref.watch(ghostPostsProvider).value?.length ?? 0;
   final events = ref.watch(campusEventsProvider).value?.length ?? 0;
   final conversations = ref.watch(chatConversationsProvider).value ?? [];
-  
+
   int unread = 0;
   for (var c in conversations) {
     unread += c.unreadCount;

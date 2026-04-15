@@ -207,11 +207,34 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                         isStrong: _isPasswordStrong(_passwordController.text),
                       ),
                       const SizedBox(height: 24),
-                      Text(
-                        'By creating an account, you agree to the app policies once they are published.',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppTheme.textSecondary,
-                          fontSize: 13,
+                      RichText(
+                        text: TextSpan(
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppTheme.textSecondary,
+                            fontSize: 13,
+                            height: 1.5,
+                          ),
+                          children: [
+                            const TextSpan(
+                              text: 'By creating an account, you agree to our ',
+                            ),
+                            TextSpan(
+                              text: 'Terms of Service',
+                              style: const TextStyle(
+                                color: AppTheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const TextSpan(text: ' and '),
+                            TextSpan(
+                              text: 'Privacy Policy',
+                              style: const TextStyle(
+                                color: AppTheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const TextSpan(text: '.'),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 28),

@@ -10,11 +10,18 @@ import 'core/providers/theme_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Supabase Backend
-  await Supabase.initialize(
-    url: AppConfig.supabaseUrl,
-    anonKey: AppConfig.supabaseAnonKey,
-  );
+    // Initialize Supabase Backend
+    // AppConfig now provides safe placeholders if real keys are missing to prevent crashes.
+    await Supabase.initialize(
+      url: AppConfig.supabaseUrl,
+      anonKey: AppConfig.supabaseAnonKey,
+    );
+
+    if (!AppConfig.isSupabaseConfigured) {
+      debugPrint(
+        '⚠️ Supabase config is incomplete. Running in offline/limited mode.',
+      );
+    }
 
   // Make status bar transparent for a modern look
   SystemChrome.setSystemUIOverlayStyle(

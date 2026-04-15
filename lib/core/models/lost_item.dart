@@ -53,5 +53,6 @@ class LostItem {
 
   String toJson() => json.encode(toMap());
 
-  factory LostItem.fromJson(String source) => LostItem.fromMap(json.decode(source));
+  factory LostItem.fromJson(String source) =>
+      LostItem.fromMap(json.decode(source));
 }

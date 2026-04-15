@@ -8,10 +8,7 @@ import '../../core/utils/ai_prompts.dart';
 import '../../theme/app_theme.dart';
 
 class ItemDetailScreen extends StatelessWidget {
-  const ItemDetailScreen({
-    super.key,
-    required this.item,
-  });
+  const ItemDetailScreen({super.key, required this.item});
 
   final LostItem item;
 
@@ -104,9 +101,10 @@ class ItemDetailScreen extends StatelessWidget {
                       ),
                       Text(
                         _timeLabel,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppTheme.textSecondary,
-                        ) ??
+                        style:
+                            theme.textTheme.bodySmall?.copyWith(
+                              color: AppTheme.textSecondary,
+                            ) ??
                             const TextStyle(
                               color: AppTheme.textSecondary,
                               fontSize: 13,
@@ -122,6 +120,8 @@ class ItemDetailScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   _InfoCard(
                     title: 'Description',
+                    color: cardColor,
+                    showShadow: !isDark,
                     child: Text(
                       item.description,
                       style: theme.textTheme.bodyMedium?.copyWith(
@@ -129,8 +129,6 @@ class ItemDetailScreen extends StatelessWidget {
                         height: 1.6,
                       ),
                     ),
-                    color: cardColor,
-                    showShadow: !isDark,
                   ),
                   const SizedBox(height: 16),
                   if (_isLost)
@@ -226,7 +224,9 @@ class ItemDetailScreen extends StatelessWidget {
                     color: cardColor,
                     showShadow: !isDark,
                     child: Text(
-                      _hasContact ? item.contactInfo : 'No contact info provided.',
+                      _hasContact
+                          ? item.contactInfo
+                          : 'No contact info provided.',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: _hasContact
                             ? theme.colorScheme.onSurface
@@ -261,10 +261,12 @@ class ItemDetailScreen extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.teal,
                         foregroundColor: Colors.white,
-                        disabledBackgroundColor:
-                            theme.disabledColor.withValues(alpha: 0.2),
-                        disabledForegroundColor:
-                            theme.disabledColor.withValues(alpha: 0.7),
+                        disabledBackgroundColor: theme.disabledColor.withValues(
+                          alpha: 0.2,
+                        ),
+                        disabledForegroundColor: theme.disabledColor.withValues(
+                          alpha: 0.7,
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 18),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -305,10 +307,8 @@ class _HeaderArtwork extends StatelessWidget {
           Image.network(
             item.imageUrl!,
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => _HeaderPlaceholder(
-              statusColor: statusColor,
-              isLost: isLost,
-            ),
+            errorBuilder: (_, __, ___) =>
+                _HeaderPlaceholder(statusColor: statusColor, isLost: isLost),
           ),
           DecoratedBox(
             decoration: BoxDecoration(
@@ -331,10 +331,7 @@ class _HeaderArtwork extends StatelessWidget {
 }
 
 class _HeaderPlaceholder extends StatelessWidget {
-  const _HeaderPlaceholder({
-    required this.statusColor,
-    required this.isLost,
-  });
+  const _HeaderPlaceholder({required this.statusColor, required this.isLost});
 
   final Color statusColor;
   final bool isLost;
@@ -389,10 +386,7 @@ class _InfoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text(title, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           child,
         ],

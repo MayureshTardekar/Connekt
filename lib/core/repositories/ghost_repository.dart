@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/ghost_post.dart';
 import '../network/logger.dart';
@@ -11,7 +12,7 @@ class GhostRepository {
           .from('ghost_posts')
           .select()
           .order('created_at', ascending: false);
-      
+
       return (response as List).map((post) => GhostPost.fromMap(post)).toList();
     } catch (e) {
       AppLogger.error('Error fetching ghost posts: $e');
@@ -23,15 +24,29 @@ class GhostRepository {
     // Show posts from the last 24 hours for a more active experience
     final now = DateTime.now().toUtc();
     final logicCutoff = now.subtract(const Duration(hours: 24));
-    
+
     return _supabase
         .from('ghost_posts')
         .stream(primaryKey: ['id'])
         .order('created_at', ascending: false)
-        .map((data) => data
-            .map((post) => GhostPost.fromMap(post))
-            .where((post) => post.createdAt.toUtc().isAfter(logicCutoff))
-            .toList());
+        .map((data) {
+      try {
+        return data.map((json) {
+          try {
+            return GhostPost.fromMap(json);
+          } catch (e) {
+            debugPrint('Error parsing ghost post record: $e');
+            return null;
+          }
+        }).whereType<GhostPost>().where((post) {
+          // Filter out very old posts for a cleaner global chat experience
+          return post.createdAt.toUtc().isAfter(logicCutoff);
+        }).toList();
+      } catch (e) {
+        debugPrint('Ghost stream mapping error: $e');
+        return [];
+      }
+    });
   }
 
   Future<void> createPost(GhostPost post) async {

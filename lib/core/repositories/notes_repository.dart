@@ -14,8 +14,10 @@ class NotesRepository {
           .from(_table)
           .select()
           .order('created_at', ascending: false);
-      
-      return (response as List).map((note) => AcademicNote.fromMap(note)).toList();
+
+      return (response as List)
+          .map((note) => AcademicNote.fromMap(note))
+          .toList();
     } catch (e) {
       AppLogger.error('Error fetching notes: $e');
       return [];

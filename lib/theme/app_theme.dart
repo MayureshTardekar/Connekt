@@ -44,18 +44,18 @@ class AppTheme {
   );
 
   static TextStyle get heading1 => GoogleFonts.inter(
-        color: textPrimary,
-        fontWeight: FontWeight.w700,
-        fontSize: 24,
-        letterSpacing: -0.6,
-      );
+    color: textPrimary,
+    fontWeight: FontWeight.w700,
+    fontSize: 24,
+    letterSpacing: -0.6,
+  );
 
   static TextStyle get heading2 => GoogleFonts.inter(
-        color: textPrimary,
-        fontWeight: FontWeight.w600,
-        fontSize: 19,
-        letterSpacing: -0.35,
-      );
+    color: textPrimary,
+    fontWeight: FontWeight.w600,
+    fontSize: 19,
+    letterSpacing: -0.35,
+  );
 
   static List<BoxShadow> cardShadow = [
     BoxShadow(
@@ -237,13 +237,8 @@ class AppTheme {
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: textPrimary,
-        contentTextStyle: GoogleFonts.inter(
-          color: Colors.white,
-          fontSize: 13,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        contentTextStyle: GoogleFonts.inter(color: Colors.white, fontSize: 13),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     );
   }
@@ -412,13 +407,8 @@ class AppTheme {
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: darkSurface,
-        contentTextStyle: GoogleFonts.inter(
-          color: Colors.white,
-          fontSize: 13,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        contentTextStyle: GoogleFonts.inter(color: Colors.white, fontSize: 13),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     );
   }

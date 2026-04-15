@@ -53,5 +53,6 @@ class CampusEvent {
 
   String toJson() => json.encode(toMap());
 
-  factory CampusEvent.fromJson(String source) => CampusEvent.fromMap(json.decode(source));
+  factory CampusEvent.fromJson(String source) =>
+      CampusEvent.fromMap(json.decode(source));
 }
