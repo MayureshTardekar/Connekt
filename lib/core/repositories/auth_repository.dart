@@ -23,13 +23,19 @@ class AuthRepository {
 
   // Email & Password Sign Up
   Future<AuthResponse> signUpWithEmail({
+    required String fullName,
     required String email,
     required String password,
   }) async {
     return await _supabase.auth.signUp(
       email: email,
       password: password,
+      data: {'full_name': fullName},
     );
+  }
+
+  Future<void> sendPasswordResetEmail(String email) async {
+    await _supabase.auth.resetPasswordForEmail(email);
   }
 
   // Social Sign In (Google / Discord)

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:go_router/go_router.dart';
 import '../../theme/app_theme.dart';
 import '../../core/repositories/campus_repository.dart';
 import '../../core/network/logger.dart';
@@ -84,7 +85,7 @@ class _UploadNoteScreenState extends State<UploadNoteScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Note uploaded successfully!'), backgroundColor: Colors.green),
         );
-        Navigator.pop(context);
+        context.pop();
       }
     } catch (e) {
       AppLogger.info('Upload failed: $e');
@@ -127,7 +128,7 @@ class _UploadNoteScreenState extends State<UploadNoteScreen> {
               size: 20,
             ),
           ),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
         ),
         title: Text(
           'Upload Note',

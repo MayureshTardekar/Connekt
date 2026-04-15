@@ -1,45 +1,69 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import '../../core/models/campus_event.dart';
 import '../../theme/app_theme.dart';
-import '../../theme/avatar_helper.dart';
 
-class EventDetailScreen extends StatefulWidget {
-  final String title;
-  final String description;
-  final String location;
-  final String time;
-  final List<Color> gradientColors;
-  final IconData icon;
-  final int attendees;
-
+class EventDetailScreen extends StatelessWidget {
   const EventDetailScreen({
     super.key,
-    required this.title,
-    required this.description,
-    required this.location,
-    required this.time,
-    required this.gradientColors,
-    required this.icon,
-    required this.attendees,
+    required this.event,
   });
 
-  @override
-  State<EventDetailScreen> createState() => _EventDetailScreenState();
-}
+  final CampusEvent event;
 
-class _EventDetailScreenState extends State<EventDetailScreen> {
-  bool _isRsvped = false;
+  List<Color> get _gradientColors {
+    switch (event.category.toLowerCase()) {
+      case 'workshop':
+        return const [Color(0xFF2563EB), Color(0xFF1D4ED8)];
+      case 'fest':
+        return const [Color(0xFFF43F5E), Color(0xFFE11D48)];
+      case 'sports':
+        return const [Color(0xFF10B981), Color(0xFF059669)];
+      case 'seminar':
+        return const [Color(0xFFF59E0B), Color(0xFFD97706)];
+      case 'social':
+        return const [Color(0xFF8B5CF6), Color(0xFF7C3AED)];
+      default:
+        return const [Color(0xFF0EA5E9), Color(0xFF0284C7)];
+    }
+  }
+
+  IconData get _icon {
+    switch (event.category.toLowerCase()) {
+      case 'workshop':
+        return Icons.build_rounded;
+      case 'fest':
+        return Icons.celebration_rounded;
+      case 'sports':
+        return Icons.sports_soccer_rounded;
+      case 'seminar':
+        return Icons.school_rounded;
+      case 'social':
+        return Icons.groups_rounded;
+      default:
+        return Icons.event_rounded;
+    }
+  }
+
+  String get _timeLabel =>
+      DateFormat('EEEE, dd MMM yyyy • h:mm a').format(event.dateTime);
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final accent = _gradientColors.first;
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             expandedHeight: 250,
             pinned: true,
-            backgroundColor: widget.gradientColors.first,
+            backgroundColor: accent,
             leading: IconButton(
               icon: Container(
                 padding: const EdgeInsets.all(6),
@@ -53,35 +77,32 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   size: 20,
                 ),
               ),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => context.pop(),
             ),
             flexibleSpace: FlexibleSpaceBar(
-              background: Hero(
-                tag: 'event_header_${widget.title}',
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: widget.gradientColors,
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: _gradientColors,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      right: -20,
+                      bottom: -20,
+                      child: Icon(
+                        _icon,
+                        size: 160,
+                        color: Colors.white.withValues(alpha: 0.12),
+                      ),
                     ),
-                  ),
-                  child: Stack(
-                    children: [
-                      Positioned(
-                        right: -20,
-                        bottom: -20,
-                        child: Icon(
-                          widget.icon,
-                          size: 160,
-                          color: Colors.white.withValues(alpha: 0.1),
-                        ),
-                      ),
-                      Center(
-                        child: Icon(widget.icon, size: 80, color: Colors.white),
-                      ),
-                    ],
-                  ),
+                    Center(
+                      child: Icon(_icon, size: 80, color: Colors.white),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -98,29 +119,27 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          widget.title,
-                          style: Theme.of(context).textTheme.headlineMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                height: 1.2,
-                              ),
+                          event.title,
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            height: 1.2,
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 12),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 10,
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: widget.gradientColors.first.withValues(
-                            alpha: 0.1,
-                          ),
-                          borderRadius: BorderRadius.circular(8),
+                          color: accent.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
-                          'Official Club',
+                          event.category,
                           style: TextStyle(
-                            color: widget.gradientColors.first,
+                            color: accent,
                             fontSize: 11,
                             fontWeight: FontWeight.w800,
                           ),
@@ -129,257 +148,207 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     ],
                   ),
                   const SizedBox(height: 24),
-
-                  // Date and Time Group
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppTheme.cardBorder),
-                    ),
+                  _EventInfoCard(
+                    color: theme.colorScheme.surface,
+                    showShadow: !isDark,
                     child: Column(
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: widget.gradientColors.first.withValues(
-                                  alpha: 0.1,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(
-                                Icons.calendar_month_rounded,
-                                color: widget.gradientColors.first,
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            const Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    widget.time,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Add to Calendar',
-                                    style: TextStyle(
-                                      color: AppTheme.primary,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                        _EventMetaRow(
+                          icon: Icons.calendar_month_rounded,
+                          label: 'When',
+                          value: _timeLabel,
+                          accent: accent,
                         ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          child: Divider(height: 1),
+                        const SizedBox(height: 16),
+                        _EventMetaRow(
+                          icon: Icons.location_on_rounded,
+                          label: 'Where',
+                          value: event.location,
+                          accent: accent,
                         ),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: widget.gradientColors.first.withValues(
-                                  alpha: 0.1,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(
-                                Icons.location_on_rounded,
-                                color: widget.gradientColors.first,
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    widget.location,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                  Text(
-                                    widget.time,
-                                    style: const TextStyle(
-                                      color: AppTheme.textSecondary,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                        const SizedBox(height: 16),
+                        _EventMetaRow(
+                          icon: Icons.campaign_rounded,
+                          label: 'Organizer',
+                          value: event.organizer,
+                          accent: accent,
                         ),
                       ],
                     ),
                   ),
-
-                  const SizedBox(height: 32),
-                  const Text(
-                    'About Event',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    '${widget.description}\n\nJoin us for an exciting day of building and networking. Free food and swags provided for all attendees!',
-                    style: const TextStyle(
-                      height: 1.6,
-                      color: AppTheme.textPrimary,
-                      fontSize: 15,
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Attendees',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                      Text(
-                        '${widget.attendees} Going',
-                        style: TextStyle(
-                          color: widget.gradientColors.first,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
                   const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      avatarWidget('Alex', radius: 20),
-                      const SizedBox(width: -10),
-                      avatarWidget('Jordan', radius: 20),
-                      const SizedBox(width: -10),
-                      avatarWidget('Aisha', radius: 20),
-                      const SizedBox(width: -10),
-                      avatarWidget('Max', radius: 20),
-                      const SizedBox(width: -10),
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppTheme.inputBg,
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            '+144',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.textSecondary,
-                            ),
+                  _EventInfoCard(
+                    color: theme.colorScheme.surface,
+                    showShadow: !isDark,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'About this event',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 12),
+                        Text(
+                          event.description.isNotEmpty
+                              ? event.description
+                              : 'No description was provided for this event.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            height: 1.6,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 16),
+                  _EventInfoCard(
+                    color: theme.colorScheme.surface,
+                    showShadow: !isDark,
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: accent.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Icon(Icons.group_rounded, color: accent),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Attendance',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                event.attendees > 0
+                                    ? '${event.attendees} confirmed'
+                                    : 'No confirmed attendees yet',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: AppTheme.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        final summary = [
+                          event.title,
+                          _timeLabel,
+                          event.location,
+                          if (event.description.isNotEmpty) event.description,
+                        ].join('\n');
+                        await Clipboard.setData(ClipboardData(text: summary));
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Event details copied.'),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.copy_rounded),
+                      label: const Text('Copy Event Details'),
+                    ),
+                  ),
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
           ),
         ],
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
-            ),
-          ],
+    );
+  }
+}
+
+class _EventInfoCard extends StatelessWidget {
+  const _EventInfoCard({
+    required this.child,
+    required this.color,
+    required this.showShadow,
+  });
+
+  final Widget child;
+  final Color color;
+  final bool showShadow;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: showShadow ? AppTheme.softShadow : const [],
+      ),
+      child: child,
+    );
+  }
+}
+
+class _EventMetaRow extends StatelessWidget {
+  const _EventMetaRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.accent,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: accent, size: 22),
         ),
-        child: SafeArea(
-          child: Row(
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Semantics(
-                  button: true,
-                  label: _isRsvped ? 'Cancel RSVP' : 'Confirm RSVP',
-                  child: ElevatedButton(
-                    onPressed: () {
-                      HapticFeedback.lightImpact();
-                      setState(() => _isRsvped = !_isRsvped);
-                      if (_isRsvped) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('RSVP Confirmed! Reminder set.'),
-                          ),
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _isRsvped
-                          ? AppTheme.emerald
-                          : widget.gradientColors.first,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      elevation: 0,
+              Text(
+                label,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.textSecondary,
                     ),
-                    child: Text(
-                      _isRsvped ? 'You\'re Going!' : 'RSVP Now',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
               ),
-              const SizedBox(width: 16),
-              Semantics(
-                button: true,
-                label: 'Set reminder for event',
-                child: InkWell(
-                  onTap: () => HapticFeedback.selectionClick(),
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: AppTheme.inputBg,
-                      borderRadius: BorderRadius.circular(16),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
                     ),
-                    child: Icon(
-                      Icons.notifications_active_outlined,
-                      color: widget.gradientColors.first,
-                    ),
-                  ),
-                ),
               ),
             ],
           ),
         ),
-      ),
+      ],
     );
   }
 }

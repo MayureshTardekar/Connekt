@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_theme.dart';
 import '../core/repositories/campus_repository.dart';
+import '../core/routing/app_routes.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/providers/campus_provider.dart';
@@ -23,6 +24,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late Animation<double> _scaleAnimation;
   late Animation<Offset> _slideAnimation;
   late AnimationController _progressController;
+  Object? _initializationError;
 
   @override
   void initState() {
@@ -78,29 +80,45 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       },
     );
 
-    Future.delayed(const Duration(milliseconds: 3200), () async {
+    _bootstrap();
+  }
+
+  Future<void> _bootstrap() async {
+    setState(() => _initializationError = null);
+    await Future<void>.delayed(const Duration(milliseconds: 1800));
+    if (!mounted) return;
+
+    final session = Supabase.instance.client.auth.currentSession;
+
+    if (session == null) {
+      context.go(AppRoutes.login);
+      return;
+    }
+
+    final repo = CampusRepository();
+
+    try {
+      final isMember = await repo.isMemberOfAnyCampus();
       if (!mounted) return;
-      
-      final session = Supabase.instance.client.auth.currentSession;
-      
-      if (session == null) {
-        context.go('/login');
-      } else {
-        final repo = CampusRepository();
-        final isMember = await repo.isMemberOfAnyCampus();
-        if (isMember) {
-          // Initialize selected campus
-          final campuses = await repo.getMyCampuses();
-          if (campuses.isNotEmpty) {
-            final firstCampusId = campuses.first['campus_id']?.toString();
-            ref.read(selectedCampusIdProvider.notifier).state = firstCampusId;
-          }
-          if (mounted) context.go('/dashboard');
-        } else {
-          if (mounted) context.go('/campus-select');
-        }
+
+      if (!isMember) {
+        context.go(AppRoutes.campusSelect);
+        return;
       }
-    });
+
+      final campuses = await repo.getMyCampuses();
+      if (!mounted) return;
+
+      if (campuses.isNotEmpty) {
+        final firstCampusId = campuses.first['campus_id']?.toString();
+        ref.read(selectedCampusIdProvider.notifier).state = firstCampusId;
+      }
+
+      context.go(AppRoutes.dashboard);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _initializationError = error);
+    }
   }
 
   @override
@@ -228,34 +246,79 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   ),
                   const SizedBox(height: 60),
 
-                  // Animated progress bar
                   AnimatedBuilder(
                     animation: _progressController,
                     builder: (context, child) {
-                      return Container(
-                        width: 140,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: FractionallySizedBox(
-                            widthFactor: _progressController.value,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFF818CF8),
-                                    Color(0xFFA78BFA),
-                                  ],
+                      return Column(
+                        children: [
+                          Container(
+                            width: 140,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: FractionallySizedBox(
+                                widthFactor: _progressController.value,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        Color(0xFF818CF8),
+                                        Color(0xFFA78BFA),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
                                 ),
-                                borderRadius: BorderRadius.circular(2),
                               ),
                             ),
                           ),
-                        ),
+                          const SizedBox(height: 20),
+                          if (_initializationError == null)
+                            Text(
+                              'Checking your campus access...',
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                  ),
+                            )
+                          else
+                            Column(
+                              children: [
+                                Text(
+                                  'Could not finish startup.',
+                                  style: Theme.of(context).textTheme.bodyLarge
+                                      ?.copyWith(color: Colors.white),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Please retry your connection.',
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.7,
+                                        ),
+                                      ),
+                                ),
+                                const SizedBox(height: 16),
+                                OutlinedButton(
+                                  onPressed: _bootstrap,
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.white,
+                                    side: BorderSide(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.35,
+                                      ),
+                                    ),
+                                  ),
+                                  child: const Text('Retry'),
+                                ),
+                              ],
+                            ),
+                        ],
                       );
                     },
                   ),

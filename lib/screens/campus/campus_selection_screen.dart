@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/campus_provider.dart';
+import '../../core/routing/app_routes.dart';
 import '../../theme/app_theme.dart';
 import '../../core/models/campus_model.dart';
 
@@ -152,7 +153,7 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
         branch: finalBranch,
       );
       if (mounted) {
-        context.go('/dashboard');
+        context.go(AppRoutes.dashboard);
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));

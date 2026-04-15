@@ -1,6 +1,9 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/routing/app_routes.dart';
 import '../../theme/app_theme.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
@@ -15,8 +18,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  static final RegExp _emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+
   bool _isAgreed = false;
   bool _isLoading = false;
+  bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
 
   bool _isPasswordStrong(String password) {
     if (password.length < 8) return false;
@@ -27,6 +35,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   Future<void> _handleSignup() async {
+    if (!_formKey.currentState!.validate()) return;
+
     if (!_isAgreed) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please agree to the terms')),
@@ -34,16 +44,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       return;
     }
 
+    final fullName = _nameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     final confirm = _confirmController.text.trim();
-
-    if (email.isEmpty || password.isEmpty || confirm.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all fields')),
-      );
-      return;
-    }
 
     if (password != confirm) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -67,15 +71,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
     try {
       await ref.read(authRepositoryProvider).signUpWithEmail(
+            fullName: fullName,
             email: email,
             password: password,
           );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Account created! Please check your email for verification.')),
+          const SnackBar(
+            content: Text(
+              'Account created! Please check your email for verification.',
+            ),
+          ),
         );
-        Navigator.pop(context);
+        context.go(AppRoutes.login);
       }
     } catch (e) {
       if (mounted) {
@@ -89,9 +98,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -99,7 +119,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
               boxShadow: AppTheme.softShadow,
             ),
@@ -109,191 +129,221 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               size: 20,
             ),
           ),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
         ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 8),
-              Text(
-                'Create Account',
-                style: Theme.of(context).textTheme.displaySmall,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Join Connekt and connect with your campus.',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 32),
-
-              Container(
-                padding: const EdgeInsets.all(28),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(28),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 8),
+                Text(
+                  'Create Account',
+                  style: theme.textTheme.displaySmall,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildField(
-                      'Full Name',
-                      _nameController,
-                      'Alex Johnson',
-                      Icons.person_outline_rounded,
-                    ),
-                    const SizedBox(height: 20),
-                    _buildField(
-                      'Email',
-                      _emailController,
-                      'name@campus.edu',
-                      Icons.mail_outline_rounded,
-                      type: TextInputType.emailAddress,
-                    ),
-                    const SizedBox(height: 20),
-                    _buildField(
-                      'Password',
-                      _passwordController,
-                      '••••••••',
-                      Icons.lock_outline_rounded,
-                      isPassword: true,
-                    ),
-                    const SizedBox(height: 20),
-                    _buildField(
-                      'Confirm Password',
-                      _confirmController,
-                      '••••••••',
-                      Icons.verified_user_outlined,
-                      isPassword: true,
-                    ),
-                    const SizedBox(height: 24),
-
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: Checkbox(
-                            value: _isAgreed,
-                            activeColor: AppTheme.primary,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            onChanged: (val) =>
-                                setState(() => _isAgreed = val ?? false),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text.rich(
-                            TextSpan(
-                              text: 'I agree to the ',
-                              style: Theme.of(
-                                context,
-                              ).textTheme.bodyMedium?.copyWith(fontSize: 13),
-                              children: const [
-                                TextSpan(
-                                  text: 'Terms',
-                                  style: TextStyle(
-                                    color: AppTheme.primary,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                TextSpan(text: ' and '),
-                                TextSpan(
-                                  text: 'Privacy Policy',
-                                  style: TextStyle(
-                                    color: AppTheme.primary,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 28),
-
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _handleSignup,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text(
-                                'Create Account',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Join Connekt and connect with your campus.',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 32),
+                Container(
+                  padding: const EdgeInsets.all(28),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildField(
+                        label: 'Full Name',
+                        controller: _nameController,
+                        hint: 'Alex Johnson',
+                        icon: Icons.person_outline_rounded,
+                      ),
+                      const SizedBox(height: 20),
+                      _buildField(
+                        label: 'Email',
+                        controller: _emailController,
+                        hint: 'name@campus.edu',
+                        icon: Icons.mail_outline_rounded,
+                        type: TextInputType.emailAddress,
+                      ),
+                      const SizedBox(height: 20),
+                      _buildField(
+                        label: 'Password',
+                        controller: _passwordController,
+                        hint: '........',
+                        icon: Icons.lock_outline_rounded,
+                        isPassword: true,
+                        isVisible: _isPasswordVisible,
+                        onVisibilityToggle: () {
+                          setState(() {
+                            _isPasswordVisible = !_isPasswordVisible;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      _buildField(
+                        label: 'Confirm Password',
+                        controller: _confirmController,
+                        hint: '........',
+                        icon: Icons.verified_user_outlined,
+                        isPassword: true,
+                        isVisible: _isConfirmPasswordVisible,
+                        onVisibilityToggle: () {
+                          setState(() {
+                            _isConfirmPasswordVisible =
+                                !_isConfirmPasswordVisible;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      _PasswordStrengthHint(
+                        password: _passwordController.text,
+                        isStrong: _isPasswordStrong(_passwordController.text),
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            height: 22,
+                            width: 22,
+                            child: Checkbox(
+                              value: _isAgreed,
+                              activeColor: AppTheme.primary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(5),
                               ),
+                              onChanged: (val) =>
+                                  setState(() => _isAgreed = val ?? false),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text.rich(
+                              TextSpan(
+                                text: 'I agree to the ',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontSize: 13,
+                                ),
+                                children: [
+                                  TextSpan(
+                                    text: 'Terms',
+                                    style: const TextStyle(
+                                      color: AppTheme.primary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                    recognizer: TapGestureRecognizer()
+                                      ..onTap = () => _showLegalNotice(
+                                            context,
+                                            'Terms',
+                                          ),
+                                  ),
+                                  const TextSpan(text: ' and '),
+                                  TextSpan(
+                                    text: 'Privacy Policy',
+                                    style: const TextStyle(
+                                      color: AppTheme.primary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                    recognizer: TapGestureRecognizer()
+                                      ..onTap = () => _showLegalNotice(
+                                            context,
+                                            'Privacy Policy',
+                                          ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 28),
-              Center(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Already have an account? ',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Text(
-                        'Sign In',
-                        style: TextStyle(
-                          color: AppTheme.primary,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
+                      const SizedBox(height: 28),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _handleSignup,
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text(
+                                  'Create Account',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 40),
-            ],
+                const SizedBox(height: 28),
+                Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Already have an account? ',
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                      GestureDetector(
+                        onTap: () => context.pop(),
+                        child: const Text(
+                          'Sign In',
+                          style: TextStyle(
+                            color: AppTheme.primary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 40),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildField(
-    String label,
-    TextEditingController controller,
-    String hint,
-    IconData icon, {
+  Widget _buildField({
+    required String label,
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
     bool isPassword = false,
+    bool isVisible = false,
+    VoidCallback? onVisibilityToggle,
     TextInputType type = TextInputType.text,
   }) {
     return Column(
@@ -303,14 +353,92 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         const SizedBox(height: 10),
         TextFormField(
           controller: controller,
-          obscureText: isPassword,
+          obscureText: isPassword && !isVisible,
           keyboardType: type,
+          onChanged: isPassword ? (_) => setState(() {}) : null,
+          validator: (value) {
+            final trimmed = value?.trim() ?? '';
+            if (trimmed.isEmpty) {
+              return 'This field is required';
+            }
+            if (label == 'Full Name' && trimmed.length < 2) {
+              return 'Please enter your full name';
+            }
+            if (label == 'Email' && !_emailRegex.hasMatch(trimmed)) {
+              return 'Please enter a valid email';
+            }
+            return null;
+          },
           decoration: InputDecoration(
             hintText: hint,
             prefixIcon: Icon(icon, color: AppTheme.textSecondary, size: 20),
+            suffixIcon: isPassword
+                ? IconButton(
+                    onPressed: onVisibilityToggle,
+                    icon: Icon(
+                      isVisible
+                          ? Icons.visibility_off_rounded
+                          : Icons.visibility_rounded,
+                    ),
+                  )
+                : null,
           ),
         ),
       ],
+    );
+  }
+
+  void _showLegalNotice(BuildContext context, String label) {
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(label),
+          content: Text(
+            '$label content is not wired to a hosted document yet. Before a real production release, connect this to your published policy page.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _PasswordStrengthHint extends StatelessWidget {
+  const _PasswordStrengthHint({
+    required this.password,
+    required this.isStrong,
+  });
+
+  final String password;
+  final bool isStrong;
+
+  @override
+  Widget build(BuildContext context) {
+    final requirements = [
+      password.length >= 8,
+      RegExp(r'[A-Z]').hasMatch(password),
+      RegExp(r'[0-9]').hasMatch(password),
+      RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password),
+    ];
+
+    final metCount = requirements.where((met) => met).length;
+    final color = isStrong
+        ? Colors.green
+        : metCount >= 2
+            ? Colors.orange
+            : Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey;
+
+    return Text(
+      isStrong
+          ? 'Strong password'
+          : 'Use 8+ characters with uppercase, number, and symbol.',
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: color),
     );
   }
 }

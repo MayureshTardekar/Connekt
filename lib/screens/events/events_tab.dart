@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/providers/campus_provider.dart';
 import '../../core/models/campus_event.dart';
-import '../../theme/avatar_helper.dart';
-import 'post_event_screen.dart';
-import 'event_detail_screen.dart';
-import '../ai/ai_chat_screen.dart';
-import '../../core/utils/ai_prompts.dart';
+import '../../core/providers/campus_provider.dart';
+import '../../core/routing/app_routes.dart';
 import '../../core/widgets/app_states.dart';
+import '../../theme/app_theme.dart';
+import '../../theme/avatar_helper.dart';
 
 class EventsTab extends ConsumerStatefulWidget {
   const EventsTab({super.key});
@@ -19,553 +17,333 @@ class EventsTab extends ConsumerStatefulWidget {
 }
 
 class _EventsTabState extends ConsumerState<EventsTab> {
-  int _selectedDay = 1;
-  int _selectedFilter = 0;
-  final List<String> _filters = [
-    'All',
-    'Workshop',
-    'Fest',
-    'Sports',
-    'Seminar',
-    'Social',
-  ];
+  int _selectedDayIndex = 0;
+  String _selectedCategory = 'All';
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 220,
-            floating: false,
-            pinned: true,
-            backgroundColor: const Color(0xFFF59E0B),
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color(0xFFF59E0B),
-                      Color(0xFFD97706),
-                      Color(0xFFB45309),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Stack(
+    final eventsAsync = ref.watch(campusEventsProvider);
+
+    return eventsAsync.when(
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, _) => Scaffold(
+        body: Center(
+          child: AppErrorState(
+            message: error.toString(),
+            onRetry: () => ref.invalidate(campusEventsProvider),
+          ),
+        ),
+      ),
+      data: (events) {
+        final categories = <String>{
+          'All',
+          ...events.map((event) => event.category.trim()).where((it) => it.isNotEmpty),
+        }.toList();
+        final effectiveCategory =
+            categories.contains(_selectedCategory) ? _selectedCategory : 'All';
+        final today = DateTime.now();
+        final selectedDate = DateTime(
+          today.year,
+          today.month,
+          today.day,
+        ).add(Duration(days: _selectedDayIndex));
+
+        final filteredEvents = events.where((event) {
+          final eventDate = DateTime(
+            event.dateTime.year,
+            event.dateTime.month,
+            event.dateTime.day,
+          );
+          final matchesDay = eventDate == selectedDate;
+          final matchesCategory =
+              effectiveCategory == 'All' || event.category == effectiveCategory;
+          return matchesDay && matchesCategory;
+        }).toList()
+          ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+
+        return Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          body: SafeArea(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Positioned(
-                      right: -20,
-                      bottom: -10,
-                      child: Icon(
-                        Icons.event_available_rounded,
-                        size: 200,
-                        color: Colors.white.withValues(alpha: 0.15),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Events',
+                            style: Theme.of(context).textTheme.displaySmall,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'See what is actually happening on campus and post new events only when they are ready.',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ],
                       ),
                     ),
-                    SafeArea(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Campus Events',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(builder: (context) => const PostEventScreen()),
-                                    );
-                                  },
-                                  icon: Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.2),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(Icons.add_rounded, color: Colors.white),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Stay updated with workshops, fests, and matches.',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.9),
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
+                    const SizedBox(width: 12),
+                    IconButton(
+                      onPressed: () => context.push(AppRoutes.eventPost),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.surface,
+                        side: BorderSide(color: Theme.of(context).dividerColor),
                       ),
+                      icon: const Icon(Icons.add_rounded),
                     ),
                   ],
                 ),
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Column(
-              children: [
-                const SizedBox(height: 16),
-                _buildFilterBar(),
-                const SizedBox(height: 10),
-              ],
-            ),
-          ),
-          ref.watch(campusEventsProvider).when(
-                data: (events) {
-                    final filteredEvents = _selectedFilter == 0
-                        ? events
-                        : events.where((e) => e.category == _filters[_selectedFilter]).toList();
-
-                    if (filteredEvents.isEmpty) {
-                      return SliverToBoxAdapter(
-                        child: Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(40.0),
-                            child: Column(
-                              children: [
-                                Icon(Icons.event_busy_rounded, size: 64, color: Colors.grey.withValues(alpha: 0.3)),
-                                const SizedBox(height: 16),
-                                Text(
-                                  _selectedFilter == 0 ? 'No events scheduled yet' : 'No ${_filters[_selectedFilter]} events found',
-                                  style: TextStyle(
-                                    color: Theme.of(context).brightness == Brightness.dark ? Colors.white60 : Colors.black54,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ],
+                const SizedBox(height: 24),
+                SizedBox(
+                  height: 68,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemBuilder: (context, index) {
+                      final date = DateTime.now().add(Duration(days: index));
+                      final isSelected = _selectedDayIndex == index;
+                      return InkWell(
+                        onTap: () => setState(() => _selectedDayIndex = index),
+                        borderRadius: BorderRadius.circular(20),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          width: 74,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? Theme.of(
+                                    context,
+                                  ).colorScheme.primary.withValues(alpha: 0.12)
+                                : Theme.of(context).colorScheme.surface,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).dividerColor,
                             ),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                DateFormat('EEE').format(date),
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: isSelected
+                                          ? Theme.of(context).colorScheme.primary
+                                          : Theme.of(
+                                            context,
+                                          ).textTheme.bodySmall?.color,
+                                    ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                DateFormat('d').format(date),
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      color: isSelected
+                                          ? Theme.of(context).colorScheme.primary
+                                          : null,
+                                    ),
+                              ),
+                            ],
                           ),
                         ),
                       );
-                    }
-
-                    return SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            return _buildEventCard(filteredEvents[index]);
-                          },
-                          childCount: filteredEvents.length,
-                        ),
-                      ),
-                    );
-                },
-                loading:
-                    () => const SliverToBoxAdapter(
-                      child: Center(child: CircularProgressIndicator()),
-                    ),
-                error: (err, stack) => SliverToBoxAdapter(
-                  child: AppErrorState(
-                    message: err.toString(),
-                    onRetry: () => ref.invalidate(campusEventsProvider),
+                    },
+                    separatorBuilder: (_, __) => const SizedBox(width: 10),
+                    itemCount: 7,
                   ),
                 ),
-              ),
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const PostEventScreen()),
-          );
-        },
-        backgroundColor: const Color(0xFFF59E0B),
-        child: const Icon(Icons.add_rounded, color: Colors.white),
-      ),
-    );
-  }
-
-  Widget _buildDaySelector() {
-    return Container(
-      height: 90,
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: 7,
-        itemBuilder: (context, index) {
-          final isSelected = _selectedDay == index;
-          return GestureDetector(
-            onTap: () => setState(() => _selectedDay = index),
-            child: Container(
-              width: 55,
-              margin: const EdgeInsets.only(right: 12),
-              decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFFF59E0B) : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  if (isSelected)
-                    BoxShadow(
-                      color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                ],
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][index],
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.grey,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${index + 12}',
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : AppColors.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                if (categories.length > 1) ...[
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    height: 42,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemBuilder: (context, index) {
+                        final category = categories[index];
+                        final isSelected = effectiveCategory == category;
+                        return ChoiceChip(
+                          label: Text(category),
+                          selected: isSelected,
+                          onSelected: (_) {
+                            setState(() => _selectedCategory = category);
+                          },
+                          backgroundColor:
+                              Theme.of(context).colorScheme.surface,
+                          selectedColor: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.12),
+                          side: BorderSide(color: Theme.of(context).dividerColor),
+                          labelStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: isSelected
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(context).textTheme.bodySmall?.color,
+                                fontWeight:
+                                    isSelected ? FontWeight.w600 : FontWeight.w500,
+                              ),
+                        );
+                      },
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemCount: categories.length,
                     ),
                   ),
                 ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildFilterBar() {
-    return SizedBox(
-      height: 50,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _filters.length,
-        itemBuilder: (context, index) {
-          final isSelected = _selectedFilter == index;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: FilterChip(
-              label: Text(_filters[index]),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() => _selectedFilter = index);
-              },
-              backgroundColor: Colors.white,
-              selectedColor: const Color(0xFFF59E0B).withValues(alpha: 0.2),
-              labelStyle: TextStyle(
-                color: isSelected ? const Color(0xFFB45309) : Colors.grey,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildAIBanner(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        final eventsAsync = ref.read(campusEventsProvider);
-        if (eventsAsync.asData?.value == null) return;
-        final eventsStr = eventsAsync.asData!.value
-            .map((e) => "\${e.title} (\${e.category})")
-            .join(", ");
-            
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => AIChatScreen(
-              initialPrompt: AIPrompts.recommendEvents("music, technology, and fun", eventsStr),
+                const SizedBox(height: 22),
+                Text(
+                  '${filteredEvents.length} events',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 14),
+                if (filteredEvents.isEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: Theme.of(context).dividerColor),
+                    ),
+                    child: Text(
+                      'No events are scheduled for this selection.',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  )
+                else
+                  ...filteredEvents.map(_buildEventCard),
+              ],
             ),
           ),
         );
       },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF8B5CF6).withValues(alpha: 0.3),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            )
-          ],
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.auto_awesome_rounded, color: Colors.white),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Get AI Event Recommendations',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                  Text(
-                    'Discover what matches your vibe.',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right_rounded, color: Colors.white),
-          ],
-        ),
-      ),
     );
   }
 
   Widget _buildEventCard(CampusEvent event) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.2 : 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+    final theme = Theme.of(context);
+    final accent = _categoryColor(event.category);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
       child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => EventDetailScreen(
-                title: event.title,
-                description: event.description,
-                location: event.location,
-                time: DateFormat('hh:mm a').format(event.dateTime),
-                gradientColors: const [Color(0xFFF59E0B), Color(0xFFD97706)],
-                icon: Icons.event_available_rounded,
-                attendees: 0,
-              ),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(24),
-        child: Column(
-          children: [
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(24),
-                    topRight: Radius.circular(24),
-                  ),
-                  child: event.imageUrl != null
-                      ? Image.network(
-                          event.imageUrl!,
-                          height: 140,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return _buildPlaceholderImage();
-                          },
-                        )
-                      : _buildPlaceholderImage(),
-                ),
-                Positioned(
-                  top: 12,
-                  right: 12,
-                  child: Container(
+        onTap: () => context.push(AppRoutes.eventDetail, extra: event),
+        borderRadius: BorderRadius.circular(22),
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: theme.dividerColor),
+            boxShadow: AppTheme.softShadow,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
-                      vertical: 6,
+                      vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      color: accent.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(999),
                     ),
-                    child: Column(
-                      children: [
-                        Text(
-                          DateFormat('MMM').format(event.dateTime).toUpperCase(),
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.red,
-                          ),
-                        ),
-                        Text(
-                          DateFormat('dd').format(event.dateTime),
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).brightness == Brightness.dark ? Colors.black : AppColors.textPrimary,
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      event.category,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: accent,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          event.category,
-                          style: const TextStyle(
-                            color: Colors.orange,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                      const Icon(Icons.schedule_rounded, size: 14, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      Text(
-                        DateFormat('hh:mm a').format(event.dateTime),
-                        style: const TextStyle(color: Colors.grey, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
+                  const Spacer(),
                   Text(
-                    event.title,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on_rounded,
-                        size: 14,
-                        color: Colors.grey,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        event.location,
-                        style: const TextStyle(color: Colors.grey, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      SizedBox(
-                        width: 60,
-                        child: Stack(
-                          children: [
-                            avatarWidget('User 1', radius: 12),
-                            Positioned(
-                              left: 15,
-                              child: avatarWidget('User 2', radius: 12),
-                            ),
-                            Positioned(
-                              left: 30,
-                              child: avatarWidget('User 3', radius: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Text(
-                        '+42 Going',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const Spacer(),
-                      ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFF59E0B),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'Join Event',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
+                    DateFormat('h:mm a').format(event.dateTime),
+                    style: theme.textTheme.bodySmall,
                   ),
                 ],
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              Text(
+                event.title,
+                style: theme.textTheme.titleMedium?.copyWith(fontSize: 17),
+              ),
+              if (event.description.trim().isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  event.description,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.location_on_outlined,
+                    size: 16,
+                    color: AppTheme.textSecondary,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      event.location,
+                      style: theme.textTheme.bodySmall,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  avatarWidget(event.organizer, radius: 10),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      event.attendees > 0
+                          ? '${event.attendees} confirmed'
+                          : 'Hosted by ${event.organizer}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () =>
+                        context.push(AppRoutes.eventDetail, extra: event),
+                    child: const Text('Open'),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildPlaceholderImage() {
-    return Container(
-      height: 140,
-      width: double.infinity,
-      color: Colors.orange.shade100,
-      child: const Icon(
-        Icons.image_not_supported_rounded,
-        color: Colors.orange,
-      ),
-    );
+  Color _categoryColor(String category) {
+    switch (category.toLowerCase()) {
+      case 'workshop':
+        return const Color(0xFF2563EB);
+      case 'fest':
+        return const Color(0xFFE11D48);
+      case 'sports':
+        return const Color(0xFF059669);
+      case 'seminar':
+        return const Color(0xFFD97706);
+      case 'social':
+        return const Color(0xFF7C3AED);
+      default:
+        return AppTheme.primary;
+    }
   }
 }

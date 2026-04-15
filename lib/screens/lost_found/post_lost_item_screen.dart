@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:go_router/go_router.dart';
 import '../../theme/app_theme.dart';
 import '../../core/repositories/campus_repository.dart';
 import '../../core/network/logger.dart';
@@ -58,7 +59,7 @@ class _PostLostItemScreenState extends State<PostLostItemScreen> {
             backgroundColor: _selectedType == 'Lost' ? Colors.red : Colors.green,
           ),
         );
-        Navigator.pop(context);
+        context.pop();
       }
     } catch (e) {
       AppLogger.info('Failed to report item: $e');
@@ -89,7 +90,7 @@ class _PostLostItemScreenState extends State<PostLostItemScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
         ),
         title: Text('Report Item', style: Theme.of(context).textTheme.titleLarge),
         centerTitle: true,

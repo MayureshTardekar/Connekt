@@ -1,0 +1,25 @@
+abstract final class AppRoutes {
+  static const splash = '/';
+  static const login = '/login';
+  static const signup = '/signup';
+  static const dashboard = '/dashboard';
+  static const notes = '/notes';
+  static const noteDetail = '/notes/detail';
+  static const noteUpload = '/notes/upload';
+  static const events = '/events';
+  static const eventDetail = '/events/detail';
+  static const eventPost = '/events/post';
+  static const chat = '/chat';
+  static const chatDetail = '/chat/detail';
+  static const chatFriendRequests = '/chat/friend-requests';
+  static const world = '/world';
+  static const campusSelect = '/campus-select';
+  static const lostFound = '/lost-found';
+  static const lostFoundDetail = '/lost-found/detail';
+  static const lostFoundPost = '/lost-found/post';
+  static const studyGroups = '/study-groups';
+  static const studyGroupsCreate = '/study-groups/create';
+  static const profile = '/profile';
+  static const profileHistory = '/profile/history';
+  static const aiChat = '/ai';
+}

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/providers/campus_provider.dart';
 import '../../core/models/lost_item.dart';
+import '../../core/routing/app_routes.dart';
 import '../../theme/avatar_helper.dart';
-import 'post_lost_item_screen.dart';
-import 'item_detail_screen.dart';
 import '../../core/widgets/app_states.dart';
 
 class LostFoundTab extends ConsumerStatefulWidget {
@@ -22,8 +22,6 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
     'All',
     'Lost',
     'Found',
-    'Electronics',
-    'Documents',
   ];
 
   @override
@@ -146,14 +144,7 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const PostLostItemScreen(),
-            ),
-          );
-        },
+        onPressed: () => context.push(AppRoutes.lostFoundPost),
         backgroundColor: AppColors.accent,
         icon: const Icon(Icons.add_location_alt_rounded, color: Colors.white),
         label: const Text(
@@ -217,22 +208,7 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
         ],
       ),
       child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ItemDetailScreen(
-                title: item.title,
-                description: item.description,
-                location: item.location,
-                time: _formatDate(item.createdAt),
-                status: item.type.toUpperCase(),
-                statusColor: statusColor,
-                imageUrl: item.imageUrl ?? '',
-              ),
-            ),
-          );
-        },
+        onTap: () => context.push(AppRoutes.lostFoundDetail, extra: item),
         borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.all(12),

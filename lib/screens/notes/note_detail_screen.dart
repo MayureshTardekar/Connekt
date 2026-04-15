@@ -1,37 +1,43 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_theme.dart';
-import '../../theme/avatar_helper.dart';
-import '../ai/ai_chat_screen.dart';
+import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import '../../core/models/academic_note.dart';
+import '../../core/routing/app_routes.dart';
 import '../../core/utils/ai_prompts.dart';
+import '../../theme/app_theme.dart';
 
-class NoteDetailScreen extends StatefulWidget {
-  final String title;
-  final String subject;
-  final Color subjectColor;
-  final String author;
-  final int downloads;
-
+class NoteDetailScreen extends StatelessWidget {
   const NoteDetailScreen({
     super.key,
-    required this.title,
-    required this.subject,
-    required this.subjectColor,
-    required this.author,
-    required this.downloads,
+    required this.note,
   });
 
-  @override
-  State<NoteDetailScreen> createState() => _NoteDetailScreenState();
-}
+  final AcademicNote note;
 
-class _NoteDetailScreenState extends State<NoteDetailScreen> {
-  bool _isBookmarked = false;
-  bool _isDownloaded = false;
+  Color get _categoryColor {
+    switch (note.category.toLowerCase()) {
+      case 'mathematics':
+      case 'math':
+        return const Color(0xFF2563EB);
+      case 'computer science':
+      case 'cs':
+        return const Color(0xFF7C3AED);
+      case 'physics':
+        return const Color(0xFFF59E0B);
+      default:
+        return AppTheme.primary;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final fileUrl = note.fileUrl?.trim() ?? '';
+
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -39,7 +45,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
           icon: Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: theme.colorScheme.surface,
               shape: BoxShape.circle,
               border: Border.all(color: AppTheme.cardBorder),
             ),
@@ -49,21 +55,8 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
               size: 20,
             ),
           ),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
         ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              _isBookmarked
-                  ? Icons.bookmark_rounded
-                  : Icons.bookmark_border_rounded,
-              color: _isBookmarked
-                  ? widget.subjectColor
-                  : AppTheme.textSecondary,
-            ),
-            onPressed: () => setState(() => _isBookmarked = !_isBookmarked),
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -71,273 +64,265 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: widget.subjectColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                widget.subject,
-                style: TextStyle(
-                  color: widget.subjectColor,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              widget.title,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                height: 1.2,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                avatarWidget(widget.author, radius: 20),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.author,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                        ),
-                      ),
-                      const Text(
-                        'Computer Science • 3rd Year',
-                        style: TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 32),
-
-            // Preview Pages Mock
-            const Text(
-              'Document Preview',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 200,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: 4,
-                itemBuilder: (context, index) {
-                  return Container(
-                    width: 140,
-                    margin: const EdgeInsets.only(right: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: AppTheme.cardBorder),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.article_outlined,
-                        color: AppTheme.textSecondary.withValues(alpha: 0.3),
-                        size: 40,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 32),
-
-            // Download Button
-            SizedBox(
               width: double.infinity,
-              height: 56,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  setState(() => _isDownloaded = true);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Note downloaded successfully'),
-                    ),
-                  );
-                },
-                icon: Icon(
-                  _isDownloaded
-                      ? Icons.check_circle_rounded
-                      : Icons.download_rounded,
-                  color: Colors.white,
-                ),
-                label: Text(
-                  _isDownloaded
-                      ? 'Downloaded (4.2 MB)'
-                      : 'Download PDF (4.2 MB)',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _isDownloaded
-                      ? AppTheme.emerald
-                      : AppTheme.primary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 0,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 32),
-            // AI Action Tokens
-            const Text(
-              'Connekt AI Tools',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildAIToolButton(
-                    context,
-                    icon: Icons.auto_awesome_rounded,
-                    label: 'Summarize',
-                    color: Colors.cyan,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => AIChatScreen(
-                            initialPrompt: AIPrompts.summarizeNote(widget.title, widget.subject),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildAIToolButton(
-                    context,
-                    icon: Icons.quiz_rounded,
-                    label: 'Generate Quiz',
-                    color: Colors.purpleAccent,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => AIChatScreen(
-                            initialPrompt: AIPrompts.generateQuiz(widget.title, widget.subject),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 48),
-            // Comments Section (Mock)
-            const Text(
-              'Comments (2)',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            const SizedBox(height: 16),
-            _buildCommentMock(
-              'Sarah Jenkins',
-              'This summary saved my life before the midterms, thanks so much!',
-            ),
-            _buildCommentMock(
-              'David Chen',
-              'Could you upload the week 5 notes as well?',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCommentMock(String name, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          avatarWidget(name, radius: 16),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppTheme.cardBorder),
+                gradient: LinearGradient(
+                  colors: [
+                    _categoryColor,
+                    _categoryColor.withValues(alpha: 0.78),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(28),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      note.category,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   Text(
-                    name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
+                    note.title,
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Uploaded by ${note.author}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.85),
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    text,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppTheme.textPrimary,
+                    DateFormat('dd MMM yyyy, h:mm a').format(note.createdAt),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.72),
                     ),
                   ),
                 ],
               ),
             ),
+            const SizedBox(height: 20),
+            _NoteInfoCard(
+              title: 'About this note',
+              color: theme.colorScheme.surface,
+              showShadow: !isDark,
+              child: Text(
+                note.description.isNotEmpty
+                    ? note.description
+                    : 'No description was provided for this note.',
+                style: theme.textTheme.bodyMedium?.copyWith(height: 1.6),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _NoteInfoCard(
+              title: 'Details',
+              color: theme.colorScheme.surface,
+              showShadow: !isDark,
+              child: Column(
+                children: [
+                  _DetailRow(
+                    icon: Icons.menu_book_rounded,
+                    label: 'Pages',
+                    value: '${note.pages}',
+                  ),
+                  const SizedBox(height: 12),
+                  _DetailRow(
+                    icon: Icons.link_rounded,
+                    label: 'File link',
+                    value: fileUrl.isNotEmpty ? 'Available' : 'Not attached',
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (fileUrl.isNotEmpty)
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    await Clipboard.setData(ClipboardData(text: fileUrl));
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('File link copied.')),
+                    );
+                  },
+                  icon: const Icon(Icons.copy_rounded),
+                  label: const Text('Copy File Link'),
+                ),
+              ),
+            if (fileUrl.isNotEmpty) const SizedBox(height: 16),
+            Text(
+              'Connekt AI Tools',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _AICardButton(
+                    label: 'Summarize',
+                    color: const Color(0xFF06B6D4),
+                    icon: Icons.auto_awesome_rounded,
+                    onTap: () => context.push(
+                      AppRoutes.aiChat,
+                      extra: AIPrompts.summarizeNote(note.title, note.category),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _AICardButton(
+                    label: 'Generate Quiz',
+                    color: const Color(0xFF8B5CF6),
+                    icon: Icons.quiz_rounded,
+                    onTap: () => context.push(
+                      AppRoutes.aiChat,
+                      extra: AIPrompts.generateQuiz(note.title, note.category),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 40),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NoteInfoCard extends StatelessWidget {
+  const _NoteInfoCard({
+    required this.title,
+    required this.child,
+    required this.color,
+    required this.showShadow,
+  });
+
+  final String title;
+  final Widget child;
+  final Color color;
+  final bool showShadow;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: showShadow ? AppTheme.softShadow : const [],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
           ),
+          const SizedBox(height: 12),
+          child,
         ],
       ),
     );
   }
+}
 
-  Widget _buildAIToolButton(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: AppTheme.primary),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        Text(
+          value,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AICardButton extends StatelessWidget {
+  const _AICardButton({
+    required this.label,
+    required this.color,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String label;
+  final Color color;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: color.withValues(alpha: 0.18)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(width: 8),
+            Icon(icon, color: color),
+            const SizedBox(height: 10),
             Text(
               label,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-              ),
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
             ),
           ],
         ),

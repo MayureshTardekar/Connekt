@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../theme/app_theme.dart';
 
 class HistorySessionsScreen extends StatelessWidget {
@@ -17,7 +18,7 @@ class HistorySessionsScreen extends StatelessWidget {
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_new_rounded, 
                 color: isDark ? Colors.white : AppTheme.textPrimary),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
         ),
       ),
       body: ListView(

@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/providers/chat_provider.dart';
 import '../../core/providers/friend_provider.dart';
 import '../../core/providers/campus_provider.dart';
 import '../../core/models/chat_conversation.dart';
+import '../../core/routing/app_routes.dart';
 import '../../core/widgets/app_states.dart';
 import '../../theme/avatar_helper.dart';
-import 'chat_detail_screen.dart';
-import 'friend_requests_screen.dart';
 
 class ChatTab extends ConsumerStatefulWidget {
   const ChatTab({super.key});
@@ -207,10 +207,7 @@ class _FriendRequestBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const FriendRequestsScreen()),
-      ),
+      onTap: () => context.push(AppRoutes.chatFriendRequests),
       child: Container(
         margin: const EdgeInsets.fromLTRB(20, 0, 20, 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -277,12 +274,7 @@ class _ChatTile extends StatelessWidget {
         '${chat.lastMessageTime.hour}:${chat.lastMessageTime.minute.toString().padLeft(2, '0')}';
 
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ChatDetailScreen(conversation: chat),
-        ),
-      ),
+      onTap: () => context.push(AppRoutes.chatDetail, extra: chat),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
@@ -410,12 +402,7 @@ class _CampusCommunityTile extends ConsumerWidget {
           lastMessageTime: DateTime.now(),
         );
         
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ChatDetailScreen(conversation: communityConv),
-          ),
-        );
+        context.push(AppRoutes.chatDetail, extra: communityConv);
       },
       child: Container(
         margin: const EdgeInsets.fromLTRB(20, 0, 20, 10),

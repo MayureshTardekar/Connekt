@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../theme/app_theme.dart';
@@ -96,7 +97,7 @@ class _PostEventScreenState extends State<PostEventScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Event posted successfully!'), backgroundColor: Colors.green),
         );
-        Navigator.pop(context);
+        context.pop();
       }
     } catch (e) {
       AppLogger.info('Failed to post event: $e');
@@ -139,7 +140,7 @@ class _PostEventScreenState extends State<PostEventScreen> {
               size: 20,
             ),
           ),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
         ),
         title: Text(
           'Post Event',

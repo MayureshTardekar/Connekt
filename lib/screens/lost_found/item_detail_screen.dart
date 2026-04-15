@@ -1,50 +1,59 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_theme.dart';
-import '../../theme/avatar_helper.dart';
-import '../chat/chat_detail_screen.dart';
-import '../../core/models/chat_conversation.dart';
-import '../ai/ai_chat_screen.dart';
+import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import '../../core/models/lost_item.dart';
+import '../../core/routing/app_routes.dart';
 import '../../core/utils/ai_prompts.dart';
+import '../../theme/app_theme.dart';
 
-class ItemDetailScreen extends StatefulWidget {
-  final String title;
-  final String description;
-  final String location;
-  final String time;
-  final String status;
-  final Color statusColor;
-  final String imageUrl;
-
+class ItemDetailScreen extends StatelessWidget {
   const ItemDetailScreen({
     super.key,
-    required this.title,
-    required this.description,
-    required this.location,
-    required this.time,
-    required this.status,
-    required this.statusColor,
-    required this.imageUrl,
+    required this.item,
   });
 
-  @override
-  State<ItemDetailScreen> createState() => _ItemDetailScreenState();
-}
+  final LostItem item;
 
-class _ItemDetailScreenState extends State<ItemDetailScreen> {
-  int _currentImageIndex = 0;
+  bool get _isLost => item.type.toLowerCase() == 'lost';
+
+  bool get _hasImage =>
+      item.imageUrl != null && item.imageUrl!.trim().isNotEmpty;
+
+  bool get _hasContact => item.contactInfo.trim().isNotEmpty;
+
+  String get _statusLabel {
+    if (item.isResolved) {
+      return 'Resolved';
+    }
+    return _isLost ? 'Lost' : 'Found';
+  }
+
+  Color get _statusColor {
+    if (item.isResolved) {
+      return AppTheme.emerald;
+    }
+    return _isLost ? Colors.red : Colors.green;
+  }
+
+  String get _timeLabel => DateFormat('dd MMM, h:mm a').format(item.createdAt);
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cardColor = theme.colorScheme.surface;
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             expandedHeight: 300,
             pinned: true,
-            backgroundColor: widget.statusColor,
+            backgroundColor: _statusColor,
             leading: GestureDetector(
-              onTap: () => Navigator.pop(context),
+              onTap: () => context.pop(),
               child: Container(
                 margin: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
@@ -58,59 +67,11 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               ),
             ),
             flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                children: [
-                  PageView.builder(
-                    itemCount: 3,
-                    onPageChanged: (index) =>
-                        setState(() => _currentImageIndex = index),
-                    itemBuilder: (context, index) {
-                      return Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              widget.statusColor.withValues(alpha: 0.8),
-                              widget.statusColor.withValues(alpha: 0.4),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                        child: Center(
-                          child: Icon(
-                            widget.status == 'Lost'
-                                ? Icons.search_off_rounded
-                                : Icons.check_circle_rounded,
-                            size: 100,
-                            color: Colors.white.withValues(alpha: 0.3),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  Positioned(
-                    bottom: 20,
-                    left: 0,
-                    right: 0,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(
-                        3,
-                        (index) => Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          width: _currentImageIndex == index ? 24 : 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: _currentImageIndex == index
-                                ? Colors.white
-                                : Colors.white.withValues(alpha: 0.4),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              background: _HeaderArtwork(
+                item: item,
+                statusColor: _statusColor,
+                isLost: _isLost,
+                hasImage: _hasImage,
               ),
             ),
           ),
@@ -129,96 +90,81 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: widget.statusColor.withValues(alpha: 0.1),
+                          color: _statusColor.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          widget.status,
+                          _statusLabel,
                           style: TextStyle(
-                            color: widget.statusColor,
+                            color: _statusColor,
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
                           ),
                         ),
                       ),
                       Text(
-                        widget.time,
-                        style: const TextStyle(
+                        _timeLabel,
+                        style: theme.textTheme.bodySmall?.copyWith(
                           color: AppTheme.textSecondary,
-                          fontSize: 13,
-                        ),
+                        ) ??
+                            const TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 13,
+                            ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    widget.title,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.displaySmall?.copyWith(fontSize: 24),
+                    item.title,
+                    style: theme.textTheme.displaySmall?.copyWith(fontSize: 24),
                   ),
                   const SizedBox(height: 16),
-
-                  // Description card
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: AppTheme.softShadow,
+                  _InfoCard(
+                    title: 'Description',
+                    child: Text(
+                      item.description,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.textSecondary,
+                        height: 1.6,
+                      ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Description',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          widget.description,
-                          style: const TextStyle(
-                            color: AppTheme.textSecondary,
-                            fontSize: 15,
-                            height: 1.6,
-                          ),
-                        ),
-                      ],
-                    ),
+                    color: cardColor,
+                    showShadow: !isDark,
                   ),
                   const SizedBox(height: 16),
-                  if (widget.status == 'Lost')
+                  if (_isLost)
                     GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => AIChatScreen(
-                              initialPrompt: AIPrompts.lostItemTips(widget.title),
-                            ),
-                          ),
-                        );
-                      },
+                      onTap: () => context.push(
+                        AppRoutes.aiChat,
+                        extra: AIPrompts.lostItemTips(item.title),
+                      ),
                       child: Container(
                         width: double.infinity,
                         margin: const EdgeInsets.only(bottom: 16),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [AppTheme.teal, AppTheme.teal.withValues(alpha: 0.7)],
+                            colors: [
+                              AppTheme.teal,
+                              AppTheme.teal.withValues(alpha: 0.75),
+                            ],
                           ),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.travel_explore_rounded, color: Colors.white, size: 28),
+                            const Icon(
+                              Icons.travel_explore_rounded,
+                              color: Colors.white,
+                              size: 28,
+                            ),
                             const SizedBox(width: 16),
-                            Expanded(
+                            const Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
+                                  Text(
                                     'Need help finding this?',
                                     style: TextStyle(
                                       color: Colors.white,
@@ -226,71 +172,29 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                       fontSize: 15,
                                     ),
                                   ),
-                                  const Text(
-                                    'Get AI tips on where to check on campus.',
-                                    style: TextStyle(color: Colors.white70, fontSize: 13),
+                                  Text(
+                                    'Get AI suggestions for places to check on campus.',
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 13,
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
-                            const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 16),
+                            const Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              color: Colors.white,
+                              size: 16,
+                            ),
                           ],
                         ),
                       ),
                     ),
-
-                  // Timeline card
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: AppTheme.softShadow,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Status Timeline',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 16),
-                        _buildTimelineStep(
-                          title: 'Reported',
-                          time: widget.time,
-                          isCompleted: true,
-                          isLast: false,
-                          color: widget.statusColor,
-                        ),
-                        _buildTimelineStep(
-                          title: 'Under Review',
-                          time: 'Pending',
-                          isCompleted: false,
-                          isLast: false,
-                          color: widget.statusColor,
-                        ),
-                        _buildTimelineStep(
-                          title: 'Resolved',
-                          time: '-',
-                          isCompleted: false,
-                          isLast: true,
-                          color: widget.statusColor,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Location card
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: AppTheme.softShadow,
-                    ),
+                  _InfoCard(
+                    title: 'Location',
+                    color: cardColor,
+                    showShadow: !isDark,
                     child: Row(
                       children: [
                         Container(
@@ -306,100 +210,61 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         ),
                         const SizedBox(width: 16),
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Location',
-                                style: TextStyle(
-                                  color: AppTheme.textSecondary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                widget.location,
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.titleMedium?.copyWith(fontSize: 15),
-                              ),
-                            ],
+                          child: Text(
+                            item.location,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontSize: 15,
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 16),
-
-                  // Posted by card
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: AppTheme.softShadow,
-                    ),
-                    child: Row(
-                      children: [
-                        avatarWidget('Sarah Miller', radius: 24),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Posted by',
-                                style: TextStyle(
-                                  color: AppTheme.textSecondary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Sarah Miller',
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.titleMedium?.copyWith(fontSize: 15),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Icon(
-                          Icons.chevron_right_rounded,
-                          color: AppTheme.textSecondary,
-                        ),
-                      ],
+                  _InfoCard(
+                    title: 'Contact Info',
+                    color: cardColor,
+                    showShadow: !isDark,
+                    child: Text(
+                      _hasContact ? item.contactInfo : 'No contact info provided.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: _hasContact
+                            ? theme.colorScheme.onSurface
+                            : AppTheme.textSecondary,
+                        height: 1.5,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 32),
-
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ChatDetailScreen(
-                              conversation: ChatConversation(
-                                id: 'lost_found_1',
-                                participantId: 'p2',
-                                participantName: 'Sarah Miller',
-                                lastMessage: 'Hey regarding the lost item...',
-                                lastMessageTime: DateTime.now(),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.chat_bubble_rounded, size: 20),
-                      label: const Text('Contact via Chat'),
+                      onPressed: _hasContact
+                          ? () async {
+                              await Clipboard.setData(
+                                ClipboardData(text: item.contactInfo),
+                              );
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Contact info copied.'),
+                                ),
+                              );
+                            }
+                          : null,
+                      icon: const Icon(Icons.copy_rounded, size: 20),
+                      label: Text(
+                        _hasContact
+                            ? 'Copy Contact Info'
+                            : 'No Contact Info Available',
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.teal,
                         foregroundColor: Colors.white,
+                        disabledBackgroundColor:
+                            theme.disabledColor.withValues(alpha: 0.2),
+                        disabledForegroundColor:
+                            theme.disabledColor.withValues(alpha: 0.7),
                         padding: const EdgeInsets.symmetric(vertical: 18),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -407,28 +272,6 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-
-                  if (widget.status == 'Lost')
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: () {},
-                        icon: const Icon(Icons.check_circle_rounded, size: 20),
-                        label: const Text('Mark as Found'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppTheme.emerald,
-                          side: const BorderSide(
-                            color: AppTheme.emerald,
-                            width: 2,
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 18),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                      ),
-                    ),
                   const SizedBox(height: 40),
                 ],
               ),
@@ -438,69 +281,122 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       ),
     );
   }
+}
 
-  Widget _buildTimelineStep({
-    required String title,
-    required String time,
-    required bool isCompleted,
-    required bool isLast,
-    required Color color,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Column(
-          children: [
-            Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                color: isCompleted ? color : Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isCompleted ? color : AppTheme.cardBorder,
-                  width: 3,
-                ),
-              ),
-              child: isCompleted
-                  ? const Icon(Icons.check, size: 12, color: Colors.white)
-                  : null,
+class _HeaderArtwork extends StatelessWidget {
+  const _HeaderArtwork({
+    required this.item,
+    required this.statusColor,
+    required this.isLost,
+    required this.hasImage,
+  });
+
+  final LostItem item;
+  final Color statusColor;
+  final bool isLost;
+  final bool hasImage;
+
+  @override
+  Widget build(BuildContext context) {
+    if (hasImage) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.network(
+            item.imageUrl!,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _HeaderPlaceholder(
+              statusColor: statusColor,
+              isLost: isLost,
             ),
-            if (!isLast)
-              Container(
-                width: 2,
-                height: 30,
-                color: isCompleted ? color : AppTheme.cardBorder,
-              ),
-          ],
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: isCompleted ? FontWeight.bold : FontWeight.w500,
-                  color: isCompleted
-                      ? AppTheme.textPrimary
-                      : AppTheme.textSecondary,
-                ),
-              ),
-              Text(
-                time,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.textSecondary,
-                ),
-              ),
-              if (!isLast) const SizedBox(height: 16),
-            ],
           ),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.black.withValues(alpha: 0.08),
+                  Colors.black.withValues(alpha: 0.42),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return _HeaderPlaceholder(statusColor: statusColor, isLost: isLost);
+  }
+}
+
+class _HeaderPlaceholder extends StatelessWidget {
+  const _HeaderPlaceholder({
+    required this.statusColor,
+    required this.isLost,
+  });
+
+  final Color statusColor;
+  final bool isLost;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            statusColor.withValues(alpha: 0.9),
+            statusColor.withValues(alpha: 0.55),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-      ],
+      ),
+      child: Center(
+        child: Icon(
+          isLost ? Icons.search_off_rounded : Icons.check_circle_rounded,
+          size: 100,
+          color: Colors.white.withValues(alpha: 0.3),
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoCard extends StatelessWidget {
+  const _InfoCard({
+    required this.title,
+    required this.child,
+    required this.color,
+    required this.showShadow,
+  });
+
+  final String title;
+  final Widget child;
+  final Color color;
+  final bool showShadow;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: showShadow ? AppTheme.softShadow : const [],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          child,
+        ],
+      ),
     );
   }
 }

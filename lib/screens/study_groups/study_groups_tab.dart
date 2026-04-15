@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/repositories/study_groups_repository.dart';
 import '../../core/models/study_group.dart';
 import '../../core/providers/campus_provider.dart';
+import '../../core/routing/app_routes.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/avatar_helper.dart';
-import 'create_group_screen.dart';
 
 class StudyGroupsTab extends ConsumerStatefulWidget {
   const StudyGroupsTab({super.key});
@@ -122,7 +123,37 @@ class _StudyGroupsTabState extends ConsumerState<StudyGroupsTab> {
   @override
   Widget build(BuildContext context) {
     final selectedCampus = ref.watch(selectedCampusProvider);
-    if (selectedCampus == null) return const Center(child: Text('Please select a campus first.'));
+    if (selectedCampus == null) {
+      return Scaffold(
+        backgroundColor: AppTheme.background,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.location_on_rounded,
+                  size: 48,
+                  color: AppTheme.coral,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Choose a campus first to view or create study groups.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => context.push(AppRoutes.campusSelect),
+                  child: const Text('Select Campus'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -140,7 +171,7 @@ class _StudyGroupsTabState extends ConsumerState<StudyGroupsTab> {
                 decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
                 child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
               ),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => context.pop(),
             ),
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
@@ -235,7 +266,7 @@ class _StudyGroupsTabState extends ConsumerState<StudyGroupsTab> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CreateGroupScreen())),
+        onPressed: () => context.push(AppRoutes.studyGroupsCreate),
         backgroundColor: AppTheme.coral,
         icon: const Icon(Icons.add_rounded, color: Colors.white),
         label: const Text('Create', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),

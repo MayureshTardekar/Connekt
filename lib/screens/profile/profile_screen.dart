@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:connekt/core/repositories/auth_repository.dart';
 import '../../core/providers/campus_provider.dart';
+import '../../core/routing/app_routes.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/avatar_helper.dart';
 
@@ -75,7 +76,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           IconButton(
             onPressed: () async {
               await Supabase.instance.client.auth.signOut();
-              if (context.mounted) context.go('/login');
+              if (context.mounted) context.go(AppRoutes.login);
             },
             icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
           ),
@@ -226,7 +227,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 TextButton.icon(
                                   onPressed: () {
                                     ref.read(selectedCampusIdProvider.notifier).state = campusId;
-                                    context.go('/dashboard');
+                                    context.go(AppRoutes.dashboard);
                                   },
                                   icon: const Icon(Icons.swap_horiz_rounded, size: 18),
                                   label: const Text('Switch'),

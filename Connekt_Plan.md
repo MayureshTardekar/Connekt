@@ -1,829 +1,792 @@
-# CampusHive — Smart Campus Companion App
-### Complete Project Reference Document
-> One file to rule them all. Use this as your bible while building.
+# Connekt Production Repair Plan
+
+This document is the working master plan to take the current Flutter app from "demo with real screens" to "production-ready campus platform".
+
+It is based on the current repository structure under `lib/`, the existing GoRouter/Riverpod architecture, and the issues identified in the audit. The goal is not only to patch visible bugs, but to remove the patterns that keep re-creating them.
 
 ---
 
-## Table of Contents
-1. [Project Overview](#1-project-overview)
-2. [App Name & Branding](#2-app-name--branding)
-3. [Tech Stack](#3-tech-stack)
-4. [App Modules](#4-app-modules)
-5. [Firebase Database Schema](#5-firebase-database-schema)
-6. [File & Folder Structure](#6-file--folder-structure)
-7. [Phase-wise Build Plan](#7-phase-wise-build-plan)
-8. [Screen-by-Screen UI Plan](#8-screen-by-screen-ui-plan)
-9. [Team Division](#9-team-division)
-10. [Gradle Dependencies](#10-gradle-dependencies)
-11. [Firebase Security Rules](#11-firebase-security-rules)
-12. [Splash Screen Guide](#12-splash-screen-guide)
-13. [Viva Preparation](#13-viva-preparation)
-14. [Timeline](#14-timeline)
+## 1. Mission
+
+### Primary goal
+Stabilize the app so that every major flow is:
+- secure enough to ship
+- consistent in navigation and state handling
+- functional instead of decorative
+- theme-safe in both light and dark mode
+- backed by real repository/provider logic instead of hardcoded UI data
+
+### Definition of "production level" for this app
+- No secrets embedded in source.
+- No mixed navigation stacks.
+- No fake submit buttons or placeholder flows pretending to save data.
+- No screen relying on hardcoded dates, attendees, comments, ratings, file sizes, or identity labels when backend data exists.
+- All create/read/update actions show loading, success, and failure states.
+- Core modules work on real backend data or are clearly feature-flagged off.
+- Important flows have tests.
 
 ---
 
-## 1. Project Overview
+## 2. Current App Map
 
-**App Name:** CampusHive (or UniPulse — pick one)  
-**Type:** Android Mobile App  
-**Language:** Java  
-**IDE:** Android Studio  
-**Backend:** Firebase (Auth + Firestore + Storage)  
-**Min SDK:** API 21 (Android 5.0)  
-**Target SDK:** API 34  
+### App foundation
+- Entry: `lib/main.dart`
+- Router: `lib/core/routing/app_router.dart`
+- Config: `lib/core/config/app_config.dart`
+- Theme: `lib/core/theme/*` and `lib/theme/*`
+- State: Riverpod providers in `lib/core/providers/*`
+- Data layer: repositories in `lib/core/repositories/*`
 
-### What this app does
-CampusHive is an all-in-one smart campus companion for college students. It combines academic tools (notes, events), social features (named chat, lost & found, study groups), and a unique anonymous peer support zone — all in one app.
-
-### Two ideas that make it stand out
-1. **Smart Campus Companion** — Notes, Events, Lost & Found, Study Groups in one unified platform
-2. **Anonymous Peer Support** — Students can post feelings, seek advice, and support each other completely anonymously. No userId stored. No identity exposed.
-
----
-
-## 2. App Name & Branding
-
-| Option | Tagline | Vibe |
-|--------|---------|------|
-| **CampusHive** | Your campus. Your community. Your hive. | Community + anonymous zone |
-| **UniPulse** | Feel the pulse of your campus. | Energetic, startup-feel |
-| **NexCampus** | The next-gen campus companion. | Futuristic |
-
-**Recommended: CampusHive**
-
-### Color Palette (suggested)
-| Element | Color | Hex |
-|---------|-------|-----|
-| Primary | Deep Blue | `#1565C0` |
-| Accent | Teal | `#00897B` |
-| Background | White | `#FFFFFF` |
-| Surface | Light Gray | `#F5F5F5` |
-| Text Primary | Near Black | `#212121` |
-| Text Secondary | Gray | `#757575` |
-| Anonymous Zone | Deep Purple | `#6A1B9A` |
-| Error | Red | `#D32F2F` |
-
-### Font
-- **Headings:** Poppins Bold
-- **Body:** Roboto Regular
-- Add both via Google Fonts in `res/font/`
+### Main feature areas
+- Auth: `lib/screens/auth/*`
+- Splash: `lib/screens/splash_screen.dart`
+- Main shell: `lib/screens/main_screen.dart`
+- Dashboard: `lib/screens/home/dashboard_tab.dart`
+- Notes: `lib/screens/notes/*`
+- Events: `lib/screens/events/*`
+- Chat: `lib/screens/chat/*`
+- Ghost / World chat / comments: `lib/screens/ghost/*`
+- Lost & found: `lib/screens/lost_found/*`
+- Study groups: `lib/screens/study_groups/*`
+- Campus: `lib/screens/campus/*`
+- Profile: `lib/screens/profile/*`
+- AI chat: `lib/screens/ai/ai_chat_screen.dart`
 
 ---
 
-## 3. Tech Stack
+## 3. Repair Strategy
 
-### Frontend
-| Tool | Purpose |
-|------|---------|
-| Java | Primary programming language |
-| XML | UI layouts |
-| Android Studio | IDE |
-| Lottie | Splash screen animation |
-| Glide | Image loading from URLs |
-| CircleImageView | Round profile images |
-| CardView | Dashboard cards |
-| RecyclerView | All list screens |
-| Material Design Components | UI components |
+### Rule 1: Fix foundations before polishing screens
+If routing, config, theming, and repository contracts stay inconsistent, screen-level fixes will keep regressing.
 
-### Backend — Firebase
-| Service | Used For |
-|---------|---------|
-| Firebase Authentication | Login, Signup, Session management |
-| Cloud Firestore | Main NoSQL database (all app data) |
-| Firebase Storage | PDF uploads (notes) + Image uploads (lost items) |
-| Firebase Cloud Messaging | Push notifications (optional, Phase 2) |
+### Rule 2: Remove fake UX first
+Any button that only pops a route, any search field with no logic, and any hardcoded card metadata breaks trust immediately.
 
-### Why Firebase over Supabase (for this project)
-- Official Android SDK — deeply integrated
-- Real-time with 2 lines of code (`addSnapshotListener`)
-- Google Sign-In works out of the box
-- Mentioned in most Android syllabi — examiner-friendly
-- Free tier is sufficient: 1GB storage, 50k reads/day
+### Rule 3: Convert screen-local fake state into provider/repository state
+Bookmarks, reactions, comments, RSVP, and upload status must move out of widget-local state.
+
+### Rule 4: Every user action needs 4 states
+- idle
+- loading
+- success
+- error
+
+### Rule 5: If backend support does not exist yet, the UI must say so explicitly
+Never ship decorative controls that look functional.
 
 ---
 
-## 4. App Modules
+## 4. Priority Roadmap
 
-### Module 1 — Authentication
-- Email/password login and signup
-- Store user profile in Firestore on signup
-- Auto-login if user session exists
-- Logout from settings
+## P0 - Critical Foundation Repairs
 
-### Module 2 — Dashboard
-- Home screen with grid of feature cards
-- Show logged-in user's name at top
-- Navigate to all modules from here
+### 4.1 Secure runtime configuration
+Target files:
+- `lib/core/config/app_config.dart`
+- `lib/main.dart`
+- platform build config where `--dart-define` is injected
+- `README.md`
 
-### Module 3 — Notes Sharing
-- Upload PDF notes with title and subject
-- View list of all uploaded notes
-- Open/download PDF in external viewer
-- Filter by subject (optional)
+Tasks:
+- Keep all secrets out of source code.
+- Standardize required keys:
+  - `SUPABASE_URL`
+  - `SUPABASE_ANON_KEY`
+  - `GEMINI_API_KEY`
+  - any optional fallback AI keys only if truly used
+- Remove unused key definitions if the app does not actually use xAI, NVIDIA, Groq.
+- Add startup validation with a clear crash message in debug and safer user-facing error handling in release.
+- Document local/dev/prod build commands using `--dart-define`.
+- Add `.env.example` only as documentation if the team wants local mapping, but do not rely on shipping `.env` in client apps for secret protection.
 
-### Module 4 — Events
-- Post campus events (title, date, description, location)
-- View all upcoming events sorted by date
-- Real-time updates
+Acceptance criteria:
+- No live secret values exist anywhere in `lib/`.
+- App startup fails loudly in development when required config is missing.
+- Build instructions are documented.
 
-### Module 5 — Lost & Found
-- Post a lost item with image + description
-- View all lost items with contact info
-- Contact poster via Chat module
-- Mark item as found (delete)
+### 4.2 Unify navigation under GoRouter only
+Target files:
+- `lib/core/routing/app_router.dart`
+- all screens using `Navigator.push`, `pushReplacement`, `popUntil`, or direct `MaterialPageRoute`
 
-### Module 6 — Student Chat (Named)
-- 1-to-1 real-time chat between named users
-- Chat list showing all active conversations
-- Message bubbles (sent right, received left)
-- Real-time updates with snapshot listener
+Tasks:
+- Replace all direct `Navigator.*` pushes for app routes with `context.go`, `context.push`, or named route equivalents.
+- Define route constants or typed helpers to avoid raw string duplication.
+- Ensure nested tab navigation behaves correctly with `StatefulShellRoute`.
+- Decide which screens belong inside shell branches vs standalone routes.
+- Normalize back behavior from detail screens and post flows.
+- Audit deep-link safety for `state.extra` arguments.
 
-### Module 7 — Anonymous Peer Support ⭐ USP
-- Post thoughts, feelings, rants anonymously
-- Mood tags: Stressed / Happy / Confused / Venting / Motivated
-- Like posts (with anti-double-like protection)
-- Comment anonymously on any post
-- Filter feed by mood
-- **CRITICAL: NO userId stored anywhere in this module**
+Acceptance criteria:
+- No feature screen uses direct Navigator for app navigation.
+- Back button behavior is consistent across Android system back and app bar back.
+- Tab stack state remains stable when switching tabs.
 
-### Module 8 — Study Group Finder
-- Post a study session (subject, time, location, max members)
-- Browse and join open study groups
-- See your created and joined groups
-- Member count shown, disable join when full
+### 4.3 Fix theme system and dark mode correctness
+Target files:
+- `lib/core/theme/app_theme.dart`
+- `lib/core/theme/app_colors.dart`
+- `lib/theme/app_theme.dart`
+- screens with hardcoded `Colors.white`, `Color(0xFF...)`, or `AppColors.background`
 
----
+Tasks:
+- Choose one theme source of truth. Remove or merge duplicate theme implementations.
+- Replace hardcoded surfaces/text colors with theme tokens:
+  - `colorScheme.surface`
+  - `colorScheme.surfaceContainer*`
+  - `colorScheme.onSurface`
+  - `colorScheme.primary`
+  - `textTheme`
+- Introduce semantic helpers for cards, chips, borders, and input fills.
+- Audit all major screens in both modes.
+- Fix Ghost/World tab specifically for light mode compatibility.
 
-## 5. Firebase Database Schema
+Acceptance criteria:
+- All main screens are readable in light and dark mode.
+- No major screen has white cards on light text or dark-only backgrounds in light mode.
+- Theme usage is consistent and centralized.
 
-### Collection: `users`
-```
-users/{userId}
-  - uid: string
-  - name: string
-  - email: string
-  - createdAt: timestamp
-```
+### 4.4 Improve splash/auth boot flow resilience
+Target files:
+- `lib/screens/splash_screen.dart`
+- `lib/core/providers/auth_provider.dart`
+- `lib/core/repositories/auth_repository.dart`
 
-### Collection: `notes`
-```
-notes/{noteId}
-  - title: string
-  - subject: string
-  - fileUrl: string         ← Firebase Storage download URL
-  - uploadedBy: string      ← user's name (not uid)
-  - uploadedById: string    ← uid (for delete permission)
-  - timestamp: timestamp
-```
+Tasks:
+- Remove fake progress behavior if loading is not actually tied to initialization.
+- Wrap campus/session checks with try/catch.
+- Add retry and offline-friendly error state.
+- Route based on actual auth state and campus membership state.
 
-### Collection: `events`
-```
-events/{eventId}
-  - title: string
-  - description: string
-  - date: timestamp
-  - location: string        ← optional
-  - postedBy: string        ← user's name
-  - postedById: string      ← uid
-  - timestamp: timestamp
-```
-
-### Collection: `lost_items`
-```
-lost_items/{itemId}
-  - title: string
-  - description: string
-  - imageUrl: string        ← Firebase Storage download URL
-  - postedBy: string        ← user's name
-  - postedById: string      ← uid (for chat routing)
-  - isFound: boolean
-  - timestamp: timestamp
-```
-
-### Collection: `chats`
-```
-chats/{chatId}             ← chatId = sorted(uid1 + uid2)
-  - participants: [uid1, uid2]
-  - lastMessage: string
-  - lastMessageTime: timestamp
-
-chats/{chatId}/messages/{messageId}
-  - text: string
-  - senderId: string
-  - senderName: string
-  - timestamp: timestamp
-```
-
-### Collection: `anonymous_posts`
-```
-anonymous_posts/{postId}
-  - content: string
-  - mood: string            ← "stressed" | "happy" | "confused" | "venting" | "motivated"
-  - likes: number
-  - likedBy: [string]       ← array of UIDs to prevent double likes (UIDs not shown in UI)
-  - commentCount: number
-  - timestamp: timestamp
-  ← NO userId field — complete anonymity
-```
-
-### Collection: `comments`
-```
-comments/{commentId}
-  - postId: string          ← reference to anonymous_posts
-  - content: string
-  - timestamp: timestamp
-  ← NO userId field — complete anonymity
-```
-
-### Collection: `study_groups`
-```
-study_groups/{groupId}
-  - subject: string
-  - description: string
-  - dateTime: timestamp
-  - location: string
-  - createdBy: string       ← user's name
-  - createdById: string     ← uid
-  - maxMembers: number
-  - memberCount: number
-  - members: [uid]          ← array of joined user UIDs
-  - timestamp: timestamp
-```
+Acceptance criteria:
+- Splash does not silently fail on backend/network error.
+- Users always land in a defined state: login, campus select, or dashboard.
 
 ---
 
-## 6. File & Folder Structure
+## P1 - Convert Fake Flows Into Real Product Flows
 
-```
-app/
-└── src/main/
-    ├── java/com/yourpackage/campushive/
-    │   ├── activities/
-    │   │   ├── SplashActivity.java
-    │   │   ├── LoginActivity.java
-    │   │   ├── SignupActivity.java
-    │   │   ├── DashboardActivity.java
-    │   │   ├── NotesActivity.java
-    │   │   ├── UploadNoteActivity.java
-    │   │   ├── EventsActivity.java
-    │   │   ├── PostEventActivity.java
-    │   │   ├── LostFoundActivity.java
-    │   │   ├── PostLostItemActivity.java
-    │   │   ├── ItemDetailActivity.java
-    │   │   ├── ChatListActivity.java
-    │   │   ├── ChatActivity.java
-    │   │   ├── AnonFeedActivity.java
-    │   │   ├── PostAnonActivity.java
-    │   │   ├── CommentsActivity.java
-    │   │   ├── StudyGroupActivity.java
-    │   │   └── PostGroupActivity.java
-    │   │
-    │   ├── adapters/
-    │   │   ├── NotesAdapter.java
-    │   │   ├── EventsAdapter.java
-    │   │   ├── LostItemsAdapter.java
-    │   │   ├── ChatListAdapter.java
-    │   │   ├── MessageAdapter.java
-    │   │   ├── AnonPostAdapter.java
-    │   │   ├── CommentsAdapter.java
-    │   │   └── StudyGroupAdapter.java
-    │   │
-    │   ├── models/
-    │   │   ├── User.java
-    │   │   ├── Note.java
-    │   │   ├── Event.java
-    │   │   ├── LostItem.java
-    │   │   ├── ChatMessage.java
-    │   │   ├── ChatPreview.java
-    │   │   ├── AnonPost.java
-    │   │   ├── Comment.java
-    │   │   └── StudyGroup.java
-    │   │
-    │   └── utils/
-    │       ├── FirebaseHelper.java
-    │       └── Constants.java
-    │
-    └── res/
-        ├── layout/
-        │   ├── activity_splash.xml
-        │   ├── activity_login.xml
-        │   ├── activity_signup.xml
-        │   ├── activity_dashboard.xml
-        │   ├── activity_notes.xml
-        │   ├── activity_upload_note.xml
-        │   ├── activity_events.xml
-        │   ├── activity_post_event.xml
-        │   ├── activity_lost_found.xml
-        │   ├── activity_post_lost_item.xml
-        │   ├── activity_item_detail.xml
-        │   ├── activity_chat_list.xml
-        │   ├── activity_chat.xml
-        │   ├── activity_anon_feed.xml
-        │   ├── activity_post_anon.xml
-        │   ├── activity_comments.xml
-        │   ├── activity_study_group.xml
-        │   ├── activity_post_group.xml
-        │   ├── item_note.xml
-        │   ├── item_event.xml
-        │   ├── item_lost.xml
-        │   ├── item_chat_preview.xml
-        │   ├── item_message_sent.xml
-        │   ├── item_message_received.xml
-        │   ├── item_anon_post.xml
-        │   ├── item_comment.xml
-        │   └── item_study_group.xml
-        │
-        ├── raw/
-        │   └── splash_anim.json       ← Lottie animation file
-        │
-        ├── drawable/
-        │   └── (icons, backgrounds)
-        │
-        └── values/
-            ├── strings.xml
-            ├── colors.xml
-            └── styles.xml
-```
+### 4.5 Auth polish and correctness
+Target files:
+- `lib/screens/auth/login_screen.dart`
+- `lib/screens/auth/signup_screen.dart`
+- `lib/core/repositories/auth_repository.dart`
+- `lib/core/providers/auth_provider.dart`
+
+Tasks:
+- Send `full_name` into user metadata/profile storage during signup.
+- Strengthen email validation.
+- Add show/hide toggle for confirm password.
+- Make "Forgot?" actionable or remove it until implemented.
+- Add loading state for social sign-in buttons.
+- Add terms/privacy links to real screens or external URLs.
+- Add inline password requirements/strength feedback.
+
+Acceptance criteria:
+- Signup persists name.
+- Auth screens show proper validation and loading/error state.
+- No dead legal/auth controls remain.
+
+### 4.6 Make note upload actually work
+Target files:
+- `lib/screens/notes/upload_note_screen.dart`
+- `lib/core/repositories/notes_repository.dart`
+- related model/storage utilities
+
+Tasks:
+- Use `file_picker` for real document selection.
+- Validate title, subject/category, file, and campus context.
+- Upload file to storage and persist note metadata.
+- Show progress, success, and failure state.
+- Return to notes list through router and refresh list data.
+
+Acceptance criteria:
+- A user can select a real file and create a note record.
+- Newly uploaded note appears in notes list.
+
+### 4.7 Make event posting actually work
+Target files:
+- `lib/screens/events/post_event_screen.dart`
+- `lib/core/repositories/campus_repository.dart` or dedicated events repository
+- `lib/core/models/campus_event.dart`
+
+Tasks:
+- Persist date/time values selected by the user.
+- Validate title, description, date, time, location/category.
+- Save the event and refresh events list.
+- Replace fake pop-only submit.
+
+Acceptance criteria:
+- A posted event persists and shows with real date/time.
+
+### 4.8 Turn decorative search/filter UI into real behavior
+Target files:
+- `lib/screens/notes/notes_tab.dart`
+- `lib/screens/events/events_tab.dart`
+- `lib/screens/chat/chat_tab.dart`
+- `lib/screens/campus/campus_selection_screen.dart`
+- `lib/screens/lost_found/lost_found_tab.dart`
+
+Tasks:
+- Add controllers/state for search fields.
+- Ensure filter chip values match actual stored categories.
+- Apply local or repository-level filtering.
+- Debounce search where needed.
+
+Acceptance criteria:
+- Search and filter controls visibly affect results.
+- There are no decorative search bars left in primary flows.
 
 ---
 
-## 7. Implementation Plan (Frontend/Product-first, Backend-later)
+## P1 - Remove Demo Data and Hardcoded UI Claims
 
-### Phase 0 — Foundation Cleanup (2–4 days)
-**Goal:** Make the codebase scalable before features explode.
-*   **Tasks:**
-    *   Create feature folders: `features/chat`, `features/ghost`, `features/events`, etc.
-    *   Add app-wide models and mock repositories (`ChatRepository`, `EventsRepository`, etc.) returning dummy JSON.
-    *   Add state management (Riverpod / Bloc / Provider — pick one and stick to it).
-    *   Add route management (GoRouter / centralized routes).
-    *   Add design tokens for spacing, radius, and typography consistency.
-*   **Why first:** Current screens are strong visually but mostly use screen-local state/hardcoded content. A modular architecture will make the phased build much faster.
-*   **Done criteria:** Every module reads from a mock repository, no business logic directly inside big widget trees.
+### 4.9 Notes module realism pass
+Target files:
+- `lib/screens/notes/notes_tab.dart`
+- `lib/screens/notes/note_detail_screen.dart`
+- `lib/core/models/academic_note.dart`
+- `lib/core/repositories/notes_repository.dart`
 
-### Phase 1 — Chat V1 (Core UX) (1–2 weeks)
-**Goal:** Fully functional chat experience (still mock/local mode), with production-like behavior.
-*   **Features:**
-    *   Conversation list (last message preview, unread badge, pinned chats, archive swipe actions).
-    *   Chat detail (text send, reply-to message, date separators).
-    *   Message status states (sending/sent/read/failed as UI-only simulation).
-    *   Long press menu (copy, delete, react placeholder).
-    *   Search across chats/messages.
-    *   Empty states + skeleton loaders.
-*   **Nice additions:** Voice note UI placeholder, attach button bottom sheet (camera/gallery/document placeholders for media sharing), “start new chat” from edit icon.
-*   **Done criteria:** Chat feels complete even without backend. All data sourced from local mock models.
+Tasks:
+- Remove hardcoded `4.8` rating unless rating data truly exists.
+- Fix category mismatch: UI chips must align with repository values.
+- Pass real download count/file metadata.
+- Replace hardcoded author academic info with real optional metadata.
+- Replace mock comments with repository-driven comments, or hide the section until supported.
+- Persist bookmarks using backend or local storage.
+- Implement real file download/open flow if note file URLs exist.
 
-### Phase 2 — Expressive Messaging & Social Connections (1 week)
-**Goal:** Make chat “fun + sticky” and introduce direct social connection management.
-*   **Features:** 
-    *   **Friend Requests Flow:** UI for accepting/ignoring requests, pending friends list, and blocking from strangers.
-    *   **Like / Dislike Mechanics:** Thumbs up/down quick interactions on messages alongside other emoji reactions.
-    *   Emoji picker panel, sticker tray with categories (college, mood, memes), GIF picker UI (mock API first).
-    *   Full-screen media viewer for images/GIFs.
-*   **UX polish:** Recent emojis/stickers, Favorite stickers, Quick reactions (Like/Dislike) on double tap.
-*   **Done criteria:** Users can express via text + emoji + sticker + GIF in the same thread. Reaction counts (Like/Dislike) update smoothly. Friend Request tabs work with mock users.
+Acceptance criteria:
+- Notes screens show real data only.
+- Unsupported metadata is hidden instead of faked.
 
-### Phase 3 — Campus Social Layer (1–2 weeks)
-**Goal:** Connect the chat to the rest of the ecosystem.
-*   **Features:** Share card into chat (Notes, Event, Lost&Found item, Ghost post preview), mini actions in card (“Open module”, “Save”, “Forward”), deep links between tabs/modules.
+### 4.10 Events module realism pass
+Target files:
+- `lib/screens/events/events_tab.dart`
+- `lib/screens/events/event_detail_screen.dart`
+- `lib/core/models/campus_event.dart`
 
-### Phase 4 — Ghost Zone Advanced UX (1 week)
-**Goal:** Make Anonymous social stronger + safer (UI first).
-*   **Features:** Mood-based feed tabs with stronger sorting controls, **Ephemeral Content** (posts wiping after 24h UI), **Anonymous Polls**, post composer improvements (mood selector, tags, character counter, “sensitive content” warning toggle), comments enhancements (nested replies UI, upvote/downvote toggle, save post), report/block UI flows (placeholders).
+Tasks:
+- Generate day selector dynamically from current week or upcoming event dates.
+- Filter events by selected day.
+- Replace hardcoded attendee counts and avatars with real attendee data or hide avatars/count preview.
+- Use actual event date formatting.
+- Make RSVP/"Interested" persist or remove until implemented.
+- Implement "Add to Calendar" with actual integration or label it clearly as upcoming.
+- Remove hardcoded description append.
+- Remove unconditional "Official Club" badge.
+- Replace negative-width overlap trick with proper stacked avatar layout.
 
-### Phase 5 — Notes / Events / Lost&Found V2 polish (1–2 weeks)
-**Goal:** Make WIP modules usable before backend.
-*   **Notes:** Filter by subject/semester, note detail screen with preview pages/comments, bookmark + downloaded tab UI, **Assignment Tracker**.
-*   **Events:** Event detail page + RSVP states ("Going"), calendar month view + local notification reminders, official Club Pages.
-*   **Lost & Found:** Report flow with image carousel placeholder, claim flow UI, status timeline, **Campus Marketplace** tab for selling.
+Acceptance criteria:
+- Event cards and detail screen are data-driven.
+- Date, attendees, and RSVP states are truthful.
 
-### Phase 6 — Quality, Performance, Accessibility (ongoing, 1 week sprint)
-**Goal:** Production feel.
-*   **Must-do:** Dark mode support, better keyboard handling, accessibility labels, semantic buttons, animation performance profiling (60fps target).
-*   **Extras:** Error states + retry UI, offline mock persistence (Hive/Isar local store).
+### 4.11 Ghost/comments/world chat integrity pass
+Target files:
+- `lib/screens/ghost/ghost_tab.dart`
+- `lib/screens/ghost/comments_screen.dart`
+- `lib/screens/ghost/post_ghost_screen.dart`
+- `lib/core/repositories/ghost_repository.dart`
 
-### Phase 7 — Backend Integration Readiness Layer
-**Goal:** Make backend plug-in as easy as flipping a switch.
-*   **Tasks:** Add DTO mappers (mock JSON -> domain model), `useMockData` flags, logging + analytics event hooks, basic unit tests.
+Tasks:
+- Replace local hardcoded comments with repository-backed comments.
+- Use relative time formatting from timestamps.
+- Persist likes/dislikes/comments if feature is enabled.
+- Add alias validation for world chat if aliases exist.
+- Add message length limits and basic content rules.
+- Confirm whether daily refresh exists; if not, remove or reword that claim.
+- Fix theme issues on all ghost/world screens.
 
-### 🔥 Extra Features (Future Engagement)
-*   **Engagement boosters:** Karma / Points System, Daily streaks, Campus leaderboard, “Ask seniors” Q&A room, **Focus Timer** + group pomodoro rooms.
-*   **Premium UX touches:** Message drafts, scheduled messages, smart suggestions, theme packs, onboarding personas.
-*   **Safety + trust:** Anonymous mode indicators, content warnings, gentle anti-bullying nudges.
+Acceptance criteria:
+- Anonymous/social screens do not display fake timestamps or fake engagement.
+- User-generated actions persist or are clearly unavailable.
 
-### Recommended Sprint Order
-1. **Phase 0 + Phase 1** (Foundation + Core chat usable)
-2. **Phase 2** (GIF/sticker/reactions)
-3. **Phase 3** (Module sharing)
-4. **Phase 4/5 parallel** (Ghost + other modules depth)
-5. **Phase 6 + 7** (Quality + integration readiness)
+### 4.12 Chat reliability pass
+Target files:
+- `lib/screens/chat/chat_tab.dart`
+- `lib/screens/chat/chat_detail_screen.dart`
+- `lib/core/providers/chat_provider.dart`
+- `lib/core/repositories/chat_repository.dart`
+
+Tasks:
+- Make compose action functional.
+- Implement chat list search.
+- Improve time formatting to human-readable form.
+- Replace constant "Online" with actual presence or remove it.
+- Replace `senderId: 'me'` placeholder with authenticated user id.
+- Persist reactions if reactions are exposed.
+- Disable or hide unimplemented call/media actions until supported.
+- Add undo to archive or use a safer archive flow.
+
+Acceptance criteria:
+- Chat does not misrepresent user state.
+- Main actions are either functional or clearly absent.
 
 ---
 
-## 8. Screen-by-Screen UI Plan
+## P2 - Data, State, and Architecture Cleanup
 
-### Splash Screen
-- Full-screen Lottie animation (education/rocket/campus theme)
-- App name below animation
-- 2.5 second delay then → check auth → Dashboard or Login
+### 4.13 Standardize repository/provider patterns
+Target files:
+- `lib/core/repositories/*`
+- `lib/core/providers/*`
+- `lib/screens/study_groups/study_groups_tab.dart`
 
-### Login Screen
-- App logo at top
-- Email EditText
-- Password EditText (with show/hide toggle)
-- LOGIN button (filled, primary color)
-- "Don't have an account? Sign Up" text link
+Tasks:
+- Ensure all feature data access goes through providers/repositories, not local repository instantiation inside widgets.
+- Convert `_groupRepo` style local construction to Riverpod providers.
+- Define consistent result/error models for async operations.
+- Split repository responsibilities more cleanly if `campus_repository.dart` or others are overloaded.
 
-### Signup Screen
-- Name, Email, Password, Confirm Password EditTexts
-- SIGN UP button
-- "Already have an account? Login" text link
+Acceptance criteria:
+- Screens do not create data-layer objects directly.
+- Async feature flows use a consistent state pattern.
+
+### 4.14 Remove N+1 and wasteful queries
+Target files:
+- `lib/screens/study_groups/study_groups_tab.dart`
+- any FutureBuilder-per-card patterns
+
+Tasks:
+- Replace per-item membership checks with batched repository response.
+- Preload membership map or enrich list query results.
+
+Acceptance criteria:
+- Group list rendering does not trigger one extra request per card.
+
+### 4.15 Dashboard transformation
+Target files:
+- `lib/screens/home/dashboard_tab.dart`
+- `lib/core/providers/dashboard_provider.dart`
+
+Tasks:
+- Convert dashboard from static launcher into an activity surface.
+- Show:
+  - recent notes
+  - upcoming events
+  - unread chat count
+  - campus membership summary
+  - optional world/ghost pulse
+- Remove dead helpers like unused `_buildStatPill()`.
+- Clean spacing leftovers and empty layout artifacts.
+
+Acceptance criteria:
+- Dashboard feels alive and reflects real app data.
+- Screen gives users a reason to return.
+
+### 4.16 Campus selection reliability
+Target files:
+- `lib/screens/campus/campus_selection_screen.dart`
+- `lib/core/providers/campus_provider.dart`
+- `lib/core/repositories/campus_repository.dart`
+
+Tasks:
+- Make search functional.
+- Prevent duplicate campus creation/join edge cases.
+- Add loading state during join/create.
+- Provide a recovery path from study groups and other campus-dependent screens back to campus selection.
+
+Acceptance criteria:
+- Campus join/select/create flows are trustworthy and recoverable.
+
+---
+
+## P2 - UX Reliability and Guardrails
+
+### 4.17 Loading, empty, error, retry states
+Target files:
+- all primary feature screens
+- `lib/core/widgets/app_states.dart`
+
+Tasks:
+- Standardize reusable loading, empty, and retry components.
+- Ensure every async screen has explicit state handling.
+
+Acceptance criteria:
+- No blank screens on failure.
+- No silent failures on upload/post/join actions.
+
+### 4.18 Validation and moderation
+Target files:
+- auth, notes, events, ghost, chat, lost & found create flows
+
+Tasks:
+- Add form validation rules.
+- Add length limits.
+- Add basic sanitization/content rules where needed.
+- Prevent empty aliases/messages.
+
+Acceptance criteria:
+- Invalid input is blocked before network submission.
+
+### 4.19 Accessibility and semantics
+Target files:
+- all major screens
+
+Tasks:
+- Add semantic labels for icon-only actions.
+- Improve tap targets.
+- Ensure contrast meets accessibility baseline.
+- Test keyboard handling and screen reader hints on forms.
+
+Acceptance criteria:
+- Main flows are accessible on mobile with assistive tooling.
+
+---
+
+## P3 - Feature Completion Gaps
+
+These are lower priority than truthfulness and stability. They should not ship as fake controls.
+
+### 4.20 Notes enhancements
+- Real PDF preview rendering
+- Download/open file handling
+- Real comments/bookmarks if supported
+
+### 4.21 Events enhancements
+- Calendar integration
+- RSVP attendee management
+- Club verification/badging model
+
+### 4.22 Chat enhancements
+- Media attachments
+- Voice/video calls
+- Sticker/GIF tabs
+- Presence system
+
+### 4.23 Profile enhancements
+- Edit display name
+- Better image upload error surfacing
+- Usage/activity stats
+
+### 4.24 AI chat hardening
+Target files:
+- `lib/screens/ai/ai_chat_screen.dart`
+- `lib/core/providers/ai_provider.dart`
+- `lib/core/repositories/ai_repository.dart`
+
+Tasks:
+- Replace brittle string-matching error detection with typed error handling.
+- Persist chat history if feature should survive restart.
+- Remove hardcoded suggestion cards or make them dynamic.
+
+---
+
+## 5. Screen-by-Screen Repair Checklist
+
+### Splash
+- Replace fake progress with real init state.
+- Add try/catch and retry path.
+- Clarify auth + campus decision tree.
+
+### Login
+- Fix email validation.
+- Make forgot password real or remove it.
+- Add social loading state.
+- Remove hardcoded white card theming.
+
+### Signup
+- Persist full name.
+- Add confirm password visibility toggle.
+- Wire terms/privacy.
+- Add password guidance.
 
 ### Dashboard
-- Top bar: App name + logout icon
-- "Welcome back, [Name]!" subtitle
-- 2x3 grid of CardViews, each with icon + label:
-  - Notes | Events
-  - Lost & Found | Chat
-  - Anonymous | Study Groups
+- Replace launcher-only layout with live data modules.
+- Remove dead spacing and dead helper methods.
 
-### Notes Screen
-- Toolbar with "Notes" title + Upload FAB (+ icon)
-- RecyclerView: each item shows title, subject, uploader, timestamp
-- Tap → open PDF in external app
+### Notes Tab
+- Fix category chips.
+- Make search/filter functional.
+- Remove fake ratings.
+- Make "View All" meaningful or remove it.
 
-### Events Screen
-- RecyclerView sorted by upcoming date
-- Each card: event title, date badge, description snippet, location
-- FAB to post new event
+### Note Detail
+- Remove hardcoded author/course labels.
+- Replace fake preview/comments.
+- Make download real or hide CTA.
+- Persist bookmark state.
 
-### Lost & Found Screen
-- RecyclerView: image thumbnail (left) + title, description, poster name
-- FAB to post new item
-- Tap item → Item Detail screen with "Contact via Chat" button
+### Upload Note
+- Use real file picker.
+- Validate input.
+- Save note for real.
 
-### Chat List Screen
-- RecyclerView: avatar circle + name + last message + time
-- Tap → opens ChatActivity
+### Events Tab
+- Dynamic date selector.
+- Real filter logic.
+- Real attendees or no fake attendee UI.
+- Real interested state or remove.
 
-### Chat Screen
-- Messages with sent (right, blue) and received (left, gray) bubbles
-- Sender name shown on received bubbles
-- Bottom bar: EditText + Send button
+### Event Detail
+- Real event date.
+- Truthful attendees and badge state.
+- Real calendar integration or hidden CTA.
+- Fix avatar overlap implementation.
 
-### Anonymous Feed Screen
-- Mood filter chips at top: All / Stressed / Happy / Confused / Venting / Motivated
-- RecyclerView: mood tag badge, post content, like count, comment count, timestamp
-- No names, no avatars — completely anonymous look
-- FAB to write new post
+### Post Event
+- Bind form state.
+- Persist selected date/time.
+- Validate and submit.
 
-### Post Anonymous Screen
-- Mood selector — row of colored chips
-- Large multiline text area: "What's on your mind?"
-- POST button
-- Small disclaimer: "This post is completely anonymous"
+### World Chat / Ghost Tab
+- Theme-safe colors.
+- Validate alias.
+- Add message limits.
+- Clarify/reset policy truthfully.
 
-### Study Groups Screen
-- RecyclerView: subject, date/time, location, spots left badge
-- FAB to create group
-- "My Groups" toggle at top
+### Chat Tab
+- Compose action.
+- Search logic.
+- Better timestamps.
+- Safer archive UX.
 
----
+### Chat Detail
+- Real sender identity.
+- Real or hidden online state.
+- Disable fake media/call actions if unsupported.
+- Persist reactions if shown.
 
-## 9. Team Division
+### Comments
+- Load real comments.
+- Use real timestamps.
+- Persist interactions.
 
-### Person 1 — UI (XML Person)
-Owns all layout files. Does NOT write Java logic.
-- All `activity_*.xml` layout files
-- All `item_*.xml` RecyclerView row layouts
-- `colors.xml`, `styles.xml`, theme setup
-- Dashboard card grid
-- Chat bubble layouts
-- Anonymous feed UI
-- Navigation flow between screens
+### Lost & Found
+- Show reporter data correctly where policy allows.
+- Add claimed/resolved flow.
+- Verify category values.
 
-### Person 2 — Firebase (Backend Person)
-Owns all Firebase integration. Does NOT write UI.
-- Firebase Auth — login, signup, logout
-- All Firestore reads and writes
-- Firebase Storage — PDF and image uploads
-- Getting download URLs after upload
-- Firestore security rules
-- Setting up Firebase project + `google-services.json`
+### Study Groups
+- Remove N+1 queries.
+- Route users to campus selection from empty state.
+- Use Riverpod for repository access.
 
-### Person 3 — Logic (Java Person)
-Owns business logic and complex features.
-- RecyclerView adapters for all modules
-- Real-time `addSnapshotListener` implementations
-- ChatId generation logic
-- Anonymous like system (likedBy array check)
-- Study group join logic (member count check)
-- Mood filter logic in anonymous feed
-- PDF file picker intent
-- Image picker intent
-- Handler/postDelayed for splash screen timing
+### Campus Selection
+- Make search work.
+- Prevent duplicates.
+- Add loading state.
 
----
+### Profile
+- Improve image upload failure handling.
+- Add editable profile name.
+- Add meaningful stats if available.
 
-## 10. Gradle Dependencies
-
-Add these to `app/build.gradle` inside `dependencies {}`:
-
-```gradle
-dependencies {
-    // Firebase BoM — controls all Firebase library versions
-    implementation platform('com.google.firebase:firebase-bom:33.0.0')
-    implementation 'com.google.firebase:firebase-auth'
-    implementation 'com.google.firebase:firebase-firestore'
-    implementation 'com.google.firebase:firebase-storage'
-    implementation 'com.google.firebase:firebase-messaging'  // optional - notifications
-
-    // Lottie — splash screen animations
-    implementation 'com.airbnb.android:lottie:6.4.0'
-
-    // Glide — image loading from URLs
-    implementation 'com.github.bumptech.glide:glide:4.16.0'
-    annotationProcessor 'com.github.bumptech.glide:compiler:4.16.0'
-
-    // CircleImageView — round profile images
-    implementation 'de.hdodenhof:circleimageview:3.1.0'
-
-    // Material Design Components
-    implementation 'com.google.android.material:material:1.12.0'
-
-    // CardView + RecyclerView
-    implementation 'androidx.cardview:cardview:1.0.0'
-    implementation 'androidx.recyclerview:recyclerview:1.3.2'
-
-    // Default AndroidX
-    implementation 'androidx.appcompat:appcompat:1.7.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-}
-```
-
-Also add to the TOP of `app/build.gradle` (plugins block):
-```gradle
-plugins {
-    id 'com.android.application'
-    id 'com.google.gms.google-services'   // ← required for Firebase
-}
-```
-
-And in `project/build.gradle`:
-```gradle
-plugins {
-    id 'com.google.gms.google-services' version '4.4.2' apply false
-}
-```
+### AI Chat
+- Remove hardcoded suggestion content.
+- Replace brittle error detection.
+- Persist history if product requires continuity.
 
 ---
 
-## 11. Firebase Security Rules
+## 6. Data Model and Backend Work Needed
 
-Paste this in Firestore → Rules tab:
+The UI can only become truthful if the backend contracts support the data. Review models and storage schema for the following:
 
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
+### Likely model upgrades needed
+- `AcademicNote`
+  - `fileUrl`
+  - `fileSizeBytes`
+  - `downloadsCount`
+  - `bookmarkCount` or user bookmark relation
+  - optional `subject`, `semester`, `uploaderName`
 
-    // Users — read own data only, write own doc only
-    match /users/{userId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.uid == userId;
-    }
+- `CampusEvent`
+  - `startAt`
+  - `endAt`
+  - `location`
+  - `attendeeCount`
+  - `attendeePreview`
+  - `rsvpStatusByUser` or separate RSVP relation
+  - `isOfficial`
 
-    // Notes — any logged-in user can read, only uploader can delete
-    match /notes/{noteId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow delete: if request.auth.uid == resource.data.uploadedById;
-    }
+- `ChatConversation` / `ChatMessage`
+  - `senderId`
+  - `status`
+  - optional `reactionSummary`
+  - optional `presence` model separate from message
 
-    // Events — any logged-in user can read/create
-    match /events/{eventId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow delete: if request.auth.uid == resource.data.postedById;
-    }
+- `GhostPost` / comments
+  - `createdAt`
+  - `commentCount`
+  - `reactionCount`
+  - moderation/report metadata if required
 
-    // Lost & Found — same pattern
-    match /lost_items/{itemId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow delete: if request.auth.uid == resource.data.postedById;
-    }
+- `LostItem`
+  - `reporterName`
+  - `status`
+  - `resolvedAt`
 
-    // Chats — only participants can read/write
-    match /chats/{chatId} {
-      allow read, write: if request.auth != null &&
-        request.auth.uid in resource.data.participants;
+- `StudyGroup`
+  - membership summary embedded enough to avoid N+1 checks
 
-      match /messages/{messageId} {
-        allow read, write: if request.auth != null;
-      }
-    }
-
-    // Anonymous posts — any logged-in user can read/create (no uid stored)
-    match /anonymous_posts/{postId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null;  // for likes
-    }
-
-    // Comments — any logged-in user (no uid stored)
-    match /comments/{commentId} {
-      allow read, create: if request.auth != null;
-    }
-
-    // Study Groups
-    match /study_groups/{groupId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null;  // for joining
-      allow delete: if request.auth.uid == resource.data.createdById;
-    }
-  }
-}
-```
+### Backend rules to verify
+- auth ownership
+- campus-scoped reads/writes
+- file storage permissions
+- comment/reaction integrity
+- note upload and event posting authorization
 
 ---
 
-## 12. Splash Screen Guide
+## 7. Testing Plan
 
-### Step 1 — Get animation
-Go to **lottiefiles.com** → search: `campus`, `education`, `rocket`, `hello`, `students`  
-Download as **Lottie JSON** format (free)
+### Unit tests
+- config validation
+- repository mapping/parsing
+- filter/search logic
+- auth validation helpers
+- date/time formatting helpers
 
-### Step 2 — Add to project
-Place the downloaded `.json` file at:
-```
-app/src/main/res/raw/splash_anim.json
-```
+### Widget tests
+- login/signup form validation
+- notes search/filter behavior
+- events day filter behavior
+- loading/empty/error states
+- dark mode rendering for critical screens
 
-### Step 3 — XML layout (activity_splash.xml)
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/white">
+### Integration tests
+- splash to auth/dashboard routing
+- signup and login
+- upload note flow
+- post event flow
+- campus join/select flow
 
-    <com.airbnb.lottie.LottieAnimationView
-        android:id="@+id/lottieView"
-        android:layout_width="280dp"
-        android:layout_height="280dp"
-        android:layout_centerHorizontal="true"
-        android:layout_centerVertical="true"
-        android:layout_above="@id/appName"
-        app:lottie_rawRes="@raw/splash_anim"
-        app:lottie_autoPlay="true"
-        app:lottie_loop="false" />
-
-    <TextView
-        android:id="@+id/appName"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="CampusHive"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:textColor="@color/primary"
-        android:layout_centerHorizontal="true"
-        android:layout_centerVertical="true"/>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Your campus. Your community."
-        android:textSize="13sp"
-        android:textColor="@color/textSecondary"
-        android:layout_centerHorizontal="true"
-        android:layout_below="@id/appName"
-        android:layout_marginTop="4dp"/>
-
-</RelativeLayout>
-```
-
-### Step 4 — Java (SplashActivity.java)
-```java
-public class SplashActivity extends AppCompatActivity {
-    private static final int SPLASH_DELAY = 2500; // 2.5 seconds
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_splash);
-
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-            Intent intent;
-            if (user != null) {
-                intent = new Intent(SplashActivity.this, DashboardActivity.class);
-            } else {
-                intent = new Intent(SplashActivity.this, LoginActivity.class);
-            }
-            startActivity(intent);
-            finish();
-        }, SPLASH_DELAY);
-    }
-}
-```
-
-### Step 5 — Set as launcher in AndroidManifest.xml
-```xml
-<activity android:name=".activities.SplashActivity"
-    android:theme="@style/Theme.AppCompat.NoActionBar">
-    <intent-filter>
-        <action android:name="android.intent.action.MAIN" />
-        <category android:name="android.intent.category.LAUNCHER" />
-    </intent-filter>
-</activity>
-```
+### Manual QA checklist
+- Android back button on all major detail screens
+- tab switching preserves state
+- offline or failed network handling
+- long text, empty text, invalid file, duplicate submission
+- dark mode and light mode screenshots for all primary screens
 
 ---
 
-## 13. Viva Preparation
+## 8. Production Readiness Gates
 
-### Key lines to say (memorize these)
+Do not call the app production-ready until all of the following are true:
 
-> "We used Firebase for real-time data synchronization using Firestore's snapshot listeners."
-
-> "We implemented a dual-identity system — named chat for direct communication and a completely anonymous peer support section where no userId is stored at any point."
-
-> "Firestore was used as a scalable NoSQL database. Collections were designed to minimize reads and support real-time updates."
-
-> "Firebase Storage was used to store PDFs for notes and images for lost items, with download URLs saved in Firestore."
-
-> "We used the Lottie animation library by Airbnb for our splash screen — it plays Adobe After Effects animations as native vector JSON, keeping the file size under 100KB."
-
-> "Anonymous posts use a likedBy array field to prevent duplicate likes without exposing user identity in the UI."
-
-### Module-wise ownership for viva
-| Module | Who explains it |
-|--------|----------------|
-| Auth + Firestore setup | Person 2 |
-| Dashboard + UI design | Person 1 |
-| Notes + Events | Person 1 (UI) + Person 2 (Firebase) |
-| Lost & Found | Person 1 (UI) + Person 2 (Firebase) |
-| Chat system | Person 3 |
-| Anonymous section | Person 3 (logic) + Person 2 (DB) |
-| Study Groups | Person 3 |
-
-### Common viva questions + answers
-
-**Q: Why Firebase over a traditional SQL database?**  
-A: Firebase Firestore provides real-time data sync out of the box, which is essential for our chat and live feeds. It also has a generous free tier and official Android SDK.
-
-**Q: How did you ensure anonymity?**  
-A: We deliberately designed the `anonymous_posts` and `comments` collections to not include any userId field. Even though users must be logged in to post (to prevent spam), their identity is never written to the anonymous documents.
-
-**Q: What is a snapshot listener?**  
-A: `addSnapshotListener` is a Firestore method that listens for real-time changes. Whenever a document or collection changes, our UI is updated instantly without the user needing to refresh.
-
-**Q: How does chat work?**  
-A: We generate a unique chatId by sorting both user UIDs alphabetically and concatenating them. This ensures the same two users always get the same chat room regardless of who initiates.
-
-**Q: What is Lottie?**  
-A: Lottie is an open-source animation library by Airbnb. It parses Adobe After Effects animations exported as JSON and renders them natively on Android. Files are tiny (50–200KB) and resolution-independent.
+- Secrets are not hardcoded.
+- Router is unified.
+- Theme is stable in both modes.
+- Upload Note and Post Event are fully functional.
+- Search/filter bars are not decorative.
+- Hardcoded engagement/date/identity values are removed.
+- Core errors are surfaced to users.
+- Dashboard is data-driven.
+- Study groups N+1 issue is fixed.
+- Basic tests exist and pass.
 
 ---
 
-## 14. Timeline
+## 9. Suggested Execution Order
 
-| Days | Phase | Tasks |
-|------|-------|-------|
-| Day 1–2 | Setup | Android Studio, Firebase, dependencies, folder structure |
-| Day 2–3 | Auth | Login, Signup, Firestore user save, session check |
-| Day 3 | Dashboard | Home screen, card grid, navigation |
-| Day 4 | Notes | Upload PDF, Firestore save, view/download |
-| Day 5 | Events | Post event, list view, real-time |
-| Day 5–6 | Lost & Found | Post item, image upload, contact via chat |
-| Day 6–7 | Chat | Chat list, 1-to-1 chat, real-time messages |
-| Day 7–8 | Anonymous | Anon feed, post, likes, comments, mood filter |
-| Day 8–9 | Study Groups | Post group, join, member count, my groups |
-| Day 10–12 | Polish | Loading states, empty states, testing, docs |
+### Sprint 1 - Foundation lockdown
+1. Config cleanup
+2. Router cleanup
+3. Theme cleanup
+4. Splash/auth boot hardening
 
-### Total: 10–12 days for a complete, submission-ready app
+### Sprint 2 - Truthful core flows
+1. Signup fixes
+2. Upload note real implementation
+3. Post event real implementation
+4. Search/filter activation
 
----
+### Sprint 3 - Remove fake data
+1. Notes realism pass
+2. Events realism pass
+3. Ghost/comments realism pass
+4. Chat truthfulness pass
 
-## Quick Checklist Before Submission
+### Sprint 4 - Architecture and dashboard
+1. Repository/provider cleanup
+2. Study groups N+1 fix
+3. Dashboard activity feed and stats
+4. Campus selection reliability
 
-- [ ] App runs without crashes on a physical device
-- [ ] Login and logout work correctly
-- [ ] All 6 modules are functional
-- [ ] Real-time updates visible in Chat and Anonymous feed
-- [ ] Images load correctly in Lost & Found
-- [ ] PDF opens correctly from Notes
-- [ ] Anonymous posts have NO name/avatar shown
-- [ ] Firestore security rules are set
-- [ ] App name is consistent everywhere (manifest, strings.xml, splash)
-- [ ] SRS document prepared
-- [ ] ER/Database diagram prepared
-- [ ] Screenshots taken for report
-- [ ] Each team member can explain their part independently
+### Sprint 5 - Reliability and QA
+1. Loading/error/empty states
+2. Validation and moderation basics
+3. Tests
+4. release checklist
 
 ---
 
-*Document prepared for Assignment 9 & 10 — Smart Campus Companion App*  
-*App: CampusHive | Stack: Java + Android + Firebase | Team: 3 members*
+## 10. Immediate Actionable Worklist
+
+If work starts now, this is the best order:
+
+1. Audit every `Navigator.` usage and replace it with GoRouter usage.
+2. Audit every hardcoded color and move it to theme-driven styling.
+3. Confirm all keys in `app_config.dart` are required, safe, and documented.
+4. Make signup save `full_name`.
+5. Implement real note upload.
+6. Implement real event posting.
+7. Fix notes/events/chat/campus search and filter controls.
+8. Remove fake hardcoded content from note/event/comment/detail screens.
+9. Fix study group data loading pattern.
+10. Turn dashboard into a live activity surface.
+
+---
+
+## 11. Nice-to-Have Product Upgrade
+
+### Campus Activity Feed
+This is the highest-ROI engagement upgrade after core fixes.
+
+Recommended dashboard sections:
+- recent notes
+- upcoming events
+- unread chats
+- trending ghost posts
+- open study groups
+
+Why it matters:
+- makes the app feel alive immediately
+- reduces demo-app perception
+- gives users a reason to open the app daily
+- reuses data already flowing through the main modules
+
+---
+
+## 12. Ownership Template
+
+Use this template while executing the repair:
+
+### Foundation owner
+- config
+- routing
+- theme
+- boot flow
+
+### Feature owner
+- notes
+- events
+- chat
+- ghost
+- lost & found
+- study groups
+
+### QA owner
+- regression checklist
+- dark mode audit
+- routing audit
+- production build validation
+
+---
+
+## 13. Final Outcome
+
+If this plan is executed properly, Connekt will move from:
+- visually strong but functionally inconsistent
+
+to:
+- secure
+- truthful
+- navigationally stable
+- theme-safe
+- data-driven
+- ready for beta testing with real users
+
+This document should be updated as each module is repaired so it stays the single source of truth for the app hardening effort.
