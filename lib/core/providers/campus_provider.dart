@@ -1,11 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../repositories/campus_repository.dart';
-import '../models/campus_model.dart';
+
 import '../models/academic_note.dart';
 import '../models/campus_event.dart';
-import '../models/lost_item.dart';
+import '../models/campus_model.dart';
 import '../models/ghost_post.dart';
-
+import '../models/lost_item.dart';
+import '../repositories/campus_repository.dart';
 import '../repositories/ghost_repository.dart';
 
 final campusRepositoryProvider = Provider((ref) => CampusRepository());
