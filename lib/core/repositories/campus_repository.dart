@@ -19,7 +19,7 @@ class CampusRepository {
       }).whereType<Campus>().toList();
     } catch (e) {
       debugPrint('Failed to fetch campuses: $e');
-      return []; // Return empty list instead of crashing
+      rethrow;
     }
   }
 
@@ -111,7 +111,7 @@ class CampusRepository {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       debugPrint('Error getting my campuses: $e');
-      return [];
+      rethrow;
     }
   }
 
@@ -127,37 +127,30 @@ class CampusRepository {
     return response;
   }
 
-  // Real-time events stream
   Stream<List<Map<String, dynamic>>> watchEvents({String? campusId}) {
-    var query = _supabase.from('campus_events').stream(primaryKey: ['id']);
-    if (campusId != null) {
-      return query
-          .eq('campus_id', campusId)
-          .order('date_time', ascending: true);
-    }
-    return query.order('date_time', ascending: true);
+    // Note: Database schema for campus_events currently lacks campus_id column.
+    // Filtering is disabled to prevent crashes until the column is added.
+    return _supabase
+        .from('campus_events')
+        .stream(primaryKey: ['id'])
+        .order('created_at', ascending: true);
   }
 
-  // Real-time lost & found stream
   Stream<List<Map<String, dynamic>>> watchLostFoundItems({String? campusId}) {
-    var query = _supabase.from('lost_found').stream(primaryKey: ['id']);
-    if (campusId != null) {
-      return query
-          .eq('campus_id', campusId)
-          .order('created_at', ascending: false);
-    }
-    return query.order('created_at', ascending: false);
+    // Note: Database schema for lost_found currently lacks campus_id column.
+    return _supabase
+        .from('lost_found')
+        .stream(primaryKey: ['id'])
+        .order('created_at', ascending: false);
   }
 
-  // Notes stream
   Stream<List<Map<String, dynamic>>> watchNotes({String? campusId}) {
-    var query = _supabase.from('academic_notes').stream(primaryKey: ['id']);
-    if (campusId != null) {
-      return query
-          .eq('campus_id', campusId)
-          .order('created_at', ascending: false);
-    }
-    return query.order('created_at', ascending: false);
+     var query = _supabase.from('notes_with_profiles').stream(primaryKey: ['id']);
+     if (campusId != null) {
+       // Note: Filtering on views in realtime streams might require 'campus_id' to be indexed.
+       // For now fetching all and filtering in provider is safer if view stream isn't working.
+     }
+     return query.order('created_at', ascending: false);
   }
 
   // Check if user is a member of any campus
@@ -178,15 +171,10 @@ class CampusRepository {
   Stream<List<Map<String, dynamic>>> getRecentActivityStream({
     String? campusId,
   }) {
-    // For Dashboard Recent Activity, we combine multiple sources
-    // Note: In production, a database view is better, but this works for development.
-    final rawStream = _supabase
+    // We combine multiple sources into a single activity feed
+    final notesStream = _supabase
         .from('academic_notes')
         .stream(primaryKey: ['id']);
-
-    final notesStream = campusId != null
-        ? rawStream.eq('campus_id', campusId)
-        : rawStream;
 
     return notesStream.order('created_at', ascending: false).limit(10).asyncMap((
       notes,
@@ -198,37 +186,45 @@ class CampusRepository {
         activities.add({
           'type': 'note',
           'title': n['title'],
-          'subtitle': 'New study note in ${n['category']}',
+          'subtitle': 'Shared a new note in ${n['category']}',
           'created_at': DateTime.parse(n['created_at']),
-          'icon': 'description',
+          // We can't easily join in streams, but we can store the ID and let UI/Model handle it or use a View
+          'author': n['author_name'] ?? n['author'] ?? 'Student', 
+          'author_avatar': n['author_avatar'],
+          'image_url': n['file_url'],
         });
       }
 
-      // Fetch some events to mix in (manual fetch as stream combine is complex)
+      // Fetch Events
       try {
-        var eventsQuery = _supabase.from('campus_events').select();
+        var eventsQuery = _supabase.from('events_with_profiles').select();
         if (campusId != null) {
           eventsQuery = eventsQuery.eq('campus_id', campusId);
         }
-        final events = await eventsQuery.limit(2);
+        
+        final events = await eventsQuery.order('created_at', ascending: false).limit(5);
         for (var e in events) {
           activities.add({
             'type': 'event',
             'title': e['title'],
-            'subtitle': 'Join this event! 🎉',
-            'created_at': DateTime.parse(e['date_time']),
-            'icon': 'celebration',
+            'subtitle': 'Organizing a campus event: ${e['location']}',
+            'created_at': DateTime.parse(e['created_at'] ?? e['date_time']),
+            'author': e['author_name'] ?? e['organizer'] ?? 'Student',
+            'author_avatar': e['author_avatar'],
+            'image_url': e['image_url'],
           });
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('Error fetching events for feed: $e');
+      }
 
-      // Sort final list
+      // Sort final list by recency
       activities.sort(
         (a, b) => (b['created_at'] as DateTime).compareTo(
           a['created_at'] as DateTime,
         ),
       );
-      return activities.take(10).toList();
+      return activities.take(15).toList();
     });
   }
 
@@ -267,10 +263,28 @@ class CampusRepository {
       'category': subject,
       'description': description,
       'file_url': fileUrl,
-      'author': user.email?.split('@')[0] ?? 'Student',
-      'pages': 0,
+      'author_id': user.id, // Store ID instead of string name
+      'author': user.userMetadata?['display_name'] ?? user.email?.split('@')[0] ?? 'Student', // Fallback cache
       'created_at': DateTime.now().toIso8601String(),
     });
+  }
+
+  // Update academic note
+  Future<void> updateNote({
+    required String noteId,
+    required String title,
+    required String description,
+    required String category,
+  }) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw Exception('Not authenticated');
+
+    await _supabase.from('academic_notes').update({
+      'title': title,
+      'description': description,
+      'category': category,
+      'updated_at': DateTime.now().toIso8601String(),
+    }).eq('id', noteId).eq('author_id', user.id); // Security: only author can update
   }
 
   // Create campus event
@@ -293,7 +307,8 @@ class CampusRepository {
       'location': location,
       'date_time': dateTime.toIso8601String(),
       'category': category,
-      'organizer': user.email?.split('@')[0] ?? 'Student',
+      'author_id': user.id, // Better tracking
+      'organizer': user.userMetadata?['display_name'] ?? user.email?.split('@')[0] ?? 'Student',
       'image_url': imageUrl,
       'attendees': 0,
     });
@@ -312,7 +327,7 @@ class CampusRepository {
     if (user == null) throw Exception('Not authenticated');
 
     await _supabase.from('lost_found').insert({
-      'campus_id': campusId,
+      // Removed campus_id
       'title': title,
       'description': description,
       'location': location,
@@ -322,5 +337,49 @@ class CampusRepository {
       'posted_by': user.id,
       'created_at': DateTime.now().toIso8601String(),
     });
+  }
+
+  // --- Management Methods ---
+
+  Future<int> getMemberCount(String campusId) async {
+    final response = await _supabase
+        .from('campus_members')
+        .select('id')
+        .eq('campus_id', campusId);
+    return (response as List).length;
+  }
+
+  Future<List<Map<String, dynamic>>> getCampusMembers(String campusId) async {
+    final response = await _supabase
+        .from('campus_members')
+        .select('*, profiles(full_name, avatar_url)')
+        .eq('campus_id', campusId);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  Future<void> updateCampusBanner(String campusId, String imageUrl) async {
+    // We assume the column banner_url exists or we use a fallback metadata approach
+    // For now, we try to update the campuses table
+    await _supabase
+        .from('campuses')
+        .update({'banner_url': imageUrl})
+        .eq('id', campusId);
+  }
+
+  Future<String> uploadCampusBanner(String campusId, List<int> fileBytes) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw Exception('Not authenticated');
+
+    final storagePath = 'banners/$campusId.jpg';
+    await _supabase.storage.from('campus_assets').uploadBinary(
+          storagePath,
+          fileBytes as dynamic,
+          fileOptions: const FileOptions(
+            contentType: 'image/jpeg',
+            upsert: true,
+          ),
+        );
+
+    return _supabase.storage.from('campus_assets').getPublicUrl(storagePath);
   }
 }

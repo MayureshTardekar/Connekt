@@ -2,12 +2,14 @@ class Campus {
   final String id;
   final String name;
   final String? createdBy;
+  final String? bannerUrl;
   final DateTime createdAt;
 
   Campus({
     required this.id,
     required this.name,
     this.createdBy,
+    this.bannerUrl,
     required this.createdAt,
   });
 
@@ -16,6 +18,7 @@ class Campus {
       id: json['id'],
       name: json['name'],
       createdBy: json['created_by'],
+      bannerUrl: json['banner_url'],
       createdAt: DateTime.parse(json['created_at']),
     );
   }

@@ -20,6 +20,6 @@ abstract final class AppRoutes {
   static const studyGroups = '/study-groups';
   static const studyGroupsCreate = '/study-groups/create';
   static const profile = '/profile';
-  static const profileHistory = '/profile/history';
   static const aiChat = '/ai';
+  static const campusManagement = '/campus-management';
 }

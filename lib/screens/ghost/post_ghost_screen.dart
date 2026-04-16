@@ -128,7 +128,7 @@ class _PostGhostScreenState extends ConsumerState<PostGhostScreen> {
                   ),
                   SizedBox(width: 8),
                   Text(
-                    'This post is completely anonymous',
+                    'Identity hidden from others',
                     style: TextStyle(
                       color: Colors.white70,
                       fontSize: 13,
@@ -230,6 +230,7 @@ class _PostGhostScreenState extends ConsumerState<PostGhostScreen> {
               child: TextField(
                 controller: _textController,
                 maxLines: 6,
+                maxLength: _maxChars,
                 onChanged: (val) => setState(() => _charCount = val.length),
                 style: const TextStyle(
                   color: Colors.white,
@@ -237,6 +238,7 @@ class _PostGhostScreenState extends ConsumerState<PostGhostScreen> {
                   height: 1.6,
                 ),
                 decoration: InputDecoration(
+                  counterText: "", // Already custom counter in UI
                   hintText: 'Share your thoughts, feelings, or just vent...',
                   hintStyle: TextStyle(
                     color: Colors.white.withValues(alpha: 0.3),

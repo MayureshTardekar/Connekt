@@ -10,6 +10,7 @@ import '../../screens/auth/login_screen.dart';
 import '../../screens/auth/signup_screen.dart';
 import '../../screens/main_screen.dart';
 import '../../screens/campus/campus_selection_screen.dart';
+import '../../screens/campus/campus_management_screen.dart';
 import '../../screens/ai/ai_chat_screen.dart';
 
 // Tab Screens
@@ -32,15 +33,14 @@ import '../../screens/lost_found/post_lost_item_screen.dart';
 import '../../screens/study_groups/study_groups_tab.dart';
 import '../../screens/study_groups/create_group_screen.dart';
 import '../../screens/profile/profile_screen.dart';
-import '../../screens/profile/history_sessions_screen.dart';
 import '../models/academic_note.dart';
 import '../models/campus_event.dart';
 import '../models/chat_conversation.dart';
 import '../models/lost_item.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  ref.watch(authStateProvider).value;
-
+  final authState = ref.watch(authStateProvider);
+  
   return GoRouter(
     initialLocation: AppRoutes.splash,
     redirect: (context, state) {
@@ -53,7 +53,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         return isLoggingIn ? null : AppRoutes.login;
       }
       
-      if (isLoggingIn) return AppRoutes.dashboard;
+      if (isLoggingIn && authState.hasValue) return AppRoutes.dashboard;
       
       return null;
     },
@@ -77,6 +77,29 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.chatFriendRequests,
         builder: (context, state) => const FriendRequestsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.profile,
+        builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.aiChat,
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          final initialPrompt = extra?['initialPrompt'] as String?;
+          return AIChatScreen(initialPrompt: initialPrompt);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.campusManagement,
+        name: AppRoutes.campusManagement,
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return CampusManagementScreen(
+            campusId: extra?['campusId'] ?? '',
+            campusName: extra?['campusName'] ?? 'Campus',
+          );
+        },
       ),
       GoRoute(
         path: AppRoutes.lostFound,
@@ -109,25 +132,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const CreateGroupScreen(),
           ),
         ],
-      ),
-      GoRoute(
-        path: AppRoutes.profile,
-        builder: (context, state) => const ProfileScreen(),
-        routes: [
-          GoRoute(
-            path: 'history',
-            builder: (context, state) => const HistorySessionsScreen(),
-          ),
-        ],
-      ),
-      GoRoute(
-        path: AppRoutes.aiChat,
-        builder: (context, state) {
-          final initialPrompt = state.extra is String
-              ? state.extra as String
-              : null;
-          return AIChatScreen(initialPrompt: initialPrompt);
-        },
       ),
 
       // Dashboard with Nested Tabs

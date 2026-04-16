@@ -227,6 +227,14 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
             course: finalCourse,
             branch: finalBranch,
           );
+      
+      // Invalidate membership providers to fetch fresh data
+      ref.invalidate(myCampusesProvider);
+      ref.invalidate(myMembershipsProvider);
+      
+      // Auto-select the newly joined campus
+      ref.read(selectedCampusIdProvider.notifier).selectCampus(campusId);
+
       if (mounted) {
         context.go(AppRoutes.dashboard);
       }
@@ -242,15 +250,20 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
   Widget _buildTextField(
     TextEditingController controller,
     String label,
-    IconData icon,
-  ) {
+    IconData icon, {
+    Widget? suffixIcon,
+    int? maxLength,
+  }) {
     return TextField(
       controller: controller,
+      maxLength: maxLength,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
+        counterStyle: const TextStyle(color: Colors.white54, fontSize: 10),
         labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
         prefixIcon: Icon(icon, color: AppTheme.primary),
+        suffixIcon: suffixIcon,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
@@ -343,6 +356,12 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
                     _searchController,
                     'Search College Name...',
                     Icons.search,
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, color: Colors.white54),
+                            onPressed: () => _searchController.clear(),
+                          )
+                        : null,
                   ),
                   const SizedBox(height: 32),
                   Row(
@@ -372,6 +391,7 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
                       _campusNameController,
                       'New Campus Name (e.g. SPIT)',
                       Icons.school_outlined,
+                      maxLength: 50,
                     ),
                     const SizedBox(height: 12),
                     SizedBox(
@@ -383,6 +403,8 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
                                 .read(campusRepositoryProvider)
                                 .createCampus(_campusNameController.text);
                             ref.invalidate(allCampusesProvider);
+                            ref.invalidate(myCampusesProvider);
+                            ref.invalidate(myMembershipsProvider);
                             setState(() => _isCreating = false);
                           }
                         },

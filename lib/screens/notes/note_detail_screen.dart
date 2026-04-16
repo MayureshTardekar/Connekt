@@ -1,19 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../core/models/academic_note.dart';
+import '../../core/providers/auth_provider.dart';
+import '../../core/providers/campus_provider.dart';
 import '../../core/routing/app_routes.dart';
 import '../../core/utils/ai_prompts.dart';
 import '../../theme/app_theme.dart';
 
-class NoteDetailScreen extends StatelessWidget {
+class NoteDetailScreen extends ConsumerStatefulWidget {
   const NoteDetailScreen({super.key, required this.note});
 
   final AcademicNote note;
 
+  @override
+  ConsumerState<NoteDetailScreen> createState() => _NoteDetailScreenState();
+}
+
+class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
+  late AcademicNote currentNote;
+
+  @override
+  void initState() {
+    super.initState();
+    currentNote = widget.note;
+  }
+
   Color get _categoryColor {
-    switch (note.category.toLowerCase()) {
+    switch (currentNote.category.toLowerCase()) {
       case 'mathematics':
       case 'math':
         return const Color(0xFF2563EB);
@@ -31,7 +47,7 @@ class NoteDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final fileUrl = note.fileUrl?.trim() ?? '';
+    final fileUrl = currentNote.fileUrl?.trim() ?? '';
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -54,6 +70,13 @@ class NoteDetailScreen extends StatelessWidget {
           ),
           onPressed: () => context.pop(),
         ),
+        actions: [
+          if (currentNote.authorId == ref.watch(currentUserProvider)?.id)
+            IconButton(
+              icon: const Icon(Icons.edit_rounded),
+              onPressed: () => _showEditDialog(),
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -87,7 +110,7 @@ class NoteDetailScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
-                      note.category,
+                      currentNote.category,
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
@@ -96,7 +119,7 @@ class NoteDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    note.title,
+                    currentNote.title,
                     style: theme.textTheme.headlineMedium?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w800,
@@ -104,14 +127,14 @@ class NoteDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'Uploaded by ${note.author}',
+                    'Uploaded by ${currentNote.author}',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: Colors.white.withValues(alpha: 0.85),
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    DateFormat('dd MMM yyyy, h:mm a').format(note.createdAt),
+                    DateFormat('dd MMM yyyy, h:mm a').format(currentNote.createdAt),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: Colors.white.withValues(alpha: 0.72),
                     ),
@@ -125,8 +148,8 @@ class NoteDetailScreen extends StatelessWidget {
               color: theme.colorScheme.surface,
               showShadow: !isDark,
               child: Text(
-                note.description.isNotEmpty
-                    ? note.description
+                currentNote.description.isNotEmpty
+                    ? currentNote.description
                     : 'No description was provided for this note.',
                 style: theme.textTheme.bodyMedium?.copyWith(height: 1.6),
               ),
@@ -138,12 +161,6 @@ class NoteDetailScreen extends StatelessWidget {
               showShadow: !isDark,
               child: Column(
                 children: [
-                  _DetailRow(
-                    icon: Icons.menu_book_rounded,
-                    label: 'Pages',
-                    value: '${note.pages}',
-                  ),
-                  const SizedBox(height: 12),
                   _DetailRow(
                     icon: Icons.link_rounded,
                     label: 'File link',
@@ -185,7 +202,7 @@ class NoteDetailScreen extends StatelessWidget {
                     icon: Icons.auto_awesome_rounded,
                     onTap: () => context.push(
                       AppRoutes.aiChat,
-                      extra: AIPrompts.summarizeNote(note.title, note.category),
+                      extra: AIPrompts.summarizeNote(currentNote.title, currentNote.category),
                     ),
                   ),
                 ),
@@ -197,13 +214,91 @@ class NoteDetailScreen extends StatelessWidget {
                     icon: Icons.quiz_rounded,
                     onTap: () => context.push(
                       AppRoutes.aiChat,
-                      extra: AIPrompts.generateQuiz(note.title, note.category),
+                      extra: AIPrompts.generateQuiz(currentNote.title, currentNote.category),
                     ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 40),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditDialog() {
+    final titleController = TextEditingController(text: currentNote.title);
+    final descController = TextEditingController(text: currentNote.description);
+    String selectedCategory = currentNote.category;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Edit Note'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(labelText: 'Title'),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: descController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(labelText: 'Description'),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: selectedCategory,
+                  decoration: const InputDecoration(labelText: 'Category'),
+                  items: ['Exam', 'Lecture', 'Assignment', 'Resource', 'General']
+                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                      .toList(),
+                  onChanged: (v) => setDialogState(() => selectedCategory = v!),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  await ref.read(campusRepositoryProvider).updateNote(
+                    noteId: currentNote.id,
+                    title: titleController.text,
+                    description: descController.text,
+                    category: selectedCategory,
+                  );
+                  if (context.mounted) {
+                    setState(() {
+                      currentNote = currentNote.copyWith(
+                        title: titleController.text,
+                        description: descController.text,
+                        category: selectedCategory,
+                      );
+                    });
+                    Navigator.pop(context);
+                    ref.invalidate(academicNotesProvider);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Note updated!')),
+                    );
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e')),
+                  );
+                }
+              },
+              child: const Text('Save Changes'),
+            ),
           ],
         ),
       ),

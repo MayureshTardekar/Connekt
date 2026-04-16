@@ -64,9 +64,9 @@ class _UploadNoteScreenState extends ConsumerState<UploadNoteScreen> {
     setState(() => _isUploading = true);
 
     try {
-      List<int> bytes;
+      Uint8List bytes;
       if (kIsWeb) {
-        bytes = _selectedFile!.bytes?.toList() ?? [];
+        bytes = _selectedFile!.bytes ?? Uint8List(0);
       } else {
         bytes = await File(_selectedFile!.path!).readAsBytes();
       }

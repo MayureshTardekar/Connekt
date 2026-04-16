@@ -20,7 +20,7 @@ class NotesRepository {
           .toList();
     } catch (e) {
       AppLogger.error('Error fetching notes: $e');
-      return [];
+      rethrow;
     }
   }
 
@@ -37,6 +37,7 @@ class NotesRepository {
       await _supabase.from(_table).insert(note.toMap());
     } catch (e) {
       AppLogger.error('Error uploading note: $e');
+      rethrow;
     }
   }
 }

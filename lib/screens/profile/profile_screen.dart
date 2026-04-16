@@ -21,6 +21,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
+    final theme = Theme.of(context);
     final memberships = ref.watch(myMembershipsProvider);
     final avatarUrl = user?.userMetadata?['avatar_url'];
 
@@ -41,6 +42,60 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       return name.isNotEmpty ? name[0].toUpperCase() : 'S';
     }
 
+    Future<void> _showEditAliasDialog() async {
+      final user = ref.read(currentUserProvider);
+      final currentAlias = user?.userMetadata?['display_name'] ?? 
+                           user?.userMetadata?['full_name'] ?? 
+                           user?.email?.split('@').first ?? '';
+      
+      final controller = TextEditingController(text: currentAlias);
+
+      return showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Change Campus Alias'),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              labelText: 'New Alias',
+              hintText: 'Enter your profile name...',
+            ),
+            maxLength: 20,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final newAlias = controller.text.trim();
+                if (newAlias.isNotEmpty) {
+                  Navigator.pop(context);
+                  try {
+                    final res = await AuthRepository().updateDisplayName(newAlias);
+                    if (res['success'] && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Alias updated! ✨')),
+                      );
+                      setState(() {}); // Refresh local state
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error: ${e.toString()}')),
+                      );
+                    }
+                  }
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      );
+    }
+
     Future<void> pickAndUploadImage() async {
       final picker = ImagePicker();
       final XFile? image = await picker.pickImage(
@@ -58,13 +113,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           );
         }
 
-        final url = await AuthRepository().uploadProfilePhoto(bytes, extension);
+        try {
+          final url =
+              await AuthRepository().uploadProfilePhoto(bytes, extension);
 
-        if (url != null && context.mounted) {
-          setState(() {});
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Profile photo updated! ✨')),
-          );
+          if (url != null && context.mounted) {
+            setState(() {});
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Profile photo updated! ✨')),
+            );
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Upload failed: ${e.toString()}'),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+          }
         }
       }
     }
@@ -138,10 +205,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  Text(
-                    getUserName(),
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
+                  GestureDetector(
+                    onTap: _showEditAliasDialog,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          user?.userMetadata?['display_name'] ?? getUserName(),
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.edit_note_rounded,
+                          size: 20,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ],
                     ),
                   ),
                   Text(
@@ -153,6 +234,44 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 32),
+            
+            // Stats Row
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatCard(
+                    'Campuses',
+                    memberships.when(
+                      data: (list) => list.length.toString(),
+                      loading: () => '...',
+                      error: (_, __) => '0',
+                    ),
+                    Icons.school_rounded,
+                    AppTheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildStatCard(
+                    'Tokens',
+                    '500', // Placeholder but better looking than nothing
+                    Icons.toll_rounded,
+                    Colors.amber,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildStatCard(
+                    'Level',
+                    '2', // Placeholder
+                    Icons.auto_awesome_rounded,
+                    Colors.purpleAccent,
+                  ),
+                ),
+              ],
+            ),
+            
             const SizedBox(height: 40),
 
             // Memberships Section
@@ -258,11 +377,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 TextButton.icon(
                                   onPressed: () {
                                     ref
-                                            .read(
-                                              selectedCampusIdProvider.notifier,
-                                            )
-                                            .state =
-                                        campusId;
+                                        .read(selectedCampusIdProvider.notifier)
+                                        .selectCampus(campusId);
                                     context.go(AppRoutes.dashboard);
                                   },
                                   icon: const Icon(
@@ -308,6 +424,50 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF161129)
+            : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: color.withValues(alpha: 0.1),
+        ),
+        boxShadow: Theme.of(context).brightness == Brightness.dark
+            ? []
+            : [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 12,
+            ),
+          ),
+        ],
       ),
     );
   }

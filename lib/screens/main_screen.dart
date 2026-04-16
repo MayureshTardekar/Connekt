@@ -108,9 +108,8 @@ class MainScreenState extends ConsumerState<MainScreen> {
             borderRadius: BorderRadius.circular(18),
             child: Container(
               decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: theme.dividerColor),
+                shape: BoxShape.circle,
+                border: Border.all(color: theme.dividerColor, width: 1.5),
               ),
               child: Center(
                 child: avatarWidget(initials, radius: 18, imageUrl: avatarUrl),

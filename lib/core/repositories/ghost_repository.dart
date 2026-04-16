@@ -16,7 +16,7 @@ class GhostRepository {
       return (response as List).map((post) => GhostPost.fromMap(post)).toList();
     } catch (e) {
       AppLogger.error('Error fetching ghost posts: $e');
-      return [];
+      rethrow;
     }
   }
 
@@ -54,6 +54,7 @@ class GhostRepository {
       await _supabase.from('ghost_posts').insert(post.toMap());
     } catch (e) {
       AppLogger.error('Error creating ghost post: $e');
+      rethrow;
     }
   }
 
@@ -72,7 +73,7 @@ class GhostRepository {
       AppLogger.info('Post $postId reported by ${user.id}');
     } catch (e) {
       AppLogger.error('Error reporting post: $e');
-      // If table doesnt exist yet, we just log it
+      rethrow;
     }
   }
 }

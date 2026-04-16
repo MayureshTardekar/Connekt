@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/models/ghost_post.dart';
+import '../../core/utils/time_formatter.dart';
 import '../../core/providers/campus_provider.dart';
 import '../../core/repositories/auth_repository.dart';
 import '../../core/theme/app_colors.dart';
@@ -286,7 +287,7 @@ class _GhostTabState extends ConsumerState<GhostTab> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                DateFormat('HH:mm').format(post.createdAt),
+                TimeFormatter.format(post.createdAt),
                 style: const TextStyle(color: Colors.white24, fontSize: 10),
               ),
               if (!isMe) ...[
