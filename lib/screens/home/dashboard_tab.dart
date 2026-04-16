@@ -6,6 +6,7 @@ import '../../core/providers/campus_provider.dart';
 import '../../core/repositories/campus_repository.dart';
 import '../../theme/app_theme.dart';
 import '../../core/utils/time_formatter.dart';
+import '../../core/routing/app_routes.dart';
 import '../main_screen.dart';
 
 class DashboardTab extends ConsumerWidget {
@@ -462,7 +463,7 @@ class _SpotlightCarouselState extends State<_SpotlightCarousel> {
 
     if (slides.isEmpty) {
       slides.add({
-        'image': 'https://images.unsplash.com/photo-1541339907198-e08756eaa589?q=80&w=1000',
+        'image': 'https://picsum.photos/seed/connekt/1000/600',
         'title': 'Welcome to Connekt',
         'subtitle': 'Explore your new campus home.',
       });
@@ -564,13 +565,13 @@ class _SpotlightCarouselState extends State<_SpotlightCarousel> {
   }
 }
 
-class _PostCard extends StatelessWidget {
+class _PostCard extends ConsumerWidget {
   final Map<String, dynamic> activity;
 
   const _PostCard({required this.activity});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final timeStr = TimeFormatter.format(activity['created_at']);
@@ -658,9 +659,33 @@ class _PostCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
             child: Row(
               children: [
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.favorite_border_rounded),
+                FutureBuilder<bool>(
+                  future: ref.read(campusRepositoryProvider).hasLiked(
+                    activity['id']?.toString() ?? '',
+                    activity['type'] ?? 'note',
+                  ),
+                  builder: (context, snapshot) {
+                    final liked = snapshot.data ?? false;
+                    return IconButton(
+                      onPressed: () async {
+                        await ref
+                            .read(campusRepositoryProvider)
+                            .toggleLike(
+                              activity['id']?.toString() ?? '',
+                              activity['type'] ?? 'note',
+                            );
+                        // In a real app we'd use a provider to refresh, 
+                        // here we just toggle local state if we were in a stateful widget
+                        // but using the stream feed will handle it if we have a listener.
+                      },
+                      icon: Icon(
+                        liked
+                            ? Icons.favorite_rounded
+                            : Icons.favorite_border_rounded,
+                        color: liked ? Colors.red : null,
+                      ),
+                    );
+                  },
                 ),
                 IconButton(
                   onPressed: () {},

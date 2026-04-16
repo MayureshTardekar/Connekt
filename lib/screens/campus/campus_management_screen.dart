@@ -231,7 +231,7 @@ class _CampusManagementScreenState extends ConsumerState<CampusManagementScreen>
                         border: Border.all(color: theme.dividerColor),
                         image: const DecorationImage(
                           image: NetworkImage(
-                            'https://images.unsplash.com/photo-1541339907198-e08756eaa539?q=80&w=1000',
+                            'https://picsum.photos/seed/connekt/1000/600',
                           ),
                           fit: BoxFit.cover,
                           opacity: 0.2,

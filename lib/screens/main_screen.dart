@@ -93,6 +93,7 @@ class MainScreenState extends ConsumerState<MainScreen> {
         'Student';
     final initials = name.isNotEmpty ? name[0].toUpperCase() : 'S';
     final avatarUrl = user?.userMetadata?['avatar_url'];
+    final pictureUrl = user?.userMetadata?['picture'];
     final campusName = campus?['campus_name']?.toString();
 
     return Scaffold(
@@ -112,7 +113,7 @@ class MainScreenState extends ConsumerState<MainScreen> {
                 border: Border.all(color: theme.dividerColor, width: 1.5),
               ),
               child: Center(
-                child: avatarWidget(initials, radius: 18, imageUrl: avatarUrl),
+                child: avatarWidget(initials, radius: 18, imageUrl: avatarUrl, pictureUrl: pictureUrl),
               ),
             ),
           ),
@@ -183,6 +184,7 @@ class MainScreenState extends ConsumerState<MainScreen> {
                             initials,
                             radius: 28,
                             imageUrl: avatarUrl,
+                            pictureUrl: pictureUrl,
                           ),
                           const SizedBox(width: 16),
                           Expanded(

@@ -300,6 +300,33 @@ class _GhostTabState extends ConsumerState<GhostTab> {
                   ),
                 ),
               ],
+              const SizedBox(width: 12),
+              FutureBuilder<bool>(
+                future: ref.read(ghostRepositoryProvider).hasLiked(post.id),
+                builder: (context, snapshot) {
+                  final liked = snapshot.data ?? false;
+                  return GestureDetector(
+                    onTap: () async {
+                      await ref.read(ghostRepositoryProvider).toggleLike(post.id);
+                      if (mounted) setState(() {});
+                    },
+                    child: Row(
+                      children: [
+                        Icon(
+                          liked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                          color: liked ? Colors.redAccent : Colors.white24,
+                          size: 12,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${post.likes}',
+                          style: const TextStyle(color: Colors.white24, fontSize: 10),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ],

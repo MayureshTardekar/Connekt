@@ -128,12 +128,11 @@ class CampusRepository {
   }
 
   Stream<List<Map<String, dynamic>>> watchEvents({String? campusId}) {
-    // Note: Database schema for campus_events currently lacks campus_id column.
-    // Filtering is disabled to prevent crashes until the column is added.
-    return _supabase
-        .from('campus_events')
-        .stream(primaryKey: ['id'])
-        .order('created_at', ascending: true);
+    var query = _supabase.from('campus_events').stream(primaryKey: ['id']);
+    if (campusId != null) {
+      return query.eq('campus_id', campusId).order('created_at', ascending: false);
+    }
+    return query.order('created_at', ascending: false);
   }
 
   Stream<List<Map<String, dynamic>>> watchLostFoundItems({String? campusId}) {
@@ -147,8 +146,7 @@ class CampusRepository {
   Stream<List<Map<String, dynamic>>> watchNotes({String? campusId}) {
      var query = _supabase.from('notes_with_profiles').stream(primaryKey: ['id']);
      if (campusId != null) {
-       // Note: Filtering on views in realtime streams might require 'campus_id' to be indexed.
-       // For now fetching all and filtering in provider is safer if view stream isn't working.
+       return query.eq('campus_id', campusId).order('created_at', ascending: false);
      }
      return query.order('created_at', ascending: false);
   }
@@ -381,5 +379,55 @@ class CampusRepository {
         );
 
     return _supabase.storage.from('campus_assets').getPublicUrl(storagePath);
+  }
+
+  // --- Likes Logic ---
+
+  Future<void> toggleLike(String activityId, String type) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
+
+    final table = type == 'event' ? 'event_likes' : 'note_likes';
+    final columnId = type == 'event' ? 'event_id' : 'note_id';
+
+    try {
+      final existing = await _supabase
+          .from(table)
+          .select()
+          .eq(columnId, activityId)
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+      if (existing != null) {
+        await _supabase.from(table).delete().eq('id', existing['id']);
+      } else {
+        await _supabase.from(table).insert({
+          columnId: activityId,
+          'user_id': user.id,
+        });
+      }
+    } catch (e) {
+      debugPrint('Like error: $e. Table $table might be missing.');
+    }
+  }
+
+  Future<bool> hasLiked(String activityId, String type) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return false;
+
+    final table = type == 'event' ? 'event_likes' : 'note_likes';
+    final columnId = type == 'event' ? 'event_id' : 'note_id';
+
+    try {
+      final response = await _supabase
+          .from(table)
+          .select('id')
+          .eq(columnId, activityId)
+          .eq('user_id', user.id)
+          .maybeSingle();
+      return response != null;
+    } catch (_) {
+      return false;
+    }
   }
 }

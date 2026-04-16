@@ -109,17 +109,15 @@ class ChatRepository {
     try {
       // Keep conversation metadata real instead of overwriting every thread with
       // a hardcoded "Campus Community" label.
-      try {
-        await _supabase.from('chat_conversations').upsert({
-          'id': conversationId,
-          'participant_name': conversation?.participantName ?? 'Conversation',
-          'participant_id': conversation?.participantId ?? '',
-          'last_message': message.text,
-          'last_message_time': message.timestamp.toIso8601String(),
-        });
-      } catch (e) {
-        AppLogger.info('Conversation upsert skipped or failed: $e');
-      }
+      final Map<String, dynamic> upsertData = {
+        'id': conversationId,
+        'other_user_name': conversation?.participantName ?? 'Conversation',
+        'last_message': message.text,
+        'last_message_time': message.timestamp.toIso8601String(),
+      };
+
+      // Try to create/update the conversation record first.
+      await _supabase.from('chat_conversations').upsert(upsertData);
 
       try {
         // Advanced insert with all features
@@ -136,23 +134,25 @@ class ChatRepository {
           'reply_to_text': message.replyToText,
           'reply_to_name': message.replyToName,
         });
+        // If we reach here, it succeeded! Do NOT run the fallback.
+        return; 
       } catch (insertError) {
         // Fallback for missing columns/schema mismatches
         AppLogger.info(
           'Advanced insert failed, falling back to minimal: $insertError',
         );
+        // Only retry if it was likely a column mismatch error (code 42703 or PGRST204)
         await _supabase.from('chat_messages').insert({
           'conversation_id': conversationId,
           'sender_id': message.senderId,
           'sender_name': message.senderName,
           'text': message.text,
           'timestamp': message.timestamp.toIso8601String(),
-          'is_read': message.isRead,
         });
       }
     } catch (e) {
       AppLogger.error('Definitive message failure: $e');
-      throw Exception('Failed to send message: $e');
+      throw Exception(e.toString());
     }
   }
 

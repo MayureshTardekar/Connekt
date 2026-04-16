@@ -29,7 +29,7 @@ String initials(String name) {
 }
 
 /// Builds a CircleAvatar with colored initials or network image
-Widget avatarWidget(String name, {double radius = 22, String? imageUrl}) {
+Widget avatarWidget(String name, {double radius = 22, String? imageUrl, String? pictureUrl}) {
   final initialsWidget = CircleAvatar(
     radius: radius,
     backgroundColor: avatarColor(name),
@@ -43,10 +43,12 @@ Widget avatarWidget(String name, {double radius = 22, String? imageUrl}) {
     ),
   );
 
-  if (imageUrl != null && imageUrl.isNotEmpty) {
+  final effectiveUrl = (imageUrl != null && imageUrl.isNotEmpty) ? imageUrl : pictureUrl;
+
+  if (effectiveUrl != null && effectiveUrl.isNotEmpty) {
     return ClipOval(
       child: Image.network(
-        imageUrl,
+        effectiveUrl,
         width: radius * 2,
         height: radius * 2,
         fit: BoxFit.cover,

@@ -27,6 +27,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   final List<ChatMessage> _localMessages = [];
   final Set<String> _sendingIds = {};
   final Set<String> _failedIds = {};
+  bool _isSendingLocally = false;
 
   @override
   void initState() {
@@ -47,10 +48,13 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
   Future<void> _sendCurrentMessage() async {
     final text = _messageController.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty || _isSendingLocally) return;
+
+    setState(() => _isSendingLocally = true);
 
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
+      setState(() => _isSendingLocally = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Sign in again to send messages.')),
       );
@@ -92,17 +96,23 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
             message,
             conversation: widget.conversation,
           );
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() {
+        _isSendingLocally = false;
         _sendingIds.remove(message.id);
         _failedIds.add(message.id);
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Message not sent. Check your connection.'),
+        SnackBar(
+          content: Text('Send failed: ${e.toString()}'),
+          duration: const Duration(seconds: 5),
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() => _isSendingLocally = false);
+      }
     }
   }
 

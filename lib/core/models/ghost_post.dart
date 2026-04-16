@@ -3,33 +3,26 @@ import 'dart:convert';
 class GhostPost {
   final String id;
   final String text;
+  final String? authorId;
+  final String? authorAlias;
   final String mood;
   final DateTime createdAt;
   final int likes;
-  final int commentsCount;
-  final String? colorHex;
-  final String? authorId;
-  final String? authorAlias;
 
   GhostPost({
     required this.id,
     required this.text,
-    required this.mood,
-    required this.createdAt,
-    this.likes = 0,
-    this.commentsCount = 0,
-    this.colorHex,
     this.authorId,
     this.authorAlias,
+    this.mood = 'Neutral',
+    required this.createdAt,
+    this.likes = 0,
   });
 
   Map<String, dynamic> toMap() {
     return {
-      'text': text,
-      'mood': mood,
-      'color_hex': colorHex,
+      'content': text,
       'author_id': authorId,
-      'author_alias': authorAlias,
       'created_at': createdAt.toIso8601String(),
     };
   }
@@ -37,14 +30,14 @@ class GhostPost {
   factory GhostPost.fromMap(Map<String, dynamic> map) {
     return GhostPost(
       id: map['id']?.toString() ?? '',
-      text: map['text'] ?? '',
-      mood: map['mood'] ?? 'Unknown',
-      createdAt: DateTime.parse(map['created_at']),
+      text: map['content'] ?? map['text'] ?? '',
+      authorId: map['user_id']?.toString() ?? map['author_id']?.toString(),
+      authorAlias: map['author_alias'] ?? map['profiles']?['ghost_alias'],
+      mood: map['mood'] ?? 'Neutral',
+      createdAt: map['created_at'] != null
+          ? DateTime.parse(map['created_at']).toLocal()
+          : DateTime.now(),
       likes: map['likes'] ?? 0,
-      commentsCount: map['comments_count'] ?? 0,
-      colorHex: map['color_hex'],
-      authorId: map['author_id'],
-      authorAlias: map['author_alias'],
     );
   }
 

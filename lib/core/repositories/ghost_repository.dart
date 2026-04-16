@@ -58,6 +58,48 @@ class GhostRepository {
     }
   }
 
+  Future<void> toggleLike(String postId) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final existing = await _supabase
+          .from('ghost_likes')
+          .select()
+          .eq('post_id', postId)
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+      if (existing != null) {
+        await _supabase.from('ghost_likes').delete().eq('id', existing['id']);
+      } else {
+        await _supabase.from('ghost_likes').insert({
+          'post_id': postId,
+          'user_id': user.id,
+        });
+      }
+    } catch (e) {
+      debugPrint('Like error: $e');
+    }
+  }
+
+  Future<bool> hasLiked(String postId) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return false;
+
+    try {
+      final response = await _supabase
+          .from('ghost_likes')
+          .select('id')
+          .eq('post_id', postId)
+          .eq('user_id', user.id)
+          .maybeSingle();
+      return response != null;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<void> reportPost(String postId) async {
     try {
       final user = _supabase.auth.currentUser;
