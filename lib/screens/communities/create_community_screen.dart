@@ -42,7 +42,9 @@ class _CreateCommunityScreenState extends ConsumerState<CreateCommunityScreen> {
 
       if (mounted) context.pop();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -79,9 +81,9 @@ class _CreateCommunityScreenState extends ConsumerState<CreateCommunityScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withOpacity(0.1)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               ),
               child: SwitchListTile(
                 title: Text(
@@ -94,7 +96,7 @@ class _CreateCommunityScreenState extends ConsumerState<CreateCommunityScreen> {
                 ),
                 value: _isPrivate,
                 onChanged: (v) => setState(() => _isPrivate = v),
-                activeColor: Colors.blueAccent,
+                activeThumbColor: Colors.blueAccent,
               ),
             ),
             const SizedBox(height: 48),
@@ -143,10 +145,10 @@ class _CreateCommunityScreenState extends ConsumerState<CreateCommunityScreen> {
         hintText: hint,
         hintStyle: const TextStyle(color: Colors.white24),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.05),
+        fillColor: Colors.white.withValues(alpha: 0.05),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),

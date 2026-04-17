@@ -12,6 +12,10 @@ import '../../core/widgets/app_states.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/avatar_helper.dart';
 
+// Consolidated Views
+import '../communities/communities_list_screen.dart';
+import '../ghost/ghost_tab.dart';
+
 class ChatTab extends ConsumerStatefulWidget {
   const ChatTab({super.key});
 
@@ -20,6 +24,94 @@ class ChatTab extends ConsumerStatefulWidget {
 }
 
 class _ChatTabState extends ConsumerState<ChatTab> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        appBar: AppBar(
+          backgroundColor: theme.scaffoldBackgroundColor,
+          elevation: 0,
+          toolbarHeight: 0, // No standard toolbar
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(130),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text('Social Hub', style: theme.textTheme.displaySmall),
+                ),
+                const SizedBox(height: 18),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: TabBar(
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    dividerColor: Colors.transparent,
+                    indicator: BoxDecoration(
+                      color: theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    labelColor: theme.colorScheme.primary,
+                    unselectedLabelColor: theme.textTheme.bodySmall?.color,
+                    labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                    unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                    tabs: const [
+                      Tab(text: 'Messages'),
+                      Tab(text: 'Communities'),
+                      Tab(text: 'Ghost Chat'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+            ),
+          ),
+        ),
+        body: const TabBarView(
+          children: [
+            _MessagesView(),
+            CommunitiesListScreen(isTab: true),
+            GhostTab(isTab: true),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MessagesView extends ConsumerStatefulWidget {
+  const _MessagesView();
+
+  @override
+  ConsumerState<_MessagesView> createState() => _MessagesViewState();
+}
+
+class _MessagesViewState extends ConsumerState<_MessagesView> {
   final TextEditingController _searchController = TextEditingController();
   final Set<String> _archivedIds = {};
 
@@ -61,9 +153,7 @@ class _ChatTabState extends ConsumerState<ChatTab> {
   Future<void> _archiveConversation(ChatConversation conversation) async {
     setState(() => _archivedIds.add(conversation.id));
     try {
-      await ref
-          .read(chatRepositoryProvider)
-          .archiveConversation(conversation.id);
+      await ref.read(chatRepositoryProvider).archiveConversation(conversation.id);
     } catch (_) {
       if (!mounted) return;
       setState(() => _archivedIds.remove(conversation.id));
@@ -75,132 +165,115 @@ class _ChatTabState extends ConsumerState<ChatTab> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final conversationsAsync = ref.watch(chatConversationsProvider);
     final pendingCount = ref.watch(pendingRequestsCountProvider);
     final selectedCampusId = ref.watch(selectedCampusIdProvider);
     final campus = ref.watch(selectedCampusProvider);
-    final campusName = campus?['campus_name']?.toString();
+    final campusName = (campus?['campuses']?['name'] ?? campus?['campus_name'])?.toString();
     final query = _searchController.text.trim().toLowerCase();
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Messages', style: theme.textTheme.displaySmall),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Keep campus conversations focused. No fake badges, no placeholder threads.',
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 22),
-                  TextField(
-                    controller: _searchController,
-                    onChanged: (_) => setState(() {}),
-                    textInputAction: TextInputAction.search,
-                    decoration: const InputDecoration(
-                      prefixIcon: Icon(Icons.search_rounded),
-                      hintText: 'Search conversations',
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 18),
-            Expanded(
-              child: conversationsAsync.when(
-                loading: () =>
-                    const AppLoadingState(message: 'Loading messages...'),
-                error: (error, _) => AppErrorState(
-                  message: error.toString(),
-                  onRetry: () => ref.invalidate(chatConversationsProvider),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: _searchController,
+                onChanged: (_) => setState(() {}),
+                textInputAction: TextInputAction.search,
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.search_rounded),
+                  hintText: 'Search conversations',
                 ),
-                data: (conversations) {
-                  final hasCampusConversation =
-                      selectedCampusId != null &&
-                      conversations.any((chat) => chat.id == selectedCampusId);
-                  final showCommunityShortcut =
-                      selectedCampusId != null &&
-                      !hasCampusConversation &&
-                      _matchesCommunityQuery(campusName, query);
-                  final visible = conversations
-                      .where((chat) => !_archivedIds.contains(chat.id))
-                      .where((chat) => _matchesConversation(chat, query))
-                      .toList();
-                  final hasAnyContent =
-                      pendingCount > 0 ||
-                      showCommunityShortcut ||
-                      visible.isNotEmpty;
-
-                  return RefreshIndicator(
-                    onRefresh: _refresh,
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-                      children: [
-                        if (pendingCount > 0) ...[
-                          _FriendRequestBanner(count: pendingCount),
-                          const SizedBox(height: 14),
-                        ],
-                        if (showCommunityShortcut) ...[
-                          _CampusCommunityShortcut(
-                            campusId: selectedCampusId,
-                            campusName: campusName,
-                          ),
-                          const SizedBox(height: 14),
-                        ],
-                        if (!hasAnyContent)
-                          SizedBox(
-                            height: 380,
-                            child: AppEmptyState(
-                              icon: Icons.chat_bubble_outline_rounded,
-                              title: query.isEmpty
-                                  ? 'No conversations yet'
-                                  : 'No matching conversations',
-                              subtitle: query.isEmpty
-                                  ? 'When real chats exist, they will appear here.'
-                                  : 'Try a different name or message keyword.',
-                            ),
-                          )
-                        else
-                          ...visible.map(
-                            (chat) => Dismissible(
-                              key: ValueKey(chat.id),
-                              direction: DismissDirection.endToStart,
-                              confirmDismiss: (_) => _confirmArchive(chat),
-                              onDismissed: (_) => _archiveConversation(chat),
-                              background: const _ArchiveBackground(),
-                              child: _ConversationTile(conversation: chat),
-                            ),
-                          ),
-                      ],
-                    ),
-                  );
-                },
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
+        const SizedBox(height: 18),
+        Expanded(
+          child: conversationsAsync.when(
+            loading: () => const AppLoadingState(message: 'Loading messages...'),
+            error: (error, _) => AppErrorState(
+              message: error.toString(),
+              onRetry: () => ref.invalidate(chatConversationsProvider),
+            ),
+            data: (conversations) {
+              final hasCampusConversation = selectedCampusId != null &&
+                  conversations.any((chat) => chat.id == selectedCampusId);
+              final showCommunityShortcut = selectedCampusId != null &&
+                  !hasCampusConversation &&
+                  _matchesCommunityQuery(campusName, query);
+              final visible = conversations
+                  .where((chat) => !_archivedIds.contains(chat.id))
+                  .where((chat) => _matchesConversation(chat, query))
+                  .toList();
+              final hasAnyContent = pendingCount > 0 || showCommunityShortcut || visible.isNotEmpty;
+
+              return RefreshIndicator(
+                onRefresh: _refresh,
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 120),
+                  children: [
+                    if (pendingCount > 0) ...[
+                      _FriendRequestBanner(count: pendingCount),
+                      const SizedBox(height: 14),
+                    ],
+                    if (showCommunityShortcut) ...[
+                      _CampusCommunityShortcut(
+                        campusId: selectedCampusId,
+                        campusName: campusName,
+                      ),
+                      const SizedBox(height: 14),
+                    ],
+                    if (!hasAnyContent)
+                      SizedBox(
+                        height: 380,
+                        child: AppEmptyState(
+                          icon: Icons.chat_bubble_outline_rounded,
+                          title: query.isEmpty ? 'No conversations yet' : 'No matching conversations',
+                          subtitle: query.isEmpty
+                              ? 'When real chats exist, they will appear here.'
+                              : 'Try a different name or message keyword.',
+                        ),
+                      )
+                    else
+                      ...visible.map(
+                        (chat) => Dismissible(
+                          key: ValueKey(chat.id),
+                          direction: DismissDirection.endToStart,
+                          confirmDismiss: (_) => _confirmArchive(chat),
+                          onDismissed: (_) => _archiveConversation(chat),
+                          background: const _ArchiveBackground(),
+                          child: _ConversationTile(conversation: chat),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
   bool _matchesConversation(ChatConversation conversation, String query) {
     if (query.isEmpty) return true;
-    return conversation.participantName.toLowerCase().contains(query) ||
-        conversation.lastMessage.toLowerCase().contains(query);
+    final q = query.toLowerCase();
+    return conversation.participantName.toLowerCase().contains(q) ||
+        conversation.lastMessage.toLowerCase().contains(q);
   }
 
   bool _matchesCommunityQuery(String? campusName, String query) {
     if (query.isEmpty) return true;
-    final label = '${campusName ?? ''} campus community'.toLowerCase();
-    return label.contains(query);
+    final rawName = campusName ?? 'Campus';
+    final upperName = rawName.toUpperCase();
+    final title = upperName.endsWith('S') || upperName.endsWith('S ') 
+        ? "$rawName' Community"
+        : "$rawName's Community";
+    return title.toLowerCase().contains(query.toLowerCase());
   }
 }
 
@@ -276,9 +349,11 @@ class _CampusCommunityShortcut extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final title = campusName == null || campusName!.trim().isEmpty
-        ? 'Campus community'
-        : '${campusName!.trim()} community';
+    final rawName = campusName ?? 'Campus';
+    final upperName = rawName.toUpperCase();
+    final title = upperName.endsWith('S') || upperName.endsWith('S ') 
+        ? "$rawName' Community"
+        : "$rawName's Community";
 
     return InkWell(
       onTap: () {
@@ -346,20 +421,32 @@ class _CampusCommunityShortcut extends StatelessWidget {
   }
 }
 
-class _ConversationTile extends StatelessWidget {
+class _ConversationTile extends ConsumerWidget {
   const _ConversationTile({required this.conversation});
 
   final ChatConversation conversation;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final hasLastMessage = conversation.lastMessage.trim().isNotEmpty;
+    final selectedCampusId = ref.watch(selectedCampusIdProvider);
+    final campus = ref.watch(selectedCampusProvider);
+    
+    // Determine dynamic name for the tile
+    String displayName = conversation.participantName;
+    if (selectedCampusId != null && conversation.id == selectedCampusId) {
+      final campusName = (campus?['campuses']?['name'] ?? campus?['campus_name'] ?? 'Campus').toString();
+      final upperName = campusName.toUpperCase();
+      displayName = upperName.endsWith('S') || upperName.endsWith('S ') 
+          ? "$campusName' Community" 
+          : "$campusName's Community";
+    }
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: InkWell(
-        onTap: () => context.push(AppRoutes.chatDetail, extra: conversation),
+        onTap: () => context.push(AppRoutes.chatDetail, extra: conversation.copyWith(participantName: displayName)),
         borderRadius: BorderRadius.circular(22),
         child: Container(
           padding: const EdgeInsets.all(16),
@@ -371,7 +458,7 @@ class _ConversationTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-              avatarWidget(conversation.participantName, radius: 24),
+              avatarWidget(displayName, radius: 24),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -381,7 +468,7 @@ class _ConversationTile extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            conversation.participantName,
+                            displayName,
                             style: theme.textTheme.titleMedium,
                             overflow: TextOverflow.ellipsis,
                           ),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/models/ghost_post.dart';
@@ -10,7 +9,8 @@ import '../../core/repositories/auth_repository.dart';
 import '../../core/theme/app_colors.dart';
 
 class GhostTab extends ConsumerStatefulWidget {
-  const GhostTab({super.key});
+  final bool isTab;
+  const GhostTab({super.key, this.isTab = false});
 
   @override
   ConsumerState<GhostTab> createState() => _GhostTabState();
@@ -159,6 +159,7 @@ class _GhostTabState extends ConsumerState<GhostTab> {
   }
 
   Widget _buildHeader() {
+    if (widget.isTab) return const SizedBox.shrink();
     final currentAlias = AuthRepository().currentGhostAlias;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),

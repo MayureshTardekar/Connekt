@@ -42,7 +42,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       return name.isNotEmpty ? name[0].toUpperCase() : 'S';
     }
 
-    Future<void> _showEditAliasDialog() async {
+    Future<void> showEditAliasDialog() async {
       final user = ref.read(currentUserProvider);
       final currentAlias = user?.userMetadata?['display_name'] ?? 
                            user?.userMetadata?['full_name'] ?? 
@@ -206,7 +206,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   const SizedBox(height: 16),
                   GestureDetector(
-                    onTap: _showEditAliasDialog,
+                    onTap: showEditAliasDialog,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [

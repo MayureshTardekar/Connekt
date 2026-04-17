@@ -10,7 +10,9 @@ class ChatMessage {
   final bool isFromMe; // Local UI helper
 
   // Phase 2 Expressive features
-  final Map<String, int> reactions;
+  final Map<String, List<String>> reactions; // emoji -> list of userIds
+  final String? audioUrl;
+  final int? audioDuration; // in seconds
   final bool isGif;
   final bool isSticker;
 
@@ -31,6 +33,8 @@ class ChatMessage {
     this.isRead = false,
     this.isFromMe = false,
     this.reactions = const {},
+    this.audioUrl,
+    this.audioDuration,
     this.isGif = false,
     this.isSticker = false,
     this.sharedCardType = SharedCardType.none,
@@ -48,7 +52,9 @@ class ChatMessage {
     DateTime? timestamp,
     bool? isRead,
     bool? isFromMe,
-    Map<String, int>? reactions,
+    Map<String, List<String>>? reactions,
+    String? audioUrl,
+    int? audioDuration,
     bool? isGif,
     bool? isSticker,
     SharedCardType? sharedCardType,
@@ -66,6 +72,8 @@ class ChatMessage {
       isRead: isRead ?? this.isRead,
       isFromMe: isFromMe ?? this.isFromMe,
       reactions: reactions ?? this.reactions,
+      audioUrl: audioUrl ?? this.audioUrl,
+      audioDuration: audioDuration ?? this.audioDuration,
       isGif: isGif ?? this.isGif,
       isSticker: isSticker ?? this.isSticker,
       sharedCardType: sharedCardType ?? this.sharedCardType,
@@ -95,9 +103,11 @@ class ChatMessage {
       isFromMe: (json['isFromMe'] ?? json['is_from_me']) as bool? ?? false,
       reactions:
           (json['reactions'] as Map<String, dynamic>?)?.map(
-            (k, e) => MapEntry(k, e as int),
+            (k, e) => MapEntry(k, (e as List).map((id) => id.toString()).toList()),
           ) ??
           {},
+      audioUrl: (json['audioUrl'] ?? json['audio_url'])?.toString(),
+      audioDuration: json['audioDuration'] ?? json['audio_duration'],
       isGif: (json['isGif'] ?? json['is_gif']) as bool? ?? false,
       isSticker: (json['isSticker'] ?? json['is_sticker']) as bool? ?? false,
       sharedCardType: SharedCardType.values.firstWhere(
@@ -124,6 +134,8 @@ class ChatMessage {
       'isRead': isRead,
       'isFromMe': isFromMe,
       'reactions': reactions,
+      'audio_url': audioUrl,
+      'audio_duration': audioDuration,
       'isGif': isGif,
       'isSticker': isSticker,
       'sharedCardType': sharedCardType.name,

@@ -76,37 +76,60 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   Future<void> _bootstrap() async {
     setState(() => _initializationError = null);
-    await Future<void>.delayed(const Duration(milliseconds: 1800));
+    
+    debugPrint('Splash: Starting bootstrap...');
+    await Future<void>.delayed(const Duration(milliseconds: 2000));
     if (!mounted) return;
 
     final session = Supabase.instance.client.auth.currentSession;
+    final currentUri = Uri.base;
+    final hasAuthCode = currentUri.queryParameters.containsKey('code');
+
+    debugPrint('Splash: Session detected: ${session != null}, Has Auth Code: $hasAuthCode');
 
     if (session == null) {
-      context.go(AppRoutes.login);
-      return;
+      if (hasAuthCode) {
+        debugPrint('Splash: Auth code detected but session null. Waiting for exchange...');
+        // Wait a bit more for the background exchange
+        await Future<void>.delayed(const Duration(seconds: 2));
+        if (!mounted) return;
+        context.go(AppRoutes.login);
+        return;
+      } else {
+        debugPrint('Splash: No session or code. Redirecting to login.');
+        if (!mounted) return;
+        context.go(AppRoutes.login);
+        return;
+      }
     }
 
     final repo = CampusRepository();
 
     try {
+      debugPrint('Splash: Checking campus membership...');
       final isMember = await repo.isMemberOfAnyCampus();
       if (!mounted) return;
 
       if (!isMember) {
+        debugPrint('Splash: User has no campus. Sending to campus selection.');
         context.go(AppRoutes.campusSelect);
         return;
       }
 
+      debugPrint('Splash: Fetching membership details...');
       final campuses = await repo.getMyCampuses();
       if (!mounted) return;
 
       if (campuses.isNotEmpty) {
         final firstCampusId = campuses.first['campus_id']?.toString();
-        ref.read(selectedCampusIdProvider.notifier).state = firstCampusId;
+        debugPrint('Splash: Auto-selecting campus: $firstCampusId');
+        ref.read(selectedCampusIdProvider.notifier).selectCampus(firstCampusId);
       }
 
+      debugPrint('Splash: Bootstrapping complete. Entering dashboard.');
       context.go(AppRoutes.dashboard);
     } catch (error) {
+      debugPrint('Splash: Initialization Error -> $error');
       if (!mounted) return;
       setState(() => _initializationError = error);
     }

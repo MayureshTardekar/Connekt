@@ -1,14 +1,11 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:record/record.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import '../../core/providers/community_provider.dart';
-import '../../core/repositories/community_repository.dart';
 import '../../core/network/logger.dart';
 import 'community_admin_screen.dart';
 
@@ -151,7 +148,7 @@ class _CommunityChatScreenState extends ConsumerState<CommunityChatScreen> {
         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isMe ? Colors.blueAccent.withOpacity(0.8) : Colors.white.withOpacity(0.1),
+          color: isMe ? Colors.blueAccent.withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16).copyWith(
             bottomRight: isMe ? Radius.zero : null,
             bottomLeft: !isMe ? Radius.zero : null,
@@ -192,8 +189,8 @@ class _CommunityChatScreenState extends ConsumerState<CommunityChatScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.1))),
+        color: Colors.white.withValues(alpha: 0.05),
+        border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
       ),
       child: Row(
         children: [
@@ -210,7 +207,7 @@ class _CommunityChatScreenState extends ConsumerState<CommunityChatScreen> {
                 hintStyle: const TextStyle(color: Colors.white38),
                 border: InputBorder.none,
                 filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
+                fillColor: Colors.white.withValues(alpha: 0.05),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
                 focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: Colors.blueAccent, width: 0.5)),

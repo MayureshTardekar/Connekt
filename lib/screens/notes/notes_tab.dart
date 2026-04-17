@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import '../../core/models/academic_note.dart';
 import '../../core/utils/time_formatter.dart';
 import '../../core/providers/campus_provider.dart';
@@ -427,7 +426,7 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: selectedCategory,
+                  initialValue: selectedCategory,
                   decoration: const InputDecoration(labelText: 'Category'),
                   items: ['Exam', 'Lecture', 'Assignment', 'Resource', 'General']
                       .map((c) => DropdownMenuItem(value: c, child: Text(c)))
@@ -459,9 +458,11 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                     );
                   }
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')),
-                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: $e')),
+                    );
+                  }
                 }
               },
               child: const Text('Save Changes'),

@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/providers/campus_provider.dart';
 import '../../core/repositories/campus_repository.dart';
-import '../../theme/app_theme.dart';
 import '../../core/utils/time_formatter.dart';
 import '../../core/routing/app_routes.dart';
 import '../main_screen.dart';
@@ -299,7 +298,7 @@ class DashboardTab extends ConsumerWidget {
                           ),
                           _QuickTool(
                             icon: Icons.groups_rounded,
-                            label: 'Groups',
+                            label: 'Study',
                             color: Colors.pink,
                             onTap: () => context.push(AppRoutes.studyGroups),
                           ),
@@ -324,11 +323,6 @@ class DashboardTab extends ConsumerWidget {
                 child: Row(
                   children: [
                     Text('Campus Feed', style: theme.textTheme.titleLarge),
-                    const Spacer(),
-                    TextButton(
-                      onPressed: () {},
-                      child: const Text('View all'),
-                    ),
                   ],
                 ),
               ),
@@ -443,9 +437,6 @@ class _SpotlightCarousel extends StatefulWidget {
 
 class _SpotlightCarouselState extends State<_SpotlightCarousel> {
   final PageController _controller = PageController(viewportFraction: 1.0);
-  int _currentIndex = 0;
-
-  final List<Map<String, String>> _slides = [];
 
   @override
   Widget build(BuildContext context) {
@@ -475,7 +466,6 @@ class _SpotlightCarouselState extends State<_SpotlightCarousel> {
           height: 200,
           child: PageView.builder(
             controller: _controller,
-            onPageChanged: (i) => setState(() => _currentIndex = i),
             itemCount: slides.length,
             itemBuilder: (context, index) {
               final slide = slides[index];
@@ -565,16 +555,64 @@ class _SpotlightCarouselState extends State<_SpotlightCarousel> {
   }
 }
 
-class _PostCard extends ConsumerWidget {
+class _PostCard extends ConsumerStatefulWidget {
   final Map<String, dynamic> activity;
 
   const _PostCard({required this.activity});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_PostCard> createState() => _PostCardState();
+}
+
+class _PostCardState extends ConsumerState<_PostCard> {
+  bool? _isLiked;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLikeStatus();
+  }
+
+  Future<void> _checkLikeStatus() async {
+    final liked = await ref.read(campusRepositoryProvider).hasLiked(
+          widget.activity['id']?.toString() ?? '',
+          widget.activity['type'] ?? 'note',
+        );
+    if (mounted) {
+      setState(() {
+        _isLiked = liked;
+      });
+    }
+  }
+
+  Future<void> _handleLike() async {
+    final activityId = widget.activity['id']?.toString() ?? '';
+    final type = widget.activity['type'] ?? 'note';
+
+    // Optimistic Update
+    final previousState = _isLiked;
+    setState(() {
+      _isLiked = !(_isLiked ?? false);
+    });
+
+    try {
+      await ref.read(campusRepositoryProvider).toggleLike(activityId, type);
+    } catch (e) {
+      // Revert on error
+      if (mounted) {
+        setState(() {
+          _isLiked = previousState;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final timeStr = TimeFormatter.format(activity['created_at']);
+    final timeStr = TimeFormatter.format(widget.activity['created_at']);
+    final liked = _isLiked ?? false;
 
     return Container(
       decoration: BoxDecoration(
@@ -598,7 +636,7 @@ class _PostCard extends ConsumerWidget {
                     alpha: 0.1,
                   ),
                   child: Text(
-                    (activity['title'] as String?)?[0] ?? 'C',
+                    (widget.activity['title'] as String?)?[0] ?? 'C',
                     style: TextStyle(
                       fontSize: 12,
                       color: theme.colorScheme.primary,
@@ -612,22 +650,17 @@ class _PostCard extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _getAuthorName(activity),
+                        _getAuthorName(widget.activity),
                         style: theme.textTheme.labelLarge?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       Text(
-                        activity['type'] == 'note' ? 'Notes' : 'Event',
+                        widget.activity['type'] == 'note' ? 'Notes' : 'Event',
                         style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
                       ),
                     ],
                   ),
-                ),
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.more_horiz, size: 20),
-                  visualDensity: VisualDensity.compact,
                 ),
               ],
             ),
@@ -639,11 +672,11 @@ class _PostCard extends ConsumerWidget {
             child: Container(
               color: isDark ? Colors.grey[900] : Colors.grey[200],
               child: Image.network(
-                _getImageUrl(activity),
+                _getImageUrl(widget.activity),
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Center(
                   child: Icon(
-                    activity['type'] == 'note'
+                    widget.activity['type'] == 'note'
                         ? Icons.description_outlined
                         : Icons.celebration_outlined,
                     size: 48,
@@ -659,37 +692,14 @@ class _PostCard extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
             child: Row(
               children: [
-                FutureBuilder<bool>(
-                  future: ref.read(campusRepositoryProvider).hasLiked(
-                    activity['id']?.toString() ?? '',
-                    activity['type'] ?? 'note',
-                  ),
-                  builder: (context, snapshot) {
-                    final liked = snapshot.data ?? false;
-                    return IconButton(
-                      onPressed: () async {
-                        await ref
-                            .read(campusRepositoryProvider)
-                            .toggleLike(
-                              activity['id']?.toString() ?? '',
-                              activity['type'] ?? 'note',
-                            );
-                        // In a real app we'd use a provider to refresh, 
-                        // here we just toggle local state if we were in a stateful widget
-                        // but using the stream feed will handle it if we have a listener.
-                      },
-                      icon: Icon(
-                        liked
-                            ? Icons.favorite_rounded
-                            : Icons.favorite_border_rounded,
-                        color: liked ? Colors.red : null,
-                      ),
-                    );
-                  },
-                ),
                 IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.send_rounded),
+                  onPressed: _handleLike,
+                  icon: Icon(
+                    liked
+                        ? Icons.favorite_rounded
+                        : Icons.favorite_border_rounded,
+                    color: liked ? Colors.red : null,
+                  ),
                 ),
               ],
             ),
@@ -706,16 +716,16 @@ class _PostCard extends ConsumerWidget {
                     style: theme.textTheme.bodyMedium,
                     children: [
                       TextSpan(
-                        text: '${_getAuthorName(activity)} ',
+                        text: '${_getAuthorName(widget.activity)} ',
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      TextSpan(text: activity['title']),
+                      TextSpan(text: widget.activity['title']),
                     ],
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  activity['subtitle'] ?? '',
+                  widget.activity['subtitle'] ?? '',
                   style: theme.textTheme.bodySmall,
                 ),
                 const SizedBox(height: 8),
@@ -748,55 +758,5 @@ class _PostCard extends ConsumerWidget {
     }
     return 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=800';
   }
-
 }
-class _DashboardCard extends StatelessWidget {
-  const _DashboardCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
 
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(22),
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: theme.dividerColor),
-          boxShadow: AppTheme.softShadow,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(icon, color: theme.colorScheme.primary, size: 20),
-            ),
-            const Spacer(),
-            Text(title, style: theme.textTheme.titleMedium),
-            const SizedBox(height: 6),
-            Text(subtitle, style: theme.textTheme.bodySmall),
-          ],
-        ),
-      ),
-    );
-  }
-}

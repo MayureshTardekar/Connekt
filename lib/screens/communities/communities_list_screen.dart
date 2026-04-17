@@ -2,16 +2,35 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/community_provider.dart';
-import '../../core/providers/campus_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class CommunitiesListScreen extends ConsumerWidget {
-  const CommunitiesListScreen({super.key});
+  final bool isTab;
+  const CommunitiesListScreen({super.key, this.isTab = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final communitiesAsync = ref.watch(communitiesProvider);
-    final selectedCampusId = ref.watch(selectedCampusIdProvider);
+
+    Widget content = communitiesAsync.when(
+      data: (communities) {
+        if (communities.isEmpty) {
+          return _buildEmptyState(context);
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: communities.length,
+          itemBuilder: (context, index) {
+            final community = communities[index];
+            return _buildCommunityCard(context, ref, community);
+          },
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator(color: Colors.blueAccent)),
+      error: (err, stack) => Center(child: Text('Error: $err', style: const TextStyle(color: Colors.red))),
+    );
+
+    if (isTab) return Container(color: Colors.black, child: content);
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -38,7 +57,7 @@ class CommunitiesListScreen extends ConsumerWidget {
             return _buildEmptyState(context);
           }
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
             itemCount: communities.length,
             itemBuilder: (context, index) {
               final community = communities[index];
@@ -58,15 +77,15 @@ class CommunitiesListScreen extends ConsumerWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.all(16),
         leading: CircleAvatar(
           radius: 30,
-          backgroundColor: Colors.blueAccent.withOpacity(0.2),
+          backgroundColor: Colors.blueAccent.withValues(alpha: 0.2),
           backgroundImage: community['avatar_url'] != null ? NetworkImage(community['avatar_url']) : null,
           child: community['avatar_url'] == null ? const Icon(Icons.group, color: Colors.blueAccent) : null,
         ),
@@ -140,8 +159,8 @@ class CommunitiesListScreen extends ConsumerWidget {
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 hintText: '****',
-                hintStyle: TextStyle(color: Colors.white.withOpacity(0.1)),
-                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.blueAccent.withOpacity(0.3))),
+                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.1)),
+                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.blueAccent.withValues(alpha: 0.3))),
               ),
               onChanged: (v) => pin = v,
             ),
@@ -164,7 +183,7 @@ class CommunitiesListScreen extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.forum_outlined, size: 80, color: Colors.white.withOpacity(0.2)),
+          Icon(Icons.forum_outlined, size: 80, color: Colors.white.withValues(alpha: 0.2)),
           const SizedBox(height: 24),
           Text(
             'No Communities Yet',

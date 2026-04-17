@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../network/logger.dart';
 
 class CommunityRepository {
   SupabaseClient get supabase => Supabase.instance.client;

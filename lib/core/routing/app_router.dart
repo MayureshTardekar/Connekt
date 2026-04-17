@@ -19,8 +19,7 @@ import '../../screens/home/dashboard_tab.dart';
 import '../../screens/notes/notes_tab.dart';
 import '../../screens/events/events_tab.dart';
 import '../../screens/chat/chat_tab.dart';
-import '../../screens/ghost/ghost_tab.dart';
-
+// Tab Screens removed from here to ChatTab consolidation
 // Detail/Action Screens
 import '../../screens/notes/note_detail_screen.dart';
 import '../../screens/notes/upload_note_screen.dart';
@@ -31,7 +30,6 @@ import '../../screens/chat/friend_requests_screen.dart';
 import '../../screens/lost_found/lost_found_tab.dart';
 import '../../screens/lost_found/item_detail_screen.dart';
 import '../../screens/lost_found/post_lost_item_screen.dart';
-import '../../screens/communities/communities_list_screen.dart';
 import '../../screens/communities/create_community_screen.dart';
 import '../../screens/communities/community_chat_screen.dart';
 import '../../screens/communities/community_admin_screen.dart';
@@ -49,10 +47,23 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: AppRoutes.splash,
     redirect: (context, state) {
-      final user = ref.watch(currentUserProvider);
-      final isLoggingIn = state.matchedLocation == AppRoutes.login || 
-                         state.matchedLocation == AppRoutes.signup ||
-                         state.matchedLocation == AppRoutes.splash;
+      final user = ref.read(currentUserProvider);
+      final location = state.matchedLocation;
+      
+      // LOGS FOR DEBUGGING (Visible in terminal)
+      debugPrint('Router: [User: ${user?.email ?? "Guest"}] [Location: $location] [Query: ${state.uri.queryParameters.keys}]');
+
+      // NEW: If we are in the middle of an OAuth code exchange or password recovery, 
+      // do NOT redirect. Let Supabase handle the incoming URL.
+      if (state.uri.queryParameters.containsKey('code') || 
+          state.uri.queryParameters.containsKey('recovery_token')) {
+        debugPrint('Router: Auth exchange detected, staying on current route...');
+        return null;
+      }
+
+      final isLoggingIn = location == AppRoutes.login || 
+                         location == AppRoutes.signup ||
+                         location == AppRoutes.splash;
       
       if (user == null) {
         return isLoggingIn ? null : AppRoutes.login;
@@ -60,7 +71,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       
       if (isLoggingIn && authState.hasValue) {
         // NEW: Check if user has joined any campus
-        final memberships = ref.read(myMembershipsProvider).value;
+        final memberships = ref.watch(myMembershipsProvider).value;
         if (memberships != null && memberships.isEmpty) {
           return AppRoutes.campusSelect;
         }
@@ -68,8 +79,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       // NEW: Force campus selection if user is logged in but has no campuses
-      final memberships = ref.read(myMembershipsProvider).value;
-      if (memberships != null && memberships.isEmpty && state.matchedLocation != AppRoutes.campusSelect) {
+      final memberships = ref.watch(myMembershipsProvider).value;
+      if (memberships != null && memberships.isEmpty && location != AppRoutes.campusSelect) {
         return AppRoutes.campusSelect;
       }
       
@@ -241,24 +252,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                     },
                   ),
                 ],
-              ),
-            ],
-          ),
-          // WORLD BRANCH
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: AppRoutes.world,
-                builder: (context, state) => const GhostTab(),
-              ),
-            ],
-          ),
-          // COMMUNITIES BRANCH
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: AppRoutes.communities,
-                builder: (context, state) => const CommunitiesListScreen(),
               ),
             ],
           ),

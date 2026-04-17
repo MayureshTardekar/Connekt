@@ -253,7 +253,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: selectedCategory,
+                  initialValue: selectedCategory,
                   decoration: const InputDecoration(labelText: 'Category'),
                   items: ['Exam', 'Lecture', 'Assignment', 'Resource', 'General']
                       .map((c) => DropdownMenuItem(value: c, child: Text(c)))
@@ -292,9 +292,11 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
                     );
                   }
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')),
-                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: $e')),
+                    );
+                  }
                 }
               },
               child: const Text('Save Changes'),

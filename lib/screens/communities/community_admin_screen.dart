@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/providers/community_provider.dart';
-import '../../core/repositories/community_repository.dart';
 
 class CommunityAdminScreen extends ConsumerWidget {
   final String communityId;
@@ -65,7 +64,7 @@ class CommunityAdminScreen extends ConsumerWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(16)),
       child: Row(
         children: [
           CircleAvatar(backgroundImage: profile['avatar_url'] != null ? NetworkImage(profile['avatar_url']) : null),
@@ -110,9 +109,9 @@ class CommunityAdminScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.redAccent.withOpacity(0.05),
+        color: Colors.redAccent.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.redAccent.withOpacity(0.2)),
+        border: Border.all(color: Colors.redAccent.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

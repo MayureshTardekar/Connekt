@@ -9,6 +9,10 @@ import '../../core/providers/chat_provider.dart';
 import '../../core/widgets/app_states.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/avatar_helper.dart';
+import 'package:record/record.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 
 class ChatDetailScreen extends ConsumerStatefulWidget {
   const ChatDetailScreen({super.key, required this.conversation});
@@ -29,6 +33,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   final Set<String> _failedIds = {};
   bool _isSendingLocally = false;
 
+  // Voice recording state
+  final AudioRecorder _audioRecorder = AudioRecorder();
+  bool _isRecording = false;
+  String? _recordingPath;
+
   @override
   void initState() {
     super.initState();
@@ -41,6 +50,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       ..removeListener(_handleInputChanged)
       ..dispose();
     _scrollController.dispose();
+    _audioRecorder.dispose();
     super.dispose();
   }
 
@@ -113,6 +123,55 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       if (mounted) {
         setState(() => _isSendingLocally = false);
       }
+    }
+  }
+
+  Future<void> _startRecording() async {
+    try {
+      if (await _audioRecorder.hasPermission()) {
+        final dir = await getTemporaryDirectory();
+        final path = '${dir.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
+        
+        const config = RecordConfig();
+        await _audioRecorder.start(config, path: path);
+        
+        setState(() {
+          _isRecording = true;
+          _recordingPath = path;
+        });
+      }
+    } catch (e) {
+      debugPrint('Start recording error: $e');
+    }
+  }
+
+  Future<void> _stopRecording() async {
+    try {
+      final path = await _audioRecorder.stop();
+      setState(() => _isRecording = false);
+
+      if (path != null) {
+        final file = File(path);
+        final bytes = await file.readAsBytes();
+        
+        final audioUrl = await ref.read(chatRepositoryProvider).uploadVoiceMessage(bytes);
+        if (audioUrl != null) {
+          final user = Supabase.instance.client.auth.currentUser;
+          final message = ChatMessage(
+            id: 'local-${DateTime.now().microsecondsSinceEpoch}',
+            senderId: user?.id ?? 'me',
+            senderName: user?.userMetadata?['full_name'] ?? 'Me',
+            text: '🎤 Voice Message',
+            audioUrl: audioUrl,
+            audioDuration: 0, // Could calculate if needed
+            timestamp: DateTime.now(),
+            isFromMe: true,
+          );
+          await _sendMessage(message);
+        }
+      }
+    } catch (e) {
+      debugPrint('Stop recording error: $e');
     }
   }
 
@@ -276,6 +335,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                       isSending: _sendingIds.contains(message.id),
                       hasFailed: _failedIds.contains(message.id),
                       onRetry: () => _sendMessage(message),
+                      onReact: (emoji) => ref.read(chatRepositoryProvider).toggleReaction(message.id, emoji),
                     );
                   },
                 );
@@ -284,9 +344,10 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
           ),
           _MessageComposer(
             controller: _messageController,
-            enabled: hasInput,
-            maxLength: _maxMessageLength,
             onSend: _sendCurrentMessage,
+            isRecording: _isRecording,
+            onStartRecording: _startRecording,
+            onStopRecording: _stopRecording,
           ),
         ],
       ),
@@ -302,6 +363,7 @@ class _MessageBubble extends StatelessWidget {
     required this.isSending,
     required this.hasFailed,
     required this.onRetry,
+    required this.onReact,
   });
 
   final ChatMessage message;
@@ -310,6 +372,7 @@ class _MessageBubble extends StatelessWidget {
   final bool isSending;
   final bool hasFailed;
   final VoidCallback onRetry;
+  final Function(String) onReact;
 
   @override
   Widget build(BuildContext context) {
@@ -320,6 +383,8 @@ class _MessageBubble extends StatelessWidget {
     final textColor = isFromMe
         ? Colors.white
         : theme.textTheme.bodyLarge?.color;
+
+    final hasAudio = message.audioUrl != null;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -345,71 +410,141 @@ class _MessageBubble extends StatelessWidget {
                   ),
                 ),
               ],
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 11,
-                ),
-                decoration: BoxDecoration(
-                  color: bubbleColor,
-                  borderRadius: BorderRadius.only(
-                    topLeft: const Radius.circular(18),
-                    topRight: const Radius.circular(18),
-                    bottomLeft: Radius.circular(isFromMe ? 18 : 6),
-                    bottomRight: Radius.circular(isFromMe ? 6 : 18),
+              GestureDetector(
+                onLongPress: () => _showReactionPicker(context),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 11,
                   ),
-                  border: Border.all(
-                    color: hasFailed
-                        ? AppTheme.coral
-                        : isFromMe
-                        ? Colors.transparent
-                        : theme.dividerColor,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      message.text,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: textColor,
-                        height: 1.42,
-                      ),
+                  decoration: BoxDecoration(
+                    color: bubbleColor,
+                    borderRadius: BorderRadius.only(
+                      topLeft: const Radius.circular(18),
+                      topRight: const Radius.circular(18),
+                      bottomLeft: Radius.circular(isFromMe ? 18 : 6),
+                      bottomRight: Radius.circular(isFromMe ? 6 : 18),
                     ),
-                    const SizedBox(height: 6),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
+                    border: Border.all(
+                      color: hasFailed
+                          ? AppTheme.coral
+                          : isFromMe
+                          ? Colors.transparent
+                          : theme.dividerColor,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (hasAudio)
+                        _VoiceMessagePlayer(url: message.audioUrl!, isMe: isFromMe)
+                      else
                         Text(
-                          _statusText(),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: isFromMe
-                                ? Colors.white.withValues(alpha: 0.72)
-                                : theme.textTheme.bodySmall?.color,
-                            fontSize: 10,
+                          message.text,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: textColor,
+                            height: 1.42,
                           ),
                         ),
-                        if (hasFailed) ...[
-                          const SizedBox(width: 8),
-                          GestureDetector(
-                            onTap: onRetry,
-                            child: Text(
-                              'Retry',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: isFromMe ? Colors.white : AppTheme.coral,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 10,
-                              ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _statusText(),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: isFromMe
+                                  ? Colors.white.withValues(alpha: 0.72)
+                                  : theme.textTheme.bodySmall?.color,
+                              fontSize: 10,
                             ),
                           ),
+                          const SizedBox(width: 4),
+                          if (isFromMe && !isSending && !hasFailed)
+                            Icon(
+                              Icons.done_all_rounded,
+                              size: 12,
+                              color: message.isRead 
+                                ? Colors.blueAccent 
+                                : Colors.white.withValues(alpha: 0.5),
+                            ),
+                          if (hasFailed) ...[
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: onRetry,
+                              child: Text(
+                                'Retry',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: isFromMe ? Colors.white : AppTheme.coral,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
+              if (message.reactions.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Wrap(
+                    spacing: 4,
+                    children: message.reactions.entries.map((e) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: theme.dividerColor, width: 0.5),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(e.key, style: const TextStyle(fontSize: 12)),
+                            const SizedBox(width: 2),
+                            Text(
+                              e.value.length.toString(),
+                              style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  void _showReactionPicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        margin: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: ['❤️', '👍', '😂', '🔥', '😮', '😢'].map((emoji) {
+            return GestureDetector(
+              onTap: () {
+                onReact(emoji);
+                Navigator.pop(context);
+              },
+              child: Text(emoji, style: const TextStyle(fontSize: 28)),
+            );
+          }).toList(),
         ),
       ),
     );
@@ -425,22 +560,25 @@ class _MessageBubble extends StatelessWidget {
 class _MessageComposer extends StatelessWidget {
   const _MessageComposer({
     required this.controller,
-    required this.enabled,
-    required this.maxLength,
     required this.onSend,
+    required this.isRecording,
+    required this.onStartRecording,
+    required this.onStopRecording,
   });
 
   final TextEditingController controller;
-  final bool enabled;
-  final int maxLength;
   final VoidCallback onSend;
+  final bool isRecording;
+  final VoidCallback onStartRecording;
+  final VoidCallback onStopRecording;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final hasInput = controller.text.trim().isNotEmpty;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor,
         border: Border(top: BorderSide(color: theme.dividerColor)),
@@ -450,41 +588,140 @@ class _MessageComposer extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Expanded(
-              child: TextField(
-                controller: controller,
-                minLines: 1,
-                maxLines: 5,
-                maxLength: maxLength,
-                textCapitalization: TextCapitalization.sentences,
-                textInputAction: TextInputAction.newline,
-                decoration: InputDecoration(
-                  hintText: 'Write a message',
-                  counterText: '',
-                  filled: true,
-                  fillColor: theme.colorScheme.surface,
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: BorderSide(color: theme.dividerColor),
+            if (!isRecording) ...[
+              IconButton(
+                icon: const Icon(Icons.add_circle_outline_rounded),
+                onPressed: () {}, // For future image support
+                color: theme.colorScheme.primary,
+              ),
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  minLines: 1,
+                  maxLines: 5,
+                  textCapitalization: TextCapitalization.sentences,
+                  textInputAction: TextInputAction.newline,
+                  decoration: InputDecoration(
+                    hintText: 'Message...',
+                    counterText: '',
+                    filled: true,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    fillColor: theme.colorScheme.surface,
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide(color: theme.dividerColor),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 10),
-            IconButton.filled(
-              onPressed: enabled ? onSend : null,
-              icon: const Icon(Icons.arrow_upward_rounded),
-              style: IconButton.styleFrom(
-                backgroundColor: theme.colorScheme.primary,
-                disabledBackgroundColor: theme.dividerColor,
-                foregroundColor: Colors.white,
-                disabledForegroundColor: theme.textTheme.bodySmall?.color,
-                fixedSize: const Size(48, 48),
+            ] else 
+              Expanded(
+                child: Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.mic, color: Colors.red, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Recording...',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onLongPressStart: (_) => onStartRecording(),
+              onLongPressEnd: (_) => onStopRecording(),
+              child: IconButton.filled(
+                onPressed: hasInput ? onSend : null,
+                icon: Icon(hasInput ? Icons.send : Icons.mic_rounded),
+                style: IconButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  disabledBackgroundColor: theme.dividerColor,
+                  foregroundColor: Colors.white,
+                  fixedSize: const Size(48, 48),
+                ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _VoiceMessagePlayer extends StatefulWidget {
+  final String url;
+  final bool isMe;
+  const _VoiceMessagePlayer({required this.url, required this.isMe});
+
+  @override
+  State<_VoiceMessagePlayer> createState() => _VoiceMessagePlayerState();
+}
+
+class _VoiceMessagePlayerState extends State<_VoiceMessagePlayer> {
+  final AudioPlayer _player = AudioPlayer();
+  bool _isPlaying = false;
+  Duration _duration = Duration.zero;
+  Duration _position = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _player.onDurationChanged.listen((d) => setState(() => _duration = d));
+    _player.onPositionChanged.listen((p) => setState(() => _position = p));
+    _player.onPlayerComplete.listen((_) => setState(() => _isPlaying = false));
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow, 
+               color: widget.isMe ? Colors.white : Theme.of(context).colorScheme.primary),
+          onPressed: () async {
+            if (_isPlaying) {
+              await _player.pause();
+            } else {
+              await _player.play(UrlSource(widget.url));
+            }
+            setState(() => _isPlaying = !_isPlaying);
+          },
+        ),
+        SizedBox(
+          width: 120,
+          child: Slider(
+            value: _position.inMilliseconds.toDouble(),
+            max: _duration.inMilliseconds.toDouble() > 0 ? _duration.inMilliseconds.toDouble() : 1.0,
+            activeColor: widget.isMe ? Colors.white : Theme.of(context).colorScheme.primary,
+            inactiveColor: widget.isMe ? Colors.white.withValues(alpha: 0.3) : Colors.grey[300],
+            onChanged: (v) => _player.seek(Duration(milliseconds: v.toInt())),
+          ),
+        ),
+      ],
     );
   }
 }

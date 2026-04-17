@@ -1,5 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-
+import 'dart:typed_data';
 import '../config/app_config.dart';
 import '../mock/mock_datasource.dart';
 import '../models/chat_conversation.dart';
@@ -128,6 +128,9 @@ class ChatRepository {
           'text': message.text,
           'timestamp': message.timestamp.toIso8601String(),
           'is_read': message.isRead,
+          'reactions': message.reactions,
+          'audio_url': message.audioUrl,
+          'audio_duration': message.audioDuration,
           'shared_card_type': message.sharedCardType.name,
           'shared_data': message.sharedData,
           'reply_to_id': message.replyToId,
@@ -203,4 +206,73 @@ class ChatRepository {
       AppLogger.error('Failed to unarchive conversation: $e');
     }
   }
+
+  /// Update read status
+  Future<void> markAsRead(String messageId) async {
+    if (AppConfig.useMockBackend) return;
+    try {
+      await _supabase
+          .from('chat_messages')
+          .update({'is_read': true})
+          .eq('id', messageId);
+    } catch (e) {
+      // Quiet fail
+    }
+  }
+
+  /// Toggle reaction on a message
+  Future<void> toggleReaction(String messageId, String emoji) async {
+    if (AppConfig.useMockBackend) return;
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final response = await _supabase
+          .from('chat_messages')
+          .select('reactions')
+          .eq('id', messageId)
+          .single();
+
+      final Map<String, dynamic> current = Map<String, dynamic>.from(response['reactions'] ?? {});
+      final List<dynamic> users = List<dynamic>.from(current[emoji] ?? []);
+
+      if (users.contains(user.id)) {
+        users.remove(user.id);
+      } else {
+        users.add(user.id);
+      }
+
+      if (users.isEmpty) {
+        current.remove(emoji);
+      } else {
+        current[emoji] = users;
+      }
+
+      await _supabase
+          .from('chat_messages')
+          .update({'reactions': current})
+          .eq('id', messageId);
+    } catch (e) {
+      AppLogger.error('Reaction error: $e');
+    }
+  }
+
+  /// Upload voice message to storage
+  Future<String?> uploadVoiceMessage(List<int> bytes) async {
+    if (AppConfig.useMockBackend) return null;
+    final user = _supabase.auth.currentUser;
+    if (user == null) return null;
+
+    final fileName = '${user.id}_${DateTime.now().millisecondsSinceEpoch}.m4a';
+    final path = 'chat_audio/$fileName';
+
+    try {
+      await _supabase.storage.from('community_assets').uploadBinary(path, Uint8List.fromList(bytes));
+      return _supabase.storage.from('community_assets').getPublicUrl(path);
+    } catch (e) {
+      AppLogger.error('Voice upload error: $e');
+      return null;
+    }
+  }
 }
+

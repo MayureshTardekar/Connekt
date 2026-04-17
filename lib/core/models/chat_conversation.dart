@@ -21,8 +21,10 @@ class ChatConversation {
     return ChatConversation(
       id: json['id']?.toString() ?? '',
       participantName:
-          (json['participantName'] ?? json['participant_name'])?.toString() ??
-          '',
+          (json['participantName'] ?? 
+           json['participant_name'] ?? 
+           json['other_user_name'])?.toString() ??
+          'Conversation',
       participantId:
           (json['participantId'] ?? json['participant_id'])?.toString() ?? '',
       lastMessage:
@@ -41,6 +43,26 @@ class ChatConversation {
           : DateTime.now(),
       unreadCount: (json['unreadCount'] ?? json['unread_count']) as int? ?? 0,
       isPinned: (json['isPinned'] ?? json['is_pinned']) as bool? ?? false,
+    );
+  }
+
+  ChatConversation copyWith({
+    String? id,
+    String? participantName,
+    String? participantId,
+    String? lastMessage,
+    DateTime? lastMessageTime,
+    int? unreadCount,
+    bool? isPinned,
+  }) {
+    return ChatConversation(
+      id: id ?? this.id,
+      participantName: participantName ?? this.participantName,
+      participantId: participantId ?? this.participantId,
+      lastMessage: lastMessage ?? this.lastMessage,
+      lastMessageTime: lastMessageTime ?? this.lastMessageTime,
+      unreadCount: unreadCount ?? this.unreadCount,
+      isPinned: isPinned ?? this.isPinned,
     );
   }
 

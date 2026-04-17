@@ -144,7 +144,6 @@ class AIRepository {
     // Last resort or browser-only fallback.
     if (AppConfig.geminiApiKey.isNotEmpty) {
       try {
-        // We iterate through available keys if primary fails
         final keys = [
           AppConfig.geminiApiKey,
           AppConfig.geminiApiKeyBackup,
@@ -171,72 +170,12 @@ class AIRepository {
               return text;
             }
           } catch (e) {
-            debugPrint(
-              'Gemini SDK Error for key: ${key.substring(0, 5)}... $e',
-            );
-            // Try REST fallback for this specific key before moving to next key
-            final v1betaResponse = await http.post(
-              Uri.parse(
-                'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=$key',
-              ),
-              headers: {'Content-Type': 'application/json'},
-              body: jsonEncode({
-                'contents': [
-                  {
-                    'parts': [
-                      {'text': message},
-                    ],
-                  },
-                ],
-                'systemInstruction': {
-                  'parts': [
-                    {'text': fullSystemInstruction},
-                  ],
-                },
-              }),
-            );
-
-            if (v1betaResponse.statusCode == 200) {
-              final data = jsonDecode(v1betaResponse.body);
-              final responseText =
-                  data['candidates'][0]['content']['parts'][0]['text']
-                      as String;
-              if (responseText.contains('WARNING')) _warningCount++;
-              return responseText;
-            } else {
-              // If v1beta fails, try v1 stable
-              final v1Response = await http.post(
-                Uri.parse(
-                  'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=$key',
-                ),
-                headers: {'Content-Type': 'application/json'},
-                body: jsonEncode({
-                  'contents': [
-                    {
-                      'parts': [
-                        {'text': message},
-                      ],
-                    },
-                  ],
-                  // Note: v1 stable might have different system instruction support
-                  'generationConfig': {
-                    'temperature': 0.7,
-                    'maxOutputTokens': 1024,
-                  },
-                }),
-              );
-
-              if (v1Response.statusCode == 200) {
-                final data = jsonDecode(v1Response.body);
-                final responseText =
-                    data['candidates'][0]['content']['parts'][0]['text']
-                        as String;
-                if (responseText.contains('WARNING')) _warningCount++;
-                return responseText;
-              }
-              debugPrint(
-                'Gemini HTTP v1/v1beta Failed for key: ${key.substring(0, 5)}... Status: ${v1Response.statusCode}',
-              );
+            debugPrint('Gemini SDK Attempt failed: $e');
+            // Try REST fallback if SDK failed
+            final responseText = await _tryGeminiRest(key, fullSystemInstruction, message);
+            if (responseText != null) {
+               if (responseText.contains('WARNING')) _warningCount++;
+               return responseText;
             }
           }
         }
@@ -249,7 +188,42 @@ class AIRepository {
     final webNotice = kIsWeb
         ? " (Note: Grok/Groq/NVIDIA are locked on Web due to CORS)"
         : "";
-    return "AI is offline. All protocols (Grok/Gemini/NVIDIA) failed$webNotice. Please check network/keys. Error: $lastError";
+    return "AI is currently unavailable. Please check your internet connection or API configuration. Error: $lastError$webNotice";
+  }
+
+  Future<String?> _tryGeminiRest(String key, String system, String message) async {
+     try {
+        final uri = Uri.parse(
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=$key',
+        );
+        final response = await http.post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'contents': [
+              {
+                'role': 'user',
+                'parts': [
+                  {'text': message},
+                ],
+              },
+            ],
+            'systemInstruction': {
+              'parts': [
+                {'text': system},
+              ],
+            },
+          }),
+        );
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          return data['candidates'][0]['content']['parts'][0]['text'] as String?;
+        }
+     } catch (e) {
+        debugPrint('Gemini REST Fallback error: $e');
+     }
+     return null;
   }
 
   // Summarize overall app state for the dashboard
