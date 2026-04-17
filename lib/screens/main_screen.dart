@@ -373,6 +373,7 @@ class MainScreenState extends ConsumerState<MainScreen> {
               _buildNavItem(Icons.event_rounded, 'Events', 2),
               _buildNavItem(Icons.forum_rounded, 'Chat', 3),
               _buildNavItem(Icons.public_rounded, 'World', 4),
+              _buildNavItem(Icons.groups_rounded, 'Groups', 5),
             ],
           ),
         ),

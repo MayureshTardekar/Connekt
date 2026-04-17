@@ -61,6 +61,18 @@ class _UploadNoteScreenState extends ConsumerState<UploadNoteScreen> {
       return;
     }
 
+    // NEW: Check file size (10MB limit)
+    const maxSizeBytes = 10 * 1024 * 1024;
+    if (_selectedFile!.size > maxSizeBytes) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('File is too large! Maximum limit is 10MB.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isUploading = true);
 
     try {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
+import '../providers/campus_provider.dart';
 import 'app_routes.dart';
 
 // Your actual screens
@@ -30,6 +31,10 @@ import '../../screens/chat/friend_requests_screen.dart';
 import '../../screens/lost_found/lost_found_tab.dart';
 import '../../screens/lost_found/item_detail_screen.dart';
 import '../../screens/lost_found/post_lost_item_screen.dart';
+import '../../screens/communities/communities_list_screen.dart';
+import '../../screens/communities/create_community_screen.dart';
+import '../../screens/communities/community_chat_screen.dart';
+import '../../screens/communities/community_admin_screen.dart';
 import '../../screens/study_groups/study_groups_tab.dart';
 import '../../screens/study_groups/create_group_screen.dart';
 import '../../screens/profile/profile_screen.dart';
@@ -53,7 +58,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         return isLoggingIn ? null : AppRoutes.login;
       }
       
-      if (isLoggingIn && authState.hasValue) return AppRoutes.dashboard;
+      if (isLoggingIn && authState.hasValue) {
+        // NEW: Check if user has joined any campus
+        final memberships = ref.read(myMembershipsProvider).value;
+        if (memberships != null && memberships.isEmpty) {
+          return AppRoutes.campusSelect;
+        }
+        return AppRoutes.dashboard;
+      }
+
+      // NEW: Force campus selection if user is logged in but has no campuses
+      final memberships = ref.read(myMembershipsProvider).value;
+      if (memberships != null && memberships.isEmpty && state.matchedLocation != AppRoutes.campusSelect) {
+        return AppRoutes.campusSelect;
+      }
       
       return null;
     },
@@ -235,7 +253,28 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
+          // COMMUNITIES BRANCH
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.communities,
+                builder: (context, state) => const CommunitiesListScreen(),
+              ),
+            ],
+          ),
         ],
+      ),
+      GoRoute(
+        path: AppRoutes.createCommunity,
+        builder: (context, state) => const CreateCommunityScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.communityChat,
+        builder: (context, state) => CommunityChatScreen(communityId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/communities/:id/admin',
+        builder: (context, state) => CommunityAdminScreen(communityId: state.pathParameters['id']!),
       ),
     ],
   );

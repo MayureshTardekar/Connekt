@@ -261,8 +261,10 @@ class CampusRepository {
       'category': subject,
       'description': description,
       'file_url': fileUrl,
-      'author_id': user.id, // Store ID instead of string name
-      'author': user.userMetadata?['display_name'] ?? user.email?.split('@')[0] ?? 'Student', // Fallback cache
+      'author_id': user.id,
+      'author': user.userMetadata?['full_name'] ?? 
+                user.userMetadata?['display_name'] ?? 
+                user.email?.split('@')[0] ?? 'Student',
       'created_at': DateTime.now().toIso8601String(),
     });
   }

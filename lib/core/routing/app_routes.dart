@@ -22,4 +22,7 @@ abstract final class AppRoutes {
   static const profile = '/profile';
   static const aiChat = '/ai';
   static const campusManagement = '/campus-management';
+  static const communities = '/communities';
+  static const createCommunity = '/communities/create';
+  static const communityChat = '/communities/chat/:id';
 }
