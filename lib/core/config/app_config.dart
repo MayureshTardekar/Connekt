@@ -1,14 +1,19 @@
 class AppConfig {
   /// Defines whether the app should use mock data repositories or live backend.
-  static const bool useMockBackend = false;
+  /// Now automatically defaults to true if Supabase configuration is missing.
+  static bool get useMockBackend {
+    const fromEnv = bool.fromEnvironment('USE_MOCK_BACKEND', defaultValue: false);
+    return fromEnv || !isSupabaseConfigured;
+  }
 
   /// Defines whether to log analytics and app events locally.
   static const bool enableLogging = true;
 
   // Supabase Configuration
+  // ACTION: Replace with your own Supabase project details
   static const String supabaseUrl = String.fromEnvironment(
     'SUPABASE_URL',
-    defaultValue: 'https://jqevsymgsahaijijgqif.supabase.co',
+    defaultValue: 'https://jqevsymgsahaijijgqif.supabase.co', 
   );
   static const String supabaseAnonKey = String.fromEnvironment(
     'SUPABASE_ANON_KEY',
@@ -16,6 +21,7 @@ class AppConfig {
   );
 
   // Gemini Configuration
+  // ACTION: Replace with your Google AI Studio API Key
   static const String geminiApiKey = String.fromEnvironment(
     'GEMINI_API_KEY',
     defaultValue: 'AIzaSyD15gKjnQWrbtfAy4deTHVj6IFhIubDk1A',
@@ -34,7 +40,10 @@ class AppConfig {
 
   // Fallback / Helper getters
   static bool get isSupabaseConfigured =>
-      supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
+      supabaseUrl.isNotEmpty && 
+      supabaseUrl != 'YOUR_SUPABASE_URL' &&
+      supabaseAnonKey.isNotEmpty &&
+      supabaseAnonKey != 'YOUR_SUPABASE_ANON_KEY';
 
   // Grok/Other settings remain as environment variables or placeholders
   static const String xaiApiKey = String.fromEnvironment('XAI_API_KEY');

@@ -3,7 +3,7 @@ import '../models/academic_note.dart';
 import '../network/logger.dart';
 
 class NotesRepository {
-  final _supabase = Supabase.instance.client;
+  SupabaseClient get _supabase => Supabase.instance.client;
 
   // Table name must match the Supabase schema: 'academic_notes'
   static const _table = 'academic_notes';

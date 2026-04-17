@@ -3,19 +3,30 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/app_config.dart';
 
 class AuthRepository {
-  final SupabaseClient _supabase = Supabase.instance.client;
+  /// Safely access supabase only if configured
+  SupabaseClient get _supabase => Supabase.instance.client;
 
   // Get current user
-  User? get currentUser => _supabase.auth.currentUser;
+  User? get currentUser {
+    if (AppConfig.useMockBackend) return null; // Or return a mock user
+    return _supabase.auth.currentUser;
+  }
 
   // Stream of auth state changes
-  Stream<AuthState> get authStateChanges => _supabase.auth.onAuthStateChange;
+  Stream<AuthState> get authStateChanges {
+    if (AppConfig.useMockBackend) return const Stream.empty();
+    return _supabase.auth.onAuthStateChange;
+  }
 
   // Email & Password Sign In
-  Future<AuthResponse> signInWithEmail({
+  Future<dynamic> signInWithEmail({
     required String email,
     required String password,
   }) async {
+    if (AppConfig.useMockBackend) {
+      debugPrint('Mock Login: Success as Guest');
+      return null; // Return successfully without calling Supabase
+    }
     try {
       return await _supabase.auth.signInWithPassword(
         email: email,
@@ -31,11 +42,15 @@ class AuthRepository {
   }
 
   // Email & Password Sign Up
-  Future<AuthResponse> signUpWithEmail({
+  Future<dynamic> signUpWithEmail({
     required String fullName,
     required String email,
     required String password,
   }) async {
+    if (AppConfig.useMockBackend) {
+      debugPrint('Mock Signup: Success as $fullName');
+      return null;
+    }
     try {
       final response = await _supabase.auth.signUp(
         email: email,

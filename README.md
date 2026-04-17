@@ -43,9 +43,9 @@ Connekt is an all-in-one smart campus companion app for college students. It com
 4. Run the app with environment variables.
    ```bash
    flutter run \
-     --dart-define=SUPABASE_URL=https://jqevsymgsahaijijgqif.supabase.co \
-     --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxZXZzeW1nc2FoYWlqaWpncWlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNTY3OTMsImV4cCI6MjA5MTYzMjc5M30.nfl8ERMTJeSfp3A_6OwagoNWszwJfzNW01rbbtX6PCU \
-     --dart-define=GEMINI_API_KEY=AIzaSyAfy9TdW6oUFucM6B-BQ9by4HXzim10iVE
+     --dart-define=SUPABASE_URL=YOUR_SUPABASE_URL \
+     --dart-define=SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY \
+     --dart-define=GEMINI_API_KEY=YOUR_GEMINI_API_KEY
    ```
 
 ## 🔐 Security & Anonymity

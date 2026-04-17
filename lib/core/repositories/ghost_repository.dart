@@ -4,7 +4,7 @@ import '../models/ghost_post.dart';
 import '../network/logger.dart';
 
 class GhostRepository {
-  final _supabase = Supabase.instance.client;
+  SupabaseClient get _supabase => Supabase.instance.client;
 
   Future<List<GhostPost>> getPosts() async {
     try {

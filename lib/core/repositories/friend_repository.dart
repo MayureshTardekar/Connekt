@@ -4,7 +4,7 @@ import '../config/app_config.dart';
 import '../mock/mock_datasource.dart';
 
 class FriendRepository {
-  final _supabase = Supabase.instance.client;
+  SupabaseClient get _supabase => Supabase.instance.client;
   static const _table = 'friend_requests';
 
   String get _currentUserId => _supabase.auth.currentUser?.id ?? '';

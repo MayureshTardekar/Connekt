@@ -7,7 +7,7 @@ import '../models/chat_message.dart';
 import '../network/logger.dart';
 
 class ChatRepository {
-  final _supabase = Supabase.instance.client;
+  SupabaseClient get _supabase => Supabase.instance.client;
 
   // Fetch all conversations
   Future<List<ChatConversation>> getConversations() async {

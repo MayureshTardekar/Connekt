@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/campus_model.dart';
 
 class CampusRepository {
-  final _supabase = Supabase.instance.client;
+  SupabaseClient get _supabase => Supabase.instance.client;
 
   Future<List<Campus>> getAllCampuses() async {
     try {

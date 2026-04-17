@@ -11,16 +11,18 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
     // Initialize Supabase Backend
-    // AppConfig now provides safe placeholders if real keys are missing to prevent crashes.
-    await Supabase.initialize(
-      url: AppConfig.supabaseUrl,
-      anonKey: AppConfig.supabaseAnonKey,
-    );
-
-    if (!AppConfig.isSupabaseConfigured) {
-      debugPrint(
-        '⚠️ Supabase config is incomplete. Running in offline/limited mode.',
+    if (AppConfig.isSupabaseConfigured) {
+      await Supabase.initialize(
+        url: AppConfig.supabaseUrl,
+        anonKey: AppConfig.supabaseAnonKey,
       );
+    } else {
+      debugPrint('---------------------------------------------------------');
+      debugPrint('⚠️ CONFIGURE SUPABASE TO UNLOCK LIVE FEATURES');
+      debugPrint('MISSING: SUPABASE_URL or SUPABASE_ANON_KEY');
+      debugPrint('RUN WITH: flutter run --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...');
+      debugPrint('CURRENT STATE: Running in Offline/Mock mode.');
+      debugPrint('---------------------------------------------------------');
     }
 
   // Make status bar transparent for a modern look

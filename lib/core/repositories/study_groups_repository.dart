@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class StudyGroupsRepository {
-  final _supabase = Supabase.instance.client;
+  SupabaseClient get _supabase => Supabase.instance.client;
 
   // Fetch all groups for the current campus
   Stream<List<Map<String, dynamic>>> getGroupsStream(String campusId) {
