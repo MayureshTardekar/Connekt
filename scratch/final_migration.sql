@@ -1,2 +1,0 @@
--- This file has been removed for security during project handover.
--- Refer to the BACKEND_SETUP.sql in the root directory for the latest schema.
