@@ -8,6 +8,7 @@ import '../../core/models/study_group.dart';
 import '../../core/repositories/study_groups_repository.dart';
 import '../../core/utils/time_formatter.dart';
 import '../../core/widgets/base_chat_message_shell.dart';
+import '../../core/widgets/image_preview_send_sheet.dart';
 import '../../core/widgets/media_bubble.dart';
 import '../../core/widgets/message_interaction_sheet.dart';
 
@@ -81,19 +82,37 @@ class _StudyGroupChatScreenState extends State<StudyGroupChatScreen> {
 
   Future<void> _pickImage() async {
     final file = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (file == null) return;
+    if (file == null || !mounted) return;
     final bytes = await file.readAsBytes();
-    final url = await _repo.uploadGroupFile(bytes, file.name);
-    if (url == null) return;
-    await _repo.sendGroupMessage(
-      groupId: widget.group.id,
-      messageType: 'image',
-      content: '📷',
-      fileUrl: url,
-      fileName: file.name,
-      replyToId: _replyingTo?['id']?.toString(),
+    if (!mounted) return;
+    var ext = file.path.contains('.')
+        ? file.path.split('.').last.toLowerCase()
+        : 'jpg';
+    if (ext.isEmpty) ext = 'jpg';
+
+    await showImagePreviewSendSheet(
+      context: context,
+      imageBytes: bytes,
+      fileExtension: ext,
+      initialCaption: _textCtrl.text,
+      title: 'Send image',
+      onConfirm: (b, e, caption) async {
+        final safeName = 'img_${DateTime.now().millisecondsSinceEpoch}.$e';
+        final url = await _repo.uploadGroupFile(b, safeName);
+        if (url == null || !mounted) return;
+        final text = caption.trim().isEmpty ? '📷' : caption.trim();
+        await _repo.sendGroupMessage(
+          groupId: widget.group.id,
+          messageType: 'image',
+          content: text,
+          fileUrl: url,
+          fileName: safeName,
+          replyToId: _replyingTo?['id']?.toString(),
+        );
+        _textCtrl.clear();
+        if (mounted) setState(() => _replyingTo = null);
+      },
     );
-    setState(() => _replyingTo = null);
   }
 
   Future<void> _pickPdf() async {

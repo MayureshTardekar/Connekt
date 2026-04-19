@@ -90,16 +90,20 @@ class CommunityRepository {
 
     // Handle File Upload if not a plain text message
     if (type != 'text' && (filePath != null || fileBytes != null)) {
-      final fileName = '${DateTime.now().millisecondsSinceEpoch}_${type == 'voice' ? 'voice.m4a' : 'img.jpg'}';
+      final fileName =
+          '${DateTime.now().millisecondsSinceEpoch}_${type == 'voice' ? 'voice.m4a' : 'img.jpg'}';
       final storagePath = 'messages/$communityId/$fileName';
 
-      if (kIsWeb && fileBytes != null) {
-        await supabase.storage.from('community_assets').uploadBinary(storagePath, fileBytes);
+      final Uint8List bytes;
+      if (fileBytes != null) {
+        bytes = fileBytes;
       } else if (filePath != null) {
-        final bytes = await XFile(filePath).readAsBytes();
-        await supabase.storage.from('community_assets').uploadBinary(storagePath, bytes);
+        bytes = await XFile(filePath).readAsBytes();
+      } else {
+        throw Exception('No file data for message');
       }
-      
+      await supabase.storage.from('community_assets').uploadBinary(storagePath, bytes);
+
       fileUrl = supabase.storage.from('community_assets').getPublicUrl(storagePath);
     }
 

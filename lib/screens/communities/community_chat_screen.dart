@@ -9,6 +9,7 @@ import '../../core/providers/community_provider.dart';
 import '../../core/utils/time_formatter.dart';
 import '../../core/network/logger.dart';
 import '../../core/widgets/base_chat_message_shell.dart';
+import '../../core/widgets/image_preview_send_sheet.dart';
 import '../../core/widgets/media_bubble.dart';
 import '../../core/widgets/message_interaction_sheet.dart';
 import 'community_admin_screen.dart';
@@ -74,19 +75,35 @@ class _CommunityChatScreenState extends ConsumerState<CommunityChatScreen> {
     }
   }
 
-  Future<void> _pickAndSendImage() async {
+  Future<void> _pickImageForPreview() async {
     final picker = ImagePicker();
     final image = await picker.pickImage(source: ImageSource.gallery);
+    if (image == null || !mounted) return;
+    final bytes = await image.readAsBytes();
+    if (!mounted) return;
+    var ext = image.path.contains('.')
+        ? image.path.split('.').last.toLowerCase()
+        : 'jpg';
+    if (ext.isEmpty) ext = 'jpg';
 
-    if (image != null) {
-      await ref
-          .read(communityRepositoryProvider)
-          .sendMessage(
-            communityId: widget.communityId,
-            type: 'image',
-            filePath: image.path,
-          );
-    }
+    await showImagePreviewSendSheet(
+      context: context,
+      imageBytes: bytes,
+      fileExtension: ext,
+      initialCaption: _messageController.text,
+      title: 'Send image',
+      onConfirm: (b, e, caption) async {
+        await ref.read(communityRepositoryProvider).sendMessage(
+              communityId: widget.communityId,
+              type: 'image',
+              content: caption.trim().isEmpty ? null : caption.trim(),
+              fileBytes: b,
+              replyToId: _replyingTo?['id'],
+            );
+        _messageController.clear();
+        if (mounted) setState(() => _replyingTo = null);
+      },
+    );
   }
 
   void _sendMessage() {
@@ -415,7 +432,7 @@ class _CommunityChatScreenState extends ConsumerState<CommunityChatScreen> {
             IconButton(
               icon: const Icon(Icons.image_outlined),
               color: theme.colorScheme.primary,
-              onPressed: _pickAndSendImage,
+              onPressed: _pickImageForPreview,
             ),
             Expanded(
               child: TextField(

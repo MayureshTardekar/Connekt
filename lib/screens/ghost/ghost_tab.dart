@@ -14,6 +14,8 @@ import '../../core/providers/campus_provider.dart';
 import '../../core/repositories/auth_repository.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/base_chat_message_shell.dart';
+import '../../core/widgets/image_preview_send_sheet.dart';
+import '../../core/widgets/media_bubble.dart';
 import '../../core/widgets/message_interaction_sheet.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:animate_do/animate_do.dart';
@@ -27,7 +29,11 @@ class GhostTab extends ConsumerStatefulWidget {
   ConsumerState<GhostTab> createState() => _GhostTabState();
 }
 
-class _GhostTabState extends ConsumerState<GhostTab> {
+class _GhostTabState extends ConsumerState<GhostTab>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final AudioRecorder _audioRecorder = AudioRecorder();
@@ -64,20 +70,46 @@ class _GhostTabState extends ConsumerState<GhostTab> {
     }
   }
 
-  Future<void> _pickAndSendImage() async {
+  /// Pick from gallery → preview + optional caption → upload only after Send.
+  Future<void> _pickImageForPreview() async {
     final picker = ImagePicker();
     final file = await picker.pickImage(
       source: ImageSource.gallery,
-      imageQuality: 70,
+      imageQuality: 85,
     );
-    if (file != null) {
-      _sendMessage(imagePath: file.path);
-    }
+    if (file == null || !mounted) return;
+
+    final bytes = await file.readAsBytes();
+    if (!mounted) return;
+    var ext = p.extension(file.path).replaceAll('.', '').toLowerCase();
+    if (ext.isEmpty) ext = 'jpg';
+
+    await showImagePreviewSendSheet(
+      context: context,
+      imageBytes: bytes,
+      fileExtension: ext,
+      initialCaption: _messageController.text,
+      title: 'Send image',
+      onConfirm: (b, e, caption) async {
+        _messageController.text = caption;
+        await _sendMessage(imageBytes: b, imageExtension: e);
+      },
+    );
   }
 
-  void _sendMessage({String? imagePath, String? audioPath}) async {
+  Future<void> _sendMessage({
+    String? imagePath,
+    Uint8List? imageBytes,
+    String? imageExtension,
+    String? audioPath,
+  }) async {
     final text = _messageController.text.trim();
-    if (text.isEmpty && imagePath == null && audioPath == null) return;
+    if (text.isEmpty &&
+        imagePath == null &&
+        imageBytes == null &&
+        audioPath == null) {
+      return;
+    }
 
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
@@ -92,17 +124,27 @@ class _GhostTabState extends ConsumerState<GhostTab> {
 
       final repo = ref.read(ghostRepositoryProvider);
 
-      if (imagePath != null) {
-        final bytes = await XFile(imagePath).readAsBytes();
-
-        final ext = p.extension(imagePath).replaceAll('.', '');
-        uploadedImageUrl = await repo.uploadImage(bytes, ext);
+      if (imageBytes != null) {
+        final ext = (imageExtension != null && imageExtension.isNotEmpty)
+            ? imageExtension
+            : 'jpg';
+        uploadedImageUrl = await repo.uploadImage(imageBytes, ext);
+        if (!mounted) return;
+      } else if (imagePath != null) {
+        final fileBytes = await XFile(imagePath).readAsBytes();
+        if (!mounted) return;
+        var ext = p.extension(imagePath).replaceAll('.', '').toLowerCase();
+        if (ext.isEmpty) ext = 'jpg';
+        uploadedImageUrl = await repo.uploadImage(fileBytes, ext);
+        if (!mounted) return;
       }
 
       if (audioPath != null) {
         final bytes = await XFile(audioPath).readAsBytes();
+        if (!mounted) return;
 
         uploadedAudioUrl = await repo.uploadVoiceMessage(bytes);
+        if (!mounted) return;
       }
 
       final post = GhostPost(
@@ -119,10 +161,12 @@ class _GhostTabState extends ConsumerState<GhostTab> {
         replyToName: _replyingTo?.authorAlias ?? 'Anon',
       );
 
+      if (!mounted) return;
       _messageController.clear();
       setState(() => _replyingTo = null);
 
       await repo.createPost(post);
+      if (!mounted) return;
 
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -148,6 +192,7 @@ class _GhostTabState extends ConsumerState<GhostTab> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       resizeToAvoidBottomInset: true,
@@ -436,9 +481,11 @@ class _GhostTabState extends ConsumerState<GhostTab> {
                     if (post.imageUrl != null)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8.0),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.network(post.imageUrl!),
+                        child: MediaBubble(
+                          networkUrl: post.imageUrl,
+                          maxWidth: 240,
+                          maxHeight: 220,
+                          borderRadius: 12,
                         ),
                       ),
                     if (post.audioUrl != null)
@@ -666,7 +713,7 @@ class _GhostTabState extends ConsumerState<GhostTab> {
             children: [
               IconButton(
                 icon: const Icon(Icons.image_outlined, color: Colors.white54),
-                onPressed: _pickAndSendImage,
+                onPressed: _isSendingLocally ? null : _pickImageForPreview,
               ),
               Expanded(
                 child: Container(

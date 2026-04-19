@@ -138,20 +138,55 @@ class GhostRepository {
     }
   }
 
-  /// Upload image to storage
-  Future<String?> uploadImage(Uint8List bytes, String extension) async {
-    final user = _supabase.auth.currentUser;
-    if (user == null) return null;
+  static String _imageContentType(String extension) {
+    switch (extension.toLowerCase()) {
+      case 'png':
+        return 'image/png';
+      case 'webp':
+        return 'image/webp';
+      case 'gif':
+        return 'image/gif';
+      case 'heic':
+      case 'heif':
+        return 'image/heic';
+      case 'jpg':
+      case 'jpeg':
+      default:
+        return 'image/jpeg';
+    }
+  }
 
-    final fileName = '${user.id}_${DateTime.now().millisecondsSinceEpoch}.$extension';
+  /// Upload image to storage (`community_assets` / `ghost_images/…`).
+  /// Throws with the underlying error so the UI can show Supabase messages (e.g. RLS).
+  Future<String> uploadImage(Uint8List bytes, String extension) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) {
+      throw Exception('Not signed in');
+    }
+
+    final safeExt = extension.replaceAll('.', '').isEmpty
+        ? 'jpg'
+        : extension.replaceAll('.', '');
+    final fileName =
+        '${user.id}_${DateTime.now().millisecondsSinceEpoch}.$safeExt';
     final path = 'ghost_images/$fileName';
 
     try {
-      await _supabase.storage.from('community_assets').uploadBinary(path, bytes);
+      await _supabase.storage.from('community_assets').uploadBinary(
+            path,
+            bytes,
+            fileOptions: FileOptions(
+              upsert: true,
+              contentType: _imageContentType(safeExt),
+            ),
+          );
       return _supabase.storage.from('community_assets').getPublicUrl(path);
-    } catch (e) {
-      AppLogger.error('Image upload error: $e');
-      return null;
+    } catch (e, st) {
+      AppLogger.error('Ghost image upload error: $e\n$st');
+      throw Exception(
+        'Storage upload failed (bucket community_assets / ghost_images). '
+        'Apply storage policies in Supabase or check the error: $e',
+      );
     }
   }
 

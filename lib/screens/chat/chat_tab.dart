@@ -111,7 +111,11 @@ class _MessagesView extends ConsumerStatefulWidget {
   ConsumerState<_MessagesView> createState() => _MessagesViewState();
 }
 
-class _MessagesViewState extends ConsumerState<_MessagesView> {
+class _MessagesViewState extends ConsumerState<_MessagesView>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   final TextEditingController _searchController = TextEditingController();
   final Set<String> _archivedIds = {};
 
@@ -165,6 +169,7 @@ class _MessagesViewState extends ConsumerState<_MessagesView> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final conversationsAsync = ref.watch(chatConversationsProvider);
     final pendingCount = ref.watch(pendingRequestsCountProvider);
     final selectedCampusId = ref.watch(selectedCampusIdProvider);

@@ -7,6 +7,7 @@ import '../../core/models/chat_conversation.dart';
 import '../../core/models/chat_message.dart';
 import '../../core/providers/chat_provider.dart';
 import '../../core/widgets/app_states.dart';
+import '../../core/widgets/image_preview_send_sheet.dart';
 import '../../core/widgets/media_bubble.dart';
 import '../../core/widgets/message_interaction_sheet.dart';
 import '../../theme/app_theme.dart';
@@ -104,32 +105,61 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
   Future<void> _pickImage() async {
     try {
-      final ImagePicker picker = ImagePicker();
+      final picker = ImagePicker();
       final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-      
-      if (image != null) {
-        final bytes = await image.readAsBytes();
-        final extension = image.path.split('.').last;
-        final imageUrl = await ref.read(chatRepositoryProvider).uploadImage(bytes, extension);
-        
-        if (imageUrl != null) {
-          final user = Supabase.instance.client.auth.currentUser;
-          final message = ChatMessage(
-            id: 'local-${DateTime.now().microsecondsSinceEpoch}',
-            senderId: user?.id ?? 'me',
-            senderName: user?.userMetadata?['full_name'] ?? 'Me',
-            text: '📷 Image attached',
-            imageUrl: imageUrl,
-            timestamp: DateTime.now(),
-            isFromMe: true,
-            replyToId: _replyingTo?.id,
-            replyToText: _replyingTo?.text,
-            replyToName: _replyingTo?.senderName,
-          );
-          setState(() => _replyingTo = null);
-          await _sendMessage(message);
-        }
-      }
+      if (image == null || !mounted) return;
+      final bytes = await image.readAsBytes();
+      if (!mounted) return;
+      var ext = image.path.contains('.')
+          ? image.path.split('.').last.toLowerCase()
+          : 'jpg';
+      if (ext.isEmpty) ext = 'jpg';
+
+      await showImagePreviewSendSheet(
+        context: context,
+        imageBytes: bytes,
+        fileExtension: ext,
+        initialCaption: _messageController.text,
+        title: 'Send image',
+        onConfirm: (b, e, caption) async {
+          if (!mounted) return;
+          setState(() => _isSendingLocally = true);
+          try {
+            final imageUrl =
+                await ref.read(chatRepositoryProvider).uploadImage(b, e);
+            if (imageUrl == null) {
+              throw Exception('Image upload failed');
+            }
+            final user = Supabase.instance.client.auth.currentUser;
+            final display =
+                caption.trim().isEmpty ? '📷 Image' : caption.trim();
+            final message = ChatMessage(
+              id: 'local-${DateTime.now().microsecondsSinceEpoch}',
+              senderId: user?.id ?? 'me',
+              senderName: user?.userMetadata?['full_name'] ?? 'Me',
+              text: display,
+              imageUrl: imageUrl,
+              timestamp: DateTime.now(),
+              isFromMe: true,
+              replyToId: _replyingTo?.id,
+              replyToText: _replyingTo?.text,
+              replyToName: _replyingTo?.senderName,
+            );
+            setState(() => _replyingTo = null);
+            _messageController.clear();
+            await _sendMessage(message);
+          } catch (e) {
+            debugPrint('Image send error: $e');
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Image failed: $e')),
+              );
+            }
+          } finally {
+            if (mounted) setState(() => _isSendingLocally = false);
+          }
+        },
+      );
     } catch (e) {
       debugPrint('Image pick error: $e');
     }

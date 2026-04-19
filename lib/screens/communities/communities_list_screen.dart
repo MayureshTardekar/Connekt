@@ -15,13 +15,18 @@ class CommunitiesListScreen extends ConsumerStatefulWidget {
       _CommunitiesListScreenState();
 }
 
-class _CommunitiesListScreenState extends ConsumerState<CommunitiesListScreen> {
+class _CommunitiesListScreenState extends ConsumerState<CommunitiesListScreen>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   int _refreshNonce = 0;
 
   void _bumpRefresh() => setState(() => _refreshNonce++);
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final theme = Theme.of(context);
     final communitiesAsync = ref.watch(communitiesProvider);
 
