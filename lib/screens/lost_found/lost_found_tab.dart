@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/models/lost_item.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../core/providers/campus_provider.dart';
 import '../../core/routing/app_routes.dart';
 import '../../theme/app_theme.dart';
@@ -266,6 +267,14 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
                             color: AppTheme.textSecondary,
                           ),
                         ),
+                        const Spacer(),
+                        if (item.postedBy == ref.read(currentUserProvider)?.id)
+                          IconButton(
+                            onPressed: () => _deleteItem(item.id),
+                            icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 18),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
                       ],
                     ),
                   ],
@@ -276,6 +285,34 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
         ),
       ),
     );
+  }
+
+  void _deleteItem(String itemId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Report?'),
+        content: const Text('This will permanently remove this lost/found report.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true), 
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref.read(campusRepositoryProvider).deleteLostFoundItem(itemId);
+        ref.invalidate(lostFoundProvider);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        }
+      }
+    }
   }
 
   Widget _buildPlaceholderImage(ThemeData theme) {

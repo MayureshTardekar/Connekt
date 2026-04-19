@@ -10,6 +10,7 @@ class LostItem {
   final String contactInfo;
   final String? imageUrl;
   final bool isResolved;
+  final String? postedBy;
 
   LostItem({
     required this.id,
@@ -21,6 +22,7 @@ class LostItem {
     required this.contactInfo,
     this.imageUrl,
     this.isResolved = false,
+    this.postedBy,
   });
 
   Map<String, dynamic> toMap() {
@@ -34,6 +36,7 @@ class LostItem {
       'contact_info': contactInfo,
       'image_url': imageUrl,
       'is_resolved': isResolved,
+      'posted_by': postedBy,
     };
   }
 
@@ -48,6 +51,7 @@ class LostItem {
       contactInfo: map['contact_info'] ?? '',
       imageUrl: map['image_url'],
       isResolved: map['is_resolved'] ?? false,
+      postedBy: map['posted_by'],
     );
   }
 

@@ -170,9 +170,10 @@ class CampusRepository {
     String? campusId,
   }) {
     // We combine multiple sources into a single activity feed
-    final notesStream = _supabase
-        .from('academic_notes')
-        .stream(primaryKey: ['id']);
+    final notesStream = campusId != null
+        ? _supabase.from('academic_notes').stream(primaryKey: ['id']).eq('campus_id', campusId)
+        : _supabase.from('academic_notes').stream(primaryKey: ['id']);
+
 
     return notesStream.order('created_at', ascending: false).limit(10).asyncMap((
       notes,
@@ -326,17 +327,20 @@ class CampusRepository {
     final user = _supabase.auth.currentUser;
     if (user == null) throw Exception('Not authenticated');
 
-    await _supabase.from('lost_found').insert({
-      // Removed campus_id
+    final row = <String, dynamic>{
       'title': title,
       'description': description,
       'location': location,
       'type': type,
       'status': 'Open',
-      'image_url': imageUrl,
       'posted_by': user.id,
       'created_at': DateTime.now().toIso8601String(),
-    });
+    };
+    // Requires `lost_found.image_url` in Supabase — run fix_db.sql section 3 if missing.
+    if (imageUrl != null && imageUrl.trim().isNotEmpty) {
+      row['image_url'] = imageUrl;
+    }
+    await _supabase.from('lost_found').insert(row);
   }
 
   // --- Management Methods ---
@@ -432,4 +436,88 @@ class CampusRepository {
       return false;
     }
   }
+
+  Future<void> deleteEvent(String eventId) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
+    await _supabase
+        .from('campus_events')
+        .delete()
+        .eq('id', eventId)
+        .eq('author_id', user.id);
+  }
+
+  Future<void> deleteLostFoundItem(String itemId) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
+    await _supabase
+        .from('lost_found')
+        .delete()
+        .eq('id', itemId)
+        .eq('posted_by', user.id);
+  }
+
+  /// Get real statistics for a campus
+  Future<Map<String, dynamic>> getCampusStats(String campusId) async {
+    try {
+      // 1. Notes count
+      final notesRes = await _supabase
+          .from('academic_notes')
+          .select('id')
+          .eq('campus_id', campusId);
+      final notesCount = notesRes.length;
+      
+      // 2. Events count
+      final eventsRes = await _supabase
+          .from('campus_events')
+          .select('id')
+          .eq('campus_id', campusId);
+      final eventsCount = eventsRes.length;
+          
+      // 3. Lost & Found count
+      final lostRes = await _supabase
+          .from('lost_found')
+          .select('id')
+          .eq('campus_id', campusId);
+      final lostCount = lostRes.length;
+          
+      // Calculate engagement based on activity in the last 7 days
+      final weekAgo = DateTime.now().subtract(const Duration(days: 7)).toIso8601String();
+      final recentNotesRes = await _supabase
+          .from('academic_notes')
+          .select('id')
+          .eq('campus_id', campusId)
+          .gt('created_at', weekAgo);
+      final recentActivity = recentNotesRes.length;
+
+      final totalActivity = notesCount + eventsCount;
+
+      
+      String engagement = 'Low';
+      if (recentActivity > 10) {
+        engagement = 'Elite';
+      } else if (recentActivity > 5) {
+        engagement = 'High';
+      } else if (recentActivity > 2) {
+        engagement = 'Moderate';
+      }
+
+      return {
+        'notes_count': notesCount,
+        'events_count': eventsCount,
+        'lost_count': lostCount,
+        'engagement': engagement,
+        'growth': recentActivity > 0 ? '+${((recentActivity / (totalActivity > 0 ? totalActivity : 1)) * 100).toInt()}%' : '0%',
+      };
+    } catch (e) {
+      return {
+        'notes_count': 0,
+        'events_count': 0,
+        'lost_count': 0,
+        'engagement': 'New',
+        'growth': '0%',
+      };
+    }
+  }
 }
+

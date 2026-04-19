@@ -84,9 +84,7 @@ class AuthRepository {
     try {
       return await _supabase.auth.signInWithOAuth(
         provider,
-        redirectTo: kIsWeb 
-          ? AppConfig.webRedirectUrl 
-          : AppConfig.nativeRedirectUrl,
+        redirectTo: AppConfig.oauthRedirectUrl,
       );
     } catch (e) {
       debugPrint('OAuth error ($provider): $e');

@@ -244,21 +244,24 @@ class AppTheme {
   }
 
   static ThemeData get darkTheme {
-    const darkBg = Color(0xFF0E1116);
-    const darkSurface = Color(0xFF151A22);
-    const darkBorder = Color(0xFF232A35);
+    const darkBg = Color(0xFF0D0D12); // Pure Obsidian
+    const darkSurface = Color(0xFF16161E); // Deep Charcoal
+    const darkBorder = Color(0xFF23232E); // Subtle Border
+    const primaryAccent = Color(0xFF0A84FF); // Electric Blue
+    const secondaryAccent = Color(0xFF5E5CE6); // Indigo Glow
 
-    final baseText = GoogleFonts.interTextTheme(ThemeData.dark().textTheme);
-
+    final baseText = ThemeData.dark().textTheme;
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      primaryColor: primaryLight,
+      primaryColor: primaryAccent,
       scaffoldBackgroundColor: darkBg,
       colorScheme: const ColorScheme.dark(
-        primary: primaryLight,
-        secondary: primary,
+        primary: primaryAccent,
+        secondary: secondaryAccent,
         surface: darkSurface,
+        onSurface: Colors.white,
+        outline: darkBorder,
       ),
       textTheme: baseText.copyWith(
         displayLarge: GoogleFonts.inter(
@@ -322,6 +325,7 @@ class AppTheme {
       ),
       cardColor: darkSurface,
       dividerColor: darkBorder,
+      canvasColor: darkBg,
       appBarTheme: AppBarTheme(
         backgroundColor: darkBg,
         foregroundColor: Colors.white,
@@ -373,7 +377,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          textStyle: GoogleFonts.inter(
+          textStyle: GoogleFonts.poppins(
             fontSize: 14,
             fontWeight: FontWeight.w600,
           ),
@@ -381,9 +385,9 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFF11161F),
-        hintStyle: GoogleFonts.inter(
-          color: const Color(0xFF6B7280),
+        fillColor: const Color(0xFF1A1A24),
+        hintStyle: GoogleFonts.poppins(
+          color: const Color(0xFF4B5563),
           fontWeight: FontWeight.w400,
           fontSize: 14,
         ),
@@ -401,7 +405,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: primaryLight, width: 1.5),
+          borderSide: const BorderSide(color: primaryAccent, width: 1.5),
         ),
       ),
       snackBarTheme: SnackBarThemeData(

@@ -7,6 +7,7 @@ class CampusEvent {
   final String location;
   final DateTime dateTime;
   final String organizer;
+  final String organizerId;
   final String category;
   final String? imageUrl;
   final int attendees;
@@ -18,6 +19,7 @@ class CampusEvent {
     required this.location,
     required this.dateTime,
     required this.organizer,
+    required this.organizerId,
     required this.category,
     this.imageUrl,
     this.attendees = 0,
@@ -31,6 +33,7 @@ class CampusEvent {
       'location': location,
       'date_time': dateTime.toIso8601String(),
       'organizer': organizer,
+      'organizer_id': organizerId,
       'category': category,
       'image_url': imageUrl,
       'attendees': attendees,
@@ -44,7 +47,8 @@ class CampusEvent {
       description: map['description'] ?? '',
       location: map['location'] ?? 'Campus',
       dateTime: DateTime.parse(map['date_time']),
-      organizer: map['organizer'] ?? 'Unknown',
+      organizer: map['organizer_name'] ?? map['organizer'] ?? 'Unknown',
+      organizerId: map['organizer_id'] ?? '',
       category: map['category'] ?? 'General',
       imageUrl: map['image_url'],
       attendees: map['attendees'] ?? 0,

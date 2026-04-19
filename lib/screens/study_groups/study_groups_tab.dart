@@ -447,12 +447,26 @@ class _StudyGroupsTabState extends ConsumerState<StudyGroupsTab> {
                   child: const Text('Manage'),
                 )
               else if (isApproved)
-                const Text(
-                  'Joined',
-                  style: TextStyle(
-                    color: Colors.green,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Joined',
+                      style: TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton.tonalIcon(
+                      onPressed: () => context.push(
+                        AppRoutes.studyGroupChat,
+                        extra: group,
+                      ),
+                      icon: const Icon(Icons.chat_bubble_rounded, size: 18),
+                      label: const Text('Chat'),
+                    ),
+                  ],
                 )
               else if (isPending)
                 const Text(

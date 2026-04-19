@@ -1,7 +1,11 @@
-import 'dart:io';
+
+
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
 import '../../theme/app_theme.dart';
@@ -80,7 +84,9 @@ class _UploadNoteScreenState extends ConsumerState<UploadNoteScreen> {
       if (kIsWeb) {
         bytes = _selectedFile!.bytes ?? Uint8List(0);
       } else {
-        bytes = await File(_selectedFile!.path!).readAsBytes();
+        // Using XFile which is web-safe instead of dart:io File
+        bytes = await XFile(_selectedFile!.path!).readAsBytes();
+
       }
 
       if (bytes.isEmpty) {

@@ -39,7 +39,15 @@ class MainScreenState extends ConsumerState<MainScreen> {
           minChildSize: 0.5,
           maxChildSize: 0.95,
           builder: (context, scrollController) {
-            return AIChatScreen(scrollController: scrollController);
+            final theme = Theme.of(context);
+            return Material(
+              color: theme.scaffoldBackgroundColor,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: AIChatScreen(scrollController: scrollController),
+            );
           },
         );
       },

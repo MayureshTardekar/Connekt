@@ -78,7 +78,21 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     setState(() => _initializationError = null);
     
     debugPrint('Splash: Starting bootstrap...');
-    await Future<void>.delayed(const Duration(milliseconds: 2000));
+    
+    // Add a global timeout for the entire bootstrap process
+    try {
+      await _runBootstrapLogic().timeout(const Duration(seconds: 10));
+    } catch (e) {
+      debugPrint('Splash: Bootstrap Timeout or Error -> $e');
+      if (mounted) {
+        // Fallback to login if it hangs too long
+        context.go(AppRoutes.login);
+      }
+    }
+  }
+
+  Future<void> _runBootstrapLogic() async {
+    await Future<void>.delayed(const Duration(milliseconds: 1500));
     if (!mounted) return;
 
     final session = Supabase.instance.client.auth.currentSession;
@@ -89,49 +103,46 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     if (session == null) {
       if (hasAuthCode) {
-        debugPrint('Splash: Auth code detected but session null. Waiting for exchange...');
-        // Wait a bit more for the background exchange
-        await Future<void>.delayed(const Duration(seconds: 2));
+        debugPrint('Splash: Auth code detected. Waiting for auto-login...');
+        // Supabase-flutter handles the code exchange automatically.
+        // We wait a bit for it to trigger authStateChanges.
+        await Future<void>.delayed(const Duration(seconds: 3));
         if (!mounted) return;
-        context.go(AppRoutes.login);
-        return;
+        
+        // Final check after wait
+        if (Supabase.instance.client.auth.currentSession == null) {
+           context.go(AppRoutes.login);
+           return;
+        }
       } else {
-        debugPrint('Splash: No session or code. Redirecting to login.');
-        if (!mounted) return;
         context.go(AppRoutes.login);
         return;
       }
     }
 
+    // If we have a session, proceed to campus check
     final repo = CampusRepository();
-
     try {
-      debugPrint('Splash: Checking campus membership...');
-      final isMember = await repo.isMemberOfAnyCampus();
+      final isMember = await repo.isMemberOfAnyCampus().timeout(const Duration(seconds: 5));
       if (!mounted) return;
 
       if (!isMember) {
-        debugPrint('Splash: User has no campus. Sending to campus selection.');
         context.go(AppRoutes.campusSelect);
         return;
       }
 
-      debugPrint('Splash: Fetching membership details...');
-      final campuses = await repo.getMyCampuses();
+      final campuses = await repo.getMyCampuses().timeout(const Duration(seconds: 5));
       if (!mounted) return;
 
       if (campuses.isNotEmpty) {
         final firstCampusId = campuses.first['campus_id']?.toString();
-        debugPrint('Splash: Auto-selecting campus: $firstCampusId');
         ref.read(selectedCampusIdProvider.notifier).selectCampus(firstCampusId);
       }
 
-      debugPrint('Splash: Bootstrapping complete. Entering dashboard.');
       context.go(AppRoutes.dashboard);
-    } catch (error) {
-      debugPrint('Splash: Initialization Error -> $error');
-      if (!mounted) return;
-      setState(() => _initializationError = error);
+    } catch (e) {
+      debugPrint('Splash: Campus fetch error -> $e');
+       if (mounted) context.go(AppRoutes.dashboard); // Try to enter anyway
     }
   }
 

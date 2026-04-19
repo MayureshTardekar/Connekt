@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/models/academic_note.dart';
 import '../../core/utils/time_formatter.dart';
-import '../../core/providers/campus_provider.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/providers/campus_provider.dart';
 import '../../core/routing/app_routes.dart';
 import '../../core/widgets/app_states.dart';
 import '../../theme/app_theme.dart';
@@ -437,6 +437,40 @@ class _NotesTabState extends ConsumerState<NotesTab> {
             ),
           ),
           actions: [
+            TextButton(
+              onPressed: () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Delete Note?'),
+                    content: const Text('This will permanently remove the note and its file.'),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, true), 
+                        child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirmed == true) {
+                  try {
+                    await ref.read(notesRepositoryProvider).deleteNote(note.id);
+                    if (context.mounted) {
+                      Navigator.pop(context); // Close edit dialog
+                      ref.invalidate(academicNotesProvider);
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                    }
+                  }
+                }
+              },
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            ),
+            const Spacer(),
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text('Cancel'),

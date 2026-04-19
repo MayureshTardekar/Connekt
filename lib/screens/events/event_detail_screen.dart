@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/models/campus_event.dart';
+import '../../core/providers/campus_provider.dart';
 import '../../theme/app_theme.dart';
 
-class EventDetailScreen extends StatelessWidget {
+class EventDetailScreen extends ConsumerWidget {
   const EventDetailScreen({super.key, required this.event});
 
   final CampusEvent event;
@@ -47,11 +50,49 @@ class EventDetailScreen extends StatelessWidget {
   String get _timeLabel =>
       DateFormat('EEEE, dd MMM yyyy • h:mm a').format(event.dateTime);
 
+  Future<void> _deleteEvent(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Event?'),
+        content: const Text('This action cannot be undone. All attendees will be notified.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref.read(campusRepositoryProvider).deleteEvent(event.id);
+        if (context.mounted) {
+          context.pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Event deleted successfully.')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e')),
+          );
+        }
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final accent = _gradientColors.first;
     final isDark = theme.brightness == Brightness.dark;
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    final isOrganizer = event.organizerId == userId;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -76,6 +117,24 @@ class EventDetailScreen extends StatelessWidget {
               ),
               onPressed: () => context.pop(),
             ),
+            actions: [
+              if (isOrganizer)
+                IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.delete_outline_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  onPressed: () => _deleteEvent(context, ref),
+                ),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
                 decoration: BoxDecoration(

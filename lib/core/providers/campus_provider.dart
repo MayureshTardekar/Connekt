@@ -8,9 +8,11 @@ import '../models/ghost_post.dart';
 import '../models/lost_item.dart';
 import '../repositories/campus_repository.dart';
 import '../repositories/ghost_repository.dart';
+import '../repositories/notes_repository.dart';
 
 final campusRepositoryProvider = Provider((ref) => CampusRepository());
 final ghostRepositoryProvider = Provider((ref) => GhostRepository());
+final notesRepositoryProvider = Provider((ref) => NotesRepository());
 
 // Campus general providers
 final allCampusesProvider = FutureProvider<List<Campus>>((ref) {

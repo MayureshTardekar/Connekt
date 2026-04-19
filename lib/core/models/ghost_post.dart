@@ -8,6 +8,14 @@ class GhostPost {
   final String mood;
   final DateTime createdAt;
   final int likes;
+  
+  // Phase 2 Expressive features
+  final String? audioUrl;
+  final String? imageUrl;
+  final String? replyToId;
+  final String? replyToText;
+  final String? replyToName;
+  final Map<String, List<String>> reactions;
 
   GhostPost({
     required this.id,
@@ -17,6 +25,12 @@ class GhostPost {
     this.mood = 'Neutral',
     required this.createdAt,
     this.likes = 0,
+    this.audioUrl,
+    this.imageUrl,
+    this.replyToId,
+    this.replyToText,
+    this.replyToName,
+    this.reactions = const {},
   });
 
   Map<String, dynamic> toMap() {
@@ -24,6 +38,12 @@ class GhostPost {
       'content': text,
       'author_id': authorId,
       'created_at': createdAt.toIso8601String(),
+      'audio_url': audioUrl,
+      'image_url': imageUrl,
+      'reply_to_id': replyToId,
+      'reply_to_text': replyToText,
+      'reply_to_name': replyToName,
+      'reactions': reactions,
     };
   }
 
@@ -38,6 +58,15 @@ class GhostPost {
           ? DateTime.parse(map['created_at']).toLocal()
           : DateTime.now(),
       likes: map['likes'] ?? 0,
+      audioUrl: map['audio_url'],
+      imageUrl: map['image_url'],
+      replyToId: map['reply_to_id'],
+      replyToText: map['reply_to_text'],
+      replyToName: map['reply_to_name'],
+      reactions: (map['reactions'] as Map<String, dynamic>?)?.map(
+            (k, e) => MapEntry(k, (e as List).map((id) => id.toString()).toList()),
+          ) ??
+          {},
     );
   }
 

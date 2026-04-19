@@ -21,6 +21,11 @@ class _CampusManagementScreenState extends ConsumerState<CampusManagementScreen>
   bool _isLoadingBanner = false;
   int _memberCount = 0;
   List<Map<String, dynamic>> _members = [];
+  Map<String, dynamic> _campusStats = {
+    'notes_count': 0,
+    'engagement': '...',
+    'growth': '...'
+  };
   bool _isLoadingStats = true;
 
   @override
@@ -35,9 +40,12 @@ class _CampusManagementScreenState extends ConsumerState<CampusManagementScreen>
       final repo = ref.read(campusRepositoryProvider);
       final count = await repo.getMemberCount(widget.campusId);
       final members = await repo.getCampusMembers(widget.campusId);
+      final stats = await repo.getCampusStats(widget.campusId);
+      
       setState(() {
         _memberCount = count;
         _members = members;
+        _campusStats = stats;
         _isLoadingStats = false;
       });
     } catch (e) {
@@ -286,7 +294,7 @@ class _CampusManagementScreenState extends ConsumerState<CampusManagementScreen>
                       _buildStatCard(
                         context,
                         'Notes Shared',
-                        '12', // Mocked till we have actual count
+                        _campusStats['notes_count'].toString(),
                         Icons.description_rounded,
                         Colors.purple,
                       ),
@@ -298,7 +306,7 @@ class _CampusManagementScreenState extends ConsumerState<CampusManagementScreen>
                       _buildStatCard(
                         context,
                         'Engagement',
-                        'High',
+                        _campusStats['engagement'],
                         Icons.bolt_rounded,
                         Colors.amber,
                       ),
@@ -306,7 +314,7 @@ class _CampusManagementScreenState extends ConsumerState<CampusManagementScreen>
                       _buildStatCard(
                         context,
                         'Growth',
-                        '+12%',
+                        _campusStats['growth'],
                         Icons.auto_graph_rounded,
                         Colors.green,
                       ),

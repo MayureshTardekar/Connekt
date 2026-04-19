@@ -1,23 +1,17 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:typed_data';
 import '../config/app_config.dart';
-import '../mock/mock_datasource.dart';
 import '../models/chat_conversation.dart';
 import '../models/chat_message.dart';
 import '../network/logger.dart';
+import '../utils/reactions_json.dart';
 
 class ChatRepository {
   SupabaseClient get _supabase => Supabase.instance.client;
 
   // Fetch all conversations
   Future<List<ChatConversation>> getConversations() async {
-    AppLogger.info(
-      'Fetching conversations... [useMockBackend: ${AppConfig.useMockBackend}]',
-    );
-    if (AppConfig.useMockBackend) {
-      return MockDatasource.chatConversations;
-    }
-
+    AppLogger.info('Fetching conversations...');
     try {
       final response = await _supabase
           .from('chat_conversations')
@@ -36,9 +30,6 @@ class ChatRepository {
 
   // Real-time stream of conversations
   Stream<List<ChatConversation>> watchConversations() {
-    if (AppConfig.useMockBackend) {
-      return Stream.value(MockDatasource.chatConversations);
-    }
     return _supabase
         .from('chat_conversations')
         .stream(primaryKey: ['id'])
@@ -53,10 +44,6 @@ class ChatRepository {
 
   // Fetch all messages for a specific conversation
   Future<List<ChatMessage>> getMessages(String conversationId) async {
-    if (AppConfig.useMockBackend) {
-      return MockDatasource.chatMessages[conversationId] ?? [];
-    }
-
     try {
       final response = await _supabase
           .from('chat_messages')
@@ -79,9 +66,6 @@ class ChatRepository {
 
   // Real-time stream of messages
   Stream<List<ChatMessage>> watchMessages(String conversationId) {
-    if (AppConfig.useMockBackend) {
-      return Stream.value(MockDatasource.chatMessages[conversationId] ?? []);
-    }
     final userId = _supabase.auth.currentUser?.id;
     return _supabase
         .from('chat_messages')
@@ -161,7 +145,6 @@ class ChatRepository {
 
   /// Get actual unique member count for a conversation
   Future<int> getMemberCount(String conversationId) async {
-    if (AppConfig.useMockBackend) return 15;
     try {
       final response = await _supabase
           .from('chat_messages')
@@ -179,8 +162,6 @@ class ChatRepository {
 
   /// Archive a conversation — marks it as archived so it no longer appears in the list
   Future<void> archiveConversation(String conversationId) async {
-    if (AppConfig.useMockBackend) return;
-
     try {
       await _supabase
           .from('chat_conversations')
@@ -195,8 +176,6 @@ class ChatRepository {
 
   /// Unarchive a conversation
   Future<void> unarchiveConversation(String conversationId) async {
-    if (AppConfig.useMockBackend) return;
-
     try {
       await _supabase
           .from('chat_conversations')
@@ -209,7 +188,6 @@ class ChatRepository {
 
   /// Update read status
   Future<void> markAsRead(String messageId) async {
-    if (AppConfig.useMockBackend) return;
     try {
       await _supabase
           .from('chat_messages')
@@ -220,11 +198,30 @@ class ChatRepository {
     }
   }
 
-  /// Toggle reaction on a message
-  Future<void> toggleReaction(String messageId, String emoji) async {
+  Future<void> deleteMessage(String messageId) async {
     if (AppConfig.useMockBackend) return;
     final user = _supabase.auth.currentUser;
     if (user == null) return;
+    try {
+      await _supabase
+          .from('chat_messages')
+          .delete()
+          .eq('id', messageId)
+          .eq('sender_id', user.id);
+    } catch (e) {
+      AppLogger.error('Delete message failed: $e');
+      rethrow;
+    }
+  }
+
+  /// Toggle reaction on a message
+  Future<void> toggleReaction(String messageId, String emoji) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
+    if (messageId.isEmpty || messageId.startsWith('local-')) {
+      AppLogger.info('toggleReaction skipped: not a persisted message id');
+      return;
+    }
 
     try {
       final response = await _supabase
@@ -233,33 +230,34 @@ class ChatRepository {
           .eq('id', messageId)
           .single();
 
-      final Map<String, dynamic> current = Map<String, dynamic>.from(response['reactions'] ?? {});
-      final List<dynamic> users = List<dynamic>.from(current[emoji] ?? []);
+      var reactions = parseReactionsJson(response['reactions']);
+      final uid = user.id;
+      final users = List<String>.from(reactions[emoji] ?? []);
 
-      if (users.contains(user.id)) {
-        users.remove(user.id);
+      if (users.contains(uid)) {
+        users.remove(uid);
       } else {
-        users.add(user.id);
+        users.add(uid);
       }
 
       if (users.isEmpty) {
-        current.remove(emoji);
+        reactions.remove(emoji);
       } else {
-        current[emoji] = users;
+        reactions[emoji] = users;
       }
 
       await _supabase
           .from('chat_messages')
-          .update({'reactions': current})
+          .update({'reactions': reactionsToJsonb(reactions)})
           .eq('id', messageId);
-    } catch (e) {
+    } catch (e, st) {
       AppLogger.error('Reaction error: $e');
+      AppLogger.error('$st');
     }
   }
 
   /// Upload voice message to storage
   Future<String?> uploadVoiceMessage(List<int> bytes) async {
-    if (AppConfig.useMockBackend) return null;
     final user = _supabase.auth.currentUser;
     if (user == null) return null;
 
@@ -271,6 +269,23 @@ class ChatRepository {
       return _supabase.storage.from('community_assets').getPublicUrl(path);
     } catch (e) {
       AppLogger.error('Voice upload error: $e');
+      return null;
+    }
+  }
+
+  /// Upload image to storage
+  Future<String?> uploadImage(Uint8List bytes, String extension) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return null;
+
+    final fileName = '${user.id}_${DateTime.now().millisecondsSinceEpoch}.$extension';
+    final path = 'chat_images/$fileName';
+
+    try {
+      await _supabase.storage.from('community_assets').uploadBinary(path, bytes);
+      return _supabase.storage.from('community_assets').getPublicUrl(path);
+    } catch (e) {
+      AppLogger.error('Image upload error: $e');
       return null;
     }
   }

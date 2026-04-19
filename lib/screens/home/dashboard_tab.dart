@@ -51,49 +51,70 @@ class DashboardTab extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(_greeting(), style: theme.textTheme.bodyMedium),
-                        const SizedBox(height: 4),
-                        Text(_userName(), style: theme.textTheme.displaySmall),
-                      ],
-                    ),
-                    if (campus != null)
-                      GestureDetector(
-                        onTap: () => context.push('/campus-select'),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: theme.colorScheme.primary.withValues(alpha: 0.2),
-                            ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(_greeting(), style: theme.textTheme.bodyMedium),
+                          const SizedBox(height: 4),
+                          Text(
+                            _userName(),
+                            style: theme.textTheme.displaySmall,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.location_on_rounded,
-                                color: theme.colorScheme.primary,
-                                size: 16,
+                        ],
+                      ),
+                    ),
+                    if (campus != null) ...[
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: GestureDetector(
+                          onTap: () => context.push('/campus-select'),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary.withValues(
+                                alpha: 0.1,
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                campus['name'] ?? 'Select Campus',
-                                style: theme.textTheme.labelLarge?.copyWith(
-                                  color: theme.colorScheme.primary,
-                                  fontWeight: FontWeight.bold,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: theme.colorScheme.primary.withValues(
+                                  alpha: 0.2,
                                 ),
                               ),
-                            ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.location_on_rounded,
+                                  color: theme.colorScheme.primary,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    campus['name'] ?? 'Select Campus',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.labelLarge?.copyWith(
+                                      color: theme.colorScheme.primary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
+                    ],
                   ],
                 ),
               ),
@@ -103,7 +124,10 @@ class DashboardTab extends ConsumerWidget {
               // No Campus Selection Prompt
               if (campus == null)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 8,
+                  ),
                   child: Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -116,7 +140,9 @@ class DashboardTab extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.3,
+                          ),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -124,17 +150,16 @@ class DashboardTab extends ConsumerWidget {
                     ),
                     child: Column(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.explore_rounded,
-                          color: Colors.white,
+                          color: theme.colorScheme.onPrimary,
                           size: 48,
                         ),
                         const SizedBox(height: 16),
-                        const Text(
+                        Text(
                           'No Campus Active',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            color: theme.colorScheme.onPrimary,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -142,16 +167,15 @@ class DashboardTab extends ConsumerWidget {
                         Text(
                           'Join or select a campus to see notes, events, and community updates.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            fontSize: 14,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onPrimary.withValues(alpha: 0.92),
                           ),
                         ),
                         const SizedBox(height: 24),
                         ElevatedButton(
                           onPressed: () => context.push('/campus-select'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
+                            backgroundColor: theme.colorScheme.surface,
                             foregroundColor: theme.colorScheme.primary,
                             minimumSize: const Size(double.infinity, 50),
                             shape: RoundedRectangleBorder(
@@ -179,7 +203,8 @@ class DashboardTab extends ConsumerWidget {
                   child: InkWell(
                     onTap: () {
                       context.pushNamed(
-                        AppRoutes.campusManagement, // We'll add this route or just use direct push
+                        AppRoutes
+                            .campusManagement, // We'll add this route or just use direct push
                         extra: {
                           'campusId': campusMembership?['campus_id'],
                           'campusName': campus?['name'] ?? 'Campus',
@@ -198,7 +223,9 @@ class DashboardTab extends ConsumerWidget {
                         ),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.2,
+                          ),
                         ),
                       ),
                       child: Row(
@@ -206,7 +233,9 @@ class DashboardTab extends ConsumerWidget {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                              color: theme.colorScheme.primary.withValues(
+                                alpha: 0.1,
+                              ),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
@@ -249,67 +278,33 @@ class DashboardTab extends ConsumerWidget {
 
               const SizedBox(height: 32),
 
-              // Discovery Quick Actions (Compact)
+              // Discovery Quick Actions — grelha 2×2 + expandir
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.only(left: 24, bottom: 8),
-                      child: Text('Discover', style: theme.textTheme.titleLarge),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      height: 100,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        children: [
-                          _QuickTool(
-                            icon: Icons.auto_stories_rounded,
-                            label: 'Notes',
-                            color: Colors.blue,
-                            onTap: () => context
-                                .findAncestorStateOfType<MainScreenState>()
-                                ?.navigateToTab(1),
-                          ),
-                          _QuickTool(
-                            icon: Icons.event_rounded,
-                            label: 'Events',
-                            color: Colors.orange,
-                            onTap: () => context
-                                .findAncestorStateOfType<MainScreenState>()
-                                ?.navigateToTab(2),
-                          ),
-                          _QuickTool(
-                            icon: Icons.forum_rounded,
-                            label: 'Chat',
-                            color: Colors.teal,
-                            onTap: () => context
-                                .findAncestorStateOfType<MainScreenState>()
-                                ?.navigateToTab(3),
-                          ),
-                          _QuickTool(
-                            icon: Icons.manage_search_rounded,
-                            label: 'LostFound',
-                            color: Colors.deepPurple,
-                            onTap: () => context.push(AppRoutes.lostFound),
-                          ),
-                          _QuickTool(
-                            icon: Icons.groups_rounded,
-                            label: 'Study',
-                            color: Colors.pink,
-                            onTap: () => context.push(AppRoutes.studyGroups),
-                          ),
-                          _QuickTool(
-                            icon: Icons.auto_awesome_rounded,
-                            label: 'AI Chat',
-                            color: Colors.amber,
-                            onTap: () => context.push(AppRoutes.aiChat),
-                          ),
-                        ],
+                      padding: const EdgeInsets.only(left: 4, bottom: 8),
+                      child: Text(
+                        'Discover',
+                        style: theme.textTheme.titleLarge,
                       ),
+                    ),
+                    _DiscoverQuickGrid(
+                      theme: theme,
+                      onNotes: () => context
+                          .findAncestorStateOfType<MainScreenState>()
+                          ?.navigateToTab(1),
+                      onEvents: () => context
+                          .findAncestorStateOfType<MainScreenState>()
+                          ?.navigateToTab(2),
+                      onChat: () => context
+                          .findAncestorStateOfType<MainScreenState>()
+                          ?.navigateToTab(3),
+                      onLostFound: () => context.push(AppRoutes.lostFound),
+                      onStudy: () => context.push(AppRoutes.studyGroups),
+                      onAi: () => context.push(AppRoutes.aiChat),
                     ),
                   ],
                 ),
@@ -381,46 +376,170 @@ class DashboardTab extends ConsumerWidget {
   }
 }
 
-class _QuickTool extends StatelessWidget {
+class _DiscoverQuickGrid extends StatefulWidget {
+  const _DiscoverQuickGrid({
+    required this.theme,
+    required this.onNotes,
+    required this.onEvents,
+    required this.onChat,
+    required this.onLostFound,
+    required this.onStudy,
+    required this.onAi,
+  });
+
+  final ThemeData theme;
+  final VoidCallback? onNotes;
+  final VoidCallback? onEvents;
+  final VoidCallback? onChat;
+  final VoidCallback? onLostFound;
+  final VoidCallback? onStudy;
+  final VoidCallback? onAi;
+
+  @override
+  State<_DiscoverQuickGrid> createState() => _DiscoverQuickGridState();
+}
+
+class _DiscoverQuickGridState extends State<_DiscoverQuickGrid> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final specs = <_QuickGridSpec>[
+      _QuickGridSpec(
+        Icons.auto_stories_rounded,
+        'Notes',
+        Colors.blue,
+        widget.onNotes,
+      ),
+      _QuickGridSpec(
+        Icons.event_rounded,
+        'Events',
+        Colors.orange,
+        widget.onEvents,
+      ),
+      _QuickGridSpec(Icons.forum_rounded, 'Chat', Colors.teal, widget.onChat),
+      _QuickGridSpec(
+        Icons.manage_search_rounded,
+        'Lost & Found',
+        Colors.deepPurple,
+        widget.onLostFound,
+      ),
+      _QuickGridSpec(
+        Icons.groups_rounded,
+        'Study',
+        Colors.pink,
+        widget.onStudy,
+      ),
+      _QuickGridSpec(
+        Icons.auto_awesome_rounded,
+        'AI Chat',
+        Colors.amber,
+        widget.onAi,
+      ),
+    ];
+
+    final visible = _expanded ? specs : specs.take(4).toList();
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            GridView.count(
+              crossAxisCount: 4,
+              childAspectRatio: 1.22,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 6,
+              crossAxisSpacing: 6,
+              padding: EdgeInsets.zero,
+              children: visible
+                  .map(
+                    (s) => _DiscoverCompactTile(
+                      theme: widget.theme,
+                      icon: s.icon,
+                      label: s.label,
+                      color: s.color,
+                      onTap: s.onTap,
+                    ),
+                  )
+                  .toList(),
+            ),
+            const SizedBox(height: 4),
+            TextButton(
+              onPressed: () => setState(() => _expanded = !_expanded),
+              child: Text(_expanded ? 'Show Less' : 'Show More'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _QuickGridSpec {
+  const _QuickGridSpec(this.icon, this.label, this.color, this.onTap);
   final IconData icon;
   final String label;
   final Color color;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+}
 
-  const _QuickTool({
+/// Compact Discover chip (~≤120px tall depending on grid); small icon + label.
+class _DiscoverCompactTile extends StatelessWidget {
+  const _DiscoverCompactTile({
+    required this.theme,
     required this.icon,
     required this.label,
     required this.color,
     required this.onTap,
   });
 
+  final ThemeData theme;
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(right: 20),
-      child: GestureDetector(
+    return Material(
+      color: theme.colorScheme.surface,
+      elevation: 1,
+      shadowColor: theme.shadowColor.withValues(alpha: 0.1),
+      borderRadius: BorderRadius.circular(12),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
         onTap: onTap,
-        child: Column(
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: color.withValues(alpha: 0.2)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: color.withValues(alpha: 0.2)),
+                ),
+                child: Icon(icon, color: color, size: 24),
               ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.w600,
+              const SizedBox(height: 4),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 9.5,
+                  height: 1.1,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -454,9 +573,10 @@ class _SpotlightCarouselState extends State<_SpotlightCarousel> {
 
     if (slides.isEmpty) {
       slides.add({
-        'image': 'https://picsum.photos/seed/connekt/1000/600',
+        'image':
+            'https://images.unsplash.com/photo-1541339907198-e08756ebafe3?q=80&w=1200', // Premium University theme
         'title': 'Welcome to Connekt',
-        'subtitle': 'Explore your new campus home.',
+        'subtitle': 'The premium social hub for your campus life.',
       });
     }
 
@@ -494,7 +614,7 @@ class _SpotlightCarouselState extends State<_SpotlightCarousel> {
                       image: NetworkImage(slide['image']!),
                       fit: BoxFit.cover,
                       colorFilter: ColorFilter.mode(
-                        Colors.black.withValues(alpha: 0.4),
+                        theme.colorScheme.shadow.withValues(alpha: 0.45),
                         BlendMode.darken,
                       ),
                     ),
@@ -516,10 +636,10 @@ class _SpotlightCarouselState extends State<_SpotlightCarousel> {
                             ),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Text(
+                          child: Text(
                             'SPOTLIGHT',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: theme.colorScheme.onPrimary,
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 1,
@@ -529,8 +649,10 @@ class _SpotlightCarouselState extends State<_SpotlightCarousel> {
                         const SizedBox(height: 8),
                         Text(
                           slide['title']!,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: theme.brightness == Brightness.light
+                                ? theme.colorScheme.surface
+                                : theme.colorScheme.onSurface,
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                           ),
@@ -538,7 +660,9 @@ class _SpotlightCarouselState extends State<_SpotlightCarousel> {
                         Text(
                           slide['subtitle']!,
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.9),
+                            color: theme.brightness == Brightness.light
+                                ? theme.colorScheme.surface.withValues(alpha: 0.92)
+                                : theme.colorScheme.onSurface.withValues(alpha: 0.9),
                             fontSize: 14,
                           ),
                         ),
@@ -574,7 +698,9 @@ class _PostCardState extends ConsumerState<_PostCard> {
   }
 
   Future<void> _checkLikeStatus() async {
-    final liked = await ref.read(campusRepositoryProvider).hasLiked(
+    final liked = await ref
+        .read(campusRepositoryProvider)
+        .hasLiked(
           widget.activity['id']?.toString() ?? '',
           widget.activity['type'] ?? 'note',
         );
@@ -657,7 +783,9 @@ class _PostCardState extends ConsumerState<_PostCard> {
                       ),
                       Text(
                         widget.activity['type'] == 'note' ? 'Notes' : 'Event',
-                        style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontSize: 11,
+                        ),
                       ),
                     ],
                   ),
@@ -711,17 +839,19 @@ class _PostCardState extends ConsumerState<_PostCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                RichText(
-                  text: TextSpan(
+                Text.rich(
+                  TextSpan(
                     style: theme.textTheme.bodyMedium,
                     children: [
                       TextSpan(
                         text: '${_getAuthorName(widget.activity)} ',
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      TextSpan(text: widget.activity['title']),
+                      TextSpan(text: '${widget.activity['title']}'),
                     ],
                   ),
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -752,11 +882,12 @@ class _PostCardState extends ConsumerState<_PostCard> {
     if (activity['type'] == 'event' && activity['image_url'] != null) {
       return activity['image_url'];
     }
-    // High-quality placeholders for specific categories
     if (activity['type'] == 'note') {
       return 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?q=80&w=800';
+    }
+    if (activity['type'] == 'lost_item') {
+      return 'https://images.unsplash.com/photo-1540324155974-7523202daa3f?q=80&w=800';
     }
     return 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=800';
   }
 }
-

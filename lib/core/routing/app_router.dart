@@ -35,11 +35,13 @@ import '../../screens/communities/community_chat_screen.dart';
 import '../../screens/communities/community_admin_screen.dart';
 import '../../screens/study_groups/study_groups_tab.dart';
 import '../../screens/study_groups/create_group_screen.dart';
+import '../../screens/study_groups/study_group_chat_screen.dart';
 import '../../screens/profile/profile_screen.dart';
 import '../models/academic_note.dart';
 import '../models/campus_event.dart';
 import '../models/chat_conversation.dart';
 import '../models/lost_item.dart';
+import '../models/study_group.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -159,6 +161,18 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'create',
             builder: (context, state) => const CreateGroupScreen(),
+          ),
+          GoRoute(
+            path: 'chat',
+            builder: (context, state) {
+              final extra = state.extra;
+              if (extra is! StudyGroup) {
+                return const _RoutePayloadErrorScreen(
+                  message: 'Missing study group data.',
+                );
+              }
+              return StudyGroupChatScreen(group: extra);
+            },
           ),
         ],
       ),

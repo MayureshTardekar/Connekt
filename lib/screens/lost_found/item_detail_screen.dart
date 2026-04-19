@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/models/lost_item.dart';
+import '../../core/providers/campus_provider.dart';
 import '../../core/routing/app_routes.dart';
 import '../../core/utils/ai_prompts.dart';
 import '../../theme/app_theme.dart';
 
-class ItemDetailScreen extends StatelessWidget {
+class ItemDetailScreen extends ConsumerWidget {
   const ItemDetailScreen({super.key, required this.item});
 
   final LostItem item;
@@ -35,11 +38,49 @@ class ItemDetailScreen extends StatelessWidget {
 
   String get _timeLabel => DateFormat('dd MMM, h:mm a').format(item.createdAt);
 
+  Future<void> _deleteItem(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Report?'),
+        content: const Text('This action cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref.read(campusRepositoryProvider).deleteLostFoundItem(item.id);
+        if (context.mounted) {
+          context.pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Report deleted successfully.')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e')),
+          );
+        }
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final cardColor = theme.colorScheme.surface;
     final isDark = theme.brightness == Brightness.dark;
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    final isOwner = item.postedBy == userId;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -63,6 +104,27 @@ class ItemDetailScreen extends StatelessWidget {
                 ),
               ),
             ),
+            actions: [
+              if (isOwner)
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: GestureDetector(
+                    onTap: () => _deleteItem(context, ref),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.delete_outline_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               background: _HeaderArtwork(
                 item: item,

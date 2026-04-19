@@ -19,6 +19,7 @@ abstract final class AppRoutes {
   static const lostFoundPost = '/lost-found/post';
   static const studyGroups = '/study-groups';
   static const studyGroupsCreate = '/study-groups/create';
+  static const studyGroupChat = '/study-groups/chat';
   static const profile = '/profile';
   static const aiChat = '/ai';
   static const campusManagement = '/campus-management';

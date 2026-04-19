@@ -40,4 +40,20 @@ class NotesRepository {
       rethrow;
     }
   }
+
+  Future<void> deleteNote(String noteId) async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) return;
+
+    try {
+      await _supabase
+          .from(_table)
+          .delete()
+          .eq('id', noteId)
+          .eq('author_id', userId);
+    } catch (e) {
+      AppLogger.error('Delete note error: $e');
+      rethrow;
+    }
+  }
 }

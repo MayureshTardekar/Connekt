@@ -9,8 +9,24 @@
       "args": [
         "--dart-define=SUPABASE_URL=https://jqevsymgsahaijijgqif.supabase.co",
         "--dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxZXZzeW1nc2FoYWlqaWpncWlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNTY3OTMsImV4cCI6MjA5MTYzMjc5M30.nfl8ERMTJeSfp3A_6OwagoNWszwJfzNW01rbbtX6PCU",
-        "--dart-define=GEMINI_API_KEY=AIzaSyAfy9TdW6oUFucM6B-BQ9by4HXzim10iVE",
-        "--web-port=3000"
+        "--dart-define=GEMINI_API_KEY=AIzaSyAfy9TdW6oUFucM6B-BQ9by4HXzim10iVE"
+      ]
+    },
+    {
+      "name": "Connekt Web (Chrome, port 3000, no CDN)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": [
+        "--dart-define=SUPABASE_URL=https://jqevsymgsahaijijgqif.supabase.co",
+        "--dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxZXZzeW1nc2FoYWlqaWpncWlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNTY3OTMsImV4cCI6MjA5MTYzMjc5M30.nfl8ERMTJeSfp3A_6OwagoNWszwJfzNW01rbbtX6PCU",
+        "--dart-define=GEMINI_API_KEY=AIzaSyAfy9TdW6oUFucM6B-BQ9by4HXzim10iVE"
+      ],
+      "toolArgs": [
+        "-d",
+        "chrome",
+        "--web-port=3000",
+        "--no-web-resources-cdn"
       ]
     }
   ]

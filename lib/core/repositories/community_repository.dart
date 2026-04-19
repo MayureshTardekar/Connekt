@@ -1,6 +1,9 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
+
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../utils/reactions_json.dart';
 
 class CommunityRepository {
   SupabaseClient get supabase => Supabase.instance.client;
@@ -78,6 +81,7 @@ class CommunityRepository {
     required String type, // 'text', 'image', 'voice'
     String? filePath,
     Uint8List? fileBytes,
+    String? replyToId,
   }) async {
     final user = supabase.auth.currentUser;
     if (user == null) throw Exception('Not authenticated');
@@ -92,7 +96,8 @@ class CommunityRepository {
       if (kIsWeb && fileBytes != null) {
         await supabase.storage.from('community_assets').uploadBinary(storagePath, fileBytes);
       } else if (filePath != null) {
-        await supabase.storage.from('community_assets').upload(storagePath, File(filePath));
+        final bytes = await XFile(filePath).readAsBytes();
+        await supabase.storage.from('community_assets').uploadBinary(storagePath, bytes);
       }
       
       fileUrl = supabase.storage.from('community_assets').getPublicUrl(storagePath);
@@ -104,7 +109,51 @@ class CommunityRepository {
       'content': content,
       'message_type': type,
       'file_url': fileUrl,
+      'reply_to_id': replyToId,
     });
+  }
+
+  // --- REACTIONS ---
+  Future<void> toggleReaction(String messageId, String emoji) async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final message = await supabase
+          .from('community_messages')
+          .select('reactions')
+          .eq('id', messageId)
+          .single();
+
+      var reactions = parseReactionsJson(message['reactions']);
+
+      if (!reactions.containsKey(emoji)) {
+        reactions[emoji] = [user.id];
+      } else if (reactions[emoji]!.contains(user.id)) {
+        reactions[emoji]!.remove(user.id);
+        if (reactions[emoji]!.isEmpty) reactions.remove(emoji);
+      } else {
+        reactions[emoji]!.add(user.id);
+      }
+
+      await supabase
+          .from('community_messages')
+          .update({'reactions': reactionsToJsonb(reactions)})
+          .eq('id', messageId);
+    } catch (e) {
+      debugPrint('Reaction error: $e');
+    }
+  }
+
+  // --- DELETE MESSAGE ---
+  Future<void> deleteMessage(String messageId) async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+    await supabase
+        .from('community_messages')
+        .delete()
+        .eq('id', messageId)
+        .eq('sender_id', user.id);
   }
 
   // Check membership status
@@ -133,15 +182,30 @@ class CommunityRepository {
 
   // --- NEW: ADMIN AUTHORITIES ---
 
-  // Verify Campus PIN
+  /// Whether this campus requires a non-empty [campuses.join_pin] before joining.
+  Future<bool> campusRequiresJoinPin(String campusId) async {
+    final data = await supabase
+        .from('campuses')
+        .select('join_pin')
+        .eq('id', campusId)
+        .single();
+    final p = data['join_pin'];
+    return p != null && p.toString().trim().isNotEmpty;
+  }
+
+  /// Institute PIN check for campus entry. If [join_pin] is null/empty in DB, any PIN is accepted (no gate).
   Future<bool> verifyCampusPin(String campusId, String pin) async {
     final data = await supabase
         .from('campuses')
         .select('join_pin')
         .eq('id', campusId)
         .single();
-    
-    return data['join_pin'] == pin;
+
+    final expected = data['join_pin'];
+    if (expected == null || expected.toString().trim().isEmpty) {
+      return true;
+    }
+    return expected.toString().trim() == pin.trim();
   }
 
   // Kick Member

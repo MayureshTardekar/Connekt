@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +10,24 @@ import 'core/providers/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // On web, surface build/layout errors instead of a blank page (debug only).
+  if (kIsWeb && kDebugMode) {
+    ErrorWidget.builder = (FlutterErrorDetails details) {
+      return Material(
+        color: const Color(0xFFF5F5F5),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: SelectableText(
+            'Flutter build error (web debug)\n\n'
+            '${details.exceptionAsString()}\n\n'
+            '${details.stack}',
+            style: const TextStyle(fontSize: 13, color: Colors.black87),
+          ),
+        ),
+      );
+    };
+  }
 
     // Initialize Supabase Backend
     if (AppConfig.isSupabaseConfigured) {
@@ -25,13 +44,15 @@ void main() async {
       debugPrint('---------------------------------------------------------');
     }
 
-  // Make status bar transparent for a modern look
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-    ),
-  );
+  // Status bar styling is mobile-only; skip on web to avoid edge-case issues.
+  if (!kIsWeb) {
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+      ),
+    );
+  }
 
   runApp(
     // Wrapping the entire app in ProviderScope so Riverpod can manage state everywhere

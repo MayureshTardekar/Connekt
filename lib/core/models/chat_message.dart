@@ -1,3 +1,5 @@
+import '../utils/reactions_json.dart';
+
 enum SharedCardType { none, note, event, lostFound, ghostPost }
 
 class ChatMessage {
@@ -12,6 +14,7 @@ class ChatMessage {
   // Phase 2 Expressive features
   final Map<String, List<String>> reactions; // emoji -> list of userIds
   final String? audioUrl;
+  final String? imageUrl;
   final int? audioDuration; // in seconds
   final bool isGif;
   final bool isSticker;
@@ -34,6 +37,7 @@ class ChatMessage {
     this.isFromMe = false,
     this.reactions = const {},
     this.audioUrl,
+    this.imageUrl,
     this.audioDuration,
     this.isGif = false,
     this.isSticker = false,
@@ -54,6 +58,7 @@ class ChatMessage {
     bool? isFromMe,
     Map<String, List<String>>? reactions,
     String? audioUrl,
+    String? imageUrl,
     int? audioDuration,
     bool? isGif,
     bool? isSticker,
@@ -73,6 +78,7 @@ class ChatMessage {
       isFromMe: isFromMe ?? this.isFromMe,
       reactions: reactions ?? this.reactions,
       audioUrl: audioUrl ?? this.audioUrl,
+      imageUrl: imageUrl ?? this.imageUrl,
       audioDuration: audioDuration ?? this.audioDuration,
       isGif: isGif ?? this.isGif,
       isSticker: isSticker ?? this.isSticker,
@@ -101,12 +107,9 @@ class ChatMessage {
           : DateTime.now(),
       isRead: (json['isRead'] ?? json['is_read']) as bool? ?? false,
       isFromMe: (json['isFromMe'] ?? json['is_from_me']) as bool? ?? false,
-      reactions:
-          (json['reactions'] as Map<String, dynamic>?)?.map(
-            (k, e) => MapEntry(k, (e as List).map((id) => id.toString()).toList()),
-          ) ??
-          {},
+      reactions: parseReactionsJson(json['reactions']),
       audioUrl: (json['audioUrl'] ?? json['audio_url'])?.toString(),
+      imageUrl: (json['imageUrl'] ?? json['image_url'])?.toString(),
       audioDuration: json['audioDuration'] ?? json['audio_duration'],
       isGif: (json['isGif'] ?? json['is_gif']) as bool? ?? false,
       isSticker: (json['isSticker'] ?? json['is_sticker']) as bool? ?? false,
@@ -135,6 +138,7 @@ class ChatMessage {
       'isFromMe': isFromMe,
       'reactions': reactions,
       'audio_url': audioUrl,
+      'image_url': imageUrl,
       'audio_duration': audioDuration,
       'isGif': isGif,
       'isSticker': isSticker,

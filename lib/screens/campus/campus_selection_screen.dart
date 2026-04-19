@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/models/campus_model.dart';
 import '../../core/providers/campus_provider.dart';
+import '../../core/providers/community_provider.dart';
 import '../../core/routing/app_routes.dart';
 import '../../theme/app_theme.dart';
 
@@ -219,6 +220,32 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
     }
 
     try {
+      final commRepo = ref.read(communityRepositoryProvider);
+      final needsPin = await commRepo.campusRequiresJoinPin(campusId);
+      if (needsPin && mounted) {
+        final pin = await _showInstitutePinDialog();
+        if (pin == null || pin.trim().isEmpty) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Institute PIN is required to join this campus.')),
+            );
+          }
+          return;
+        }
+        final ok = await commRepo.verifyCampusPin(campusId, pin);
+        if (!ok) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Invalid institute PIN. Ask your campus admin.'),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+          }
+          return;
+        }
+      }
+
       await ref
           .read(campusRepositoryProvider)
           .joinCampus(
@@ -245,6 +272,57 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
         );
       }
     }
+  }
+
+  /// Institute PIN before [joinCampus] — campus gatekeeper (not used inside Communities).
+  Future<String?> _showInstitutePinDialog() {
+    String pin = '';
+    final theme = Theme.of(context);
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: theme.colorScheme.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Institute PIN',
+          style: theme.textTheme.titleLarge,
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Enter the PIN issued by your campus admin to unlock this institute on Connekt.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.textTheme.bodySmall?.color,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              obscureText: true,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.headlineSmall?.copyWith(letterSpacing: 6),
+              decoration: InputDecoration(
+                hintText: '••••',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onChanged: (v) => pin = v,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, pin),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildTextField(
