@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
+
 class GhostPost {
   final String id;
   final String text;
@@ -74,4 +76,53 @@ class GhostPost {
 
   factory GhostPost.fromJson(String source) =>
       GhostPost.fromMap(json.decode(source));
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is GhostPost &&
+        id == other.id &&
+        text == other.text &&
+        authorId == other.authorId &&
+        authorAlias == other.authorAlias &&
+        mood == other.mood &&
+        createdAt == other.createdAt &&
+        likes == other.likes &&
+        audioUrl == other.audioUrl &&
+        imageUrl == other.imageUrl &&
+        replyToId == other.replyToId &&
+        replyToText == other.replyToText &&
+        replyToName == other.replyToName &&
+        _reactionsMapEquals(reactions, other.reactions);
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        id,
+        text,
+        authorId,
+        authorAlias,
+        mood,
+        createdAt,
+        likes,
+        audioUrl,
+        imageUrl,
+        replyToId,
+        replyToText,
+        replyToName,
+        Object.hashAll(
+          reactions.entries.map((e) => Object.hash(e.key, Object.hashAll(e.value))),
+        ),
+      );
+}
+
+bool _reactionsMapEquals(
+  Map<String, List<String>> a,
+  Map<String, List<String>> b,
+) {
+  if (a.length != b.length) return false;
+  for (final e in a.entries) {
+    if (!listEquals(e.value, b[e.key])) return false;
+  }
+  return true;
 }

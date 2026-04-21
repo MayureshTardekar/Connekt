@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -106,6 +108,7 @@ class MainScreenState extends ConsumerState<MainScreen> {
 
     return Scaffold(
       key: _scaffoldKey,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
@@ -346,41 +349,54 @@ class MainScreenState extends ConsumerState<MainScreen> {
         ),
       ),
       body: widget.navigationShell,
-      bottomNavigationBar: Container(
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: theme.dividerColor),
-          boxShadow: AppTheme.softShadow,
+      bottomNavigationBar: Padding(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          0,
+          16,
+          16 + MediaQuery.paddingOf(context).bottom,
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(24),
-          child: BottomNavigationBar(
-            currentIndex: widget.navigationShell.currentIndex,
-            onTap: (index) => widget.navigationShell.goBranch(
-              index,
-              initialLocation: index == widget.navigationShell.currentIndex,
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+            child: Container(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface.withValues(alpha: 0.78),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: theme.dividerColor.withValues(alpha: 0.55),
+                ),
+                boxShadow: AppTheme.softShadow,
+              ),
+              child: BottomNavigationBar(
+                currentIndex: widget.navigationShell.currentIndex,
+                onTap: (index) => widget.navigationShell.goBranch(
+                  index,
+                  initialLocation:
+                      index == widget.navigationShell.currentIndex,
+                ),
+                type: BottomNavigationBarType.fixed,
+                backgroundColor: Colors.transparent,
+                selectedItemColor: theme.colorScheme.primary,
+                unselectedItemColor: theme.textTheme.bodySmall?.color,
+                selectedLabelStyle: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 11,
+                ),
+                unselectedLabelStyle: const TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 11,
+                ),
+                elevation: 0,
+                items: [
+                  _buildNavItem(Icons.dashboard_rounded, 'Home', 0),
+                  _buildNavItem(Icons.auto_stories_rounded, 'Notes', 1),
+                  _buildNavItem(Icons.event_rounded, 'Events', 2),
+                  _buildNavItem(Icons.forum_rounded, 'Chat', 3),
+                ],
+              ),
             ),
-            type: BottomNavigationBarType.fixed,
-            backgroundColor: theme.colorScheme.surface,
-            selectedItemColor: theme.colorScheme.primary,
-            unselectedItemColor: theme.textTheme.bodySmall?.color,
-            selectedLabelStyle: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 11,
-            ),
-            unselectedLabelStyle: const TextStyle(
-              fontWeight: FontWeight.w500,
-              fontSize: 11,
-            ),
-            elevation: 0,
-            items: [
-              _buildNavItem(Icons.dashboard_rounded, 'Home', 0),
-              _buildNavItem(Icons.auto_stories_rounded, 'Notes', 1),
-              _buildNavItem(Icons.event_rounded, 'Events', 2),
-              _buildNavItem(Icons.forum_rounded, 'Chat', 3),
-            ],
           ),
         ),
       ),
@@ -395,21 +411,26 @@ class MainScreenState extends ConsumerState<MainScreen> {
     final isSelected = widget.navigationShell.currentIndex == index;
 
     return BottomNavigationBarItem(
-      icon: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOut,
-        width: 42,
-        height: 34,
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppTheme.primary.withValues(alpha: 0.12)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Icon(
-          icon,
-          size: 20,
-          color: isSelected ? AppTheme.primary : null,
+      icon: AnimatedScale(
+        scale: isSelected ? 1.07 : 1.0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOutCubic,
+          width: 42,
+          height: 34,
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppTheme.primary.withValues(alpha: 0.14)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Icon(
+            icon,
+            size: 20,
+            color: isSelected ? AppTheme.primary : null,
+          ),
         ),
       ),
       label: label,

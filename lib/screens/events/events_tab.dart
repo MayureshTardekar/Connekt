@@ -7,6 +7,7 @@ import '../../core/providers/auth_provider.dart';
 import '../../core/providers/campus_provider.dart';
 import '../../core/routing/app_routes.dart';
 import '../../core/widgets/app_states.dart';
+import '../../core/widgets/notes_events_shimmer.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/avatar_helper.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
@@ -29,8 +30,7 @@ class _EventsTabState extends ConsumerState<EventsTab> {
     final eventsAsync = ref.watch(campusEventsProvider);
 
     return eventsAsync.when(
-      loading: () =>
-          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () => buildEventsTabShimmer(context),
       error: (error, _) => Scaffold(
         body: Center(
           child: AppErrorState(
@@ -67,6 +67,9 @@ class _EventsTabState extends ConsumerState<EventsTab> {
               effectiveCategory == 'All' || event.category == effectiveCategory;
           return matchesDay && matchesCategory;
         }).toList()..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+
+        // Admin check: only the campus CREATOR has admin controls
+        final isAdmin = ref.watch(isCampusCreatorProvider);
 
         return Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -231,7 +234,7 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                         ),
                       )
                     else
-                      ...filteredEvents.map(_buildEventCard),
+                      ...filteredEvents.map((e) => _buildEventCard(e, isAdmin)),
                   ],
                 ),
               ),
@@ -273,14 +276,15 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                             ],
                           ),
                           const Spacer(),
-                          IconButton.filled(
-                            onPressed: () => context.push(AppRoutes.eventPost),
-                            icon: const Icon(Icons.add_rounded, color: Colors.white),
-                            style: IconButton.styleFrom(
-                              backgroundColor: Theme.of(context).colorScheme.primary,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          if (isAdmin)
+                            IconButton.filled(
+                              onPressed: () => context.push(AppRoutes.eventPost),
+                              icon: const Icon(Icons.add_rounded, color: Colors.white),
+                              style: IconButton.styleFrom(
+                                backgroundColor: Theme.of(context).colorScheme.primary,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     ),
@@ -295,7 +299,7 @@ class _EventsTabState extends ConsumerState<EventsTab> {
   }
 
 
-  Widget _buildEventCard(CampusEvent event) {
+  Widget _buildEventCard(CampusEvent event, bool isAdmin) {
     final theme = Theme.of(context);
     final accent = _categoryColor(event.category);
 
@@ -389,7 +393,7 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  if (event.organizerId == ref.read(currentUserProvider)?.id)
+                  if (event.organizerId == ref.read(currentUserProvider)?.id || isAdmin)
                     IconButton(
                       onPressed: () => _deleteEvent(event.id),
                       icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 18),

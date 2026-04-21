@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -591,26 +593,32 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen>
         children: [
           _buildAIAvatar(theme, thinking: true),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Thinking…',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: cs.onSurface.withValues(alpha: 0.6),
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHighest.withValues(alpha: 0.85),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: cs.outline.withValues(alpha: 0.12),
                 ),
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: List.generate(
-                  3,
-                  (i) => Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: _ListeningDot(theme: theme, delay: i, active: true),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Thinking…',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: cs.onSurface.withValues(alpha: 0.65),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 10),
+                  _AiThinkingTypingDots(theme: theme),
+                ],
               ),
-            ],
+            ),
           ),
         ],
       ),
@@ -901,23 +909,17 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen>
   }
 }
 
-/// Subtle pulsing dots for "Listening…" and typing.
-class _ListeningDot extends StatefulWidget {
-  const _ListeningDot({
-    required this.theme,
-    required this.delay,
-    required this.active,
-  });
+/// Staggered bounce “typing” dots for the Gemini thinking state.
+class _AiThinkingTypingDots extends StatefulWidget {
+  const _AiThinkingTypingDots({required this.theme});
 
   final ThemeData theme;
-  final int delay;
-  final bool active;
 
   @override
-  State<_ListeningDot> createState() => _ListeningDotState();
+  State<_AiThinkingTypingDots> createState() => _AiThinkingTypingDotsState();
 }
 
-class _ListeningDotState extends State<_ListeningDot>
+class _AiThinkingTypingDotsState extends State<_AiThinkingTypingDots>
     with SingleTickerProviderStateMixin {
   late AnimationController _c;
 
@@ -926,25 +928,8 @@ class _ListeningDotState extends State<_ListeningDot>
     super.initState();
     _c = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
-    );
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !widget.active) return;
-      Future<void>.delayed(Duration(milliseconds: widget.delay * 100), () {
-        if (mounted && widget.active) _c.repeat(reverse: true);
-      });
-    });
-  }
-
-  @override
-  void didUpdateWidget(covariant _ListeningDot oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.active && !_c.isAnimating) {
-      _c.repeat(reverse: true);
-    } else if (!widget.active) {
-      _c.stop();
-      _c.value = 0;
-    }
+      duration: const Duration(milliseconds: 1000),
+    )..repeat();
   }
 
   @override
@@ -955,17 +940,35 @@ class _ListeningDotState extends State<_ListeningDot>
 
   @override
   Widget build(BuildContext context) {
-    final base = widget.theme.colorScheme.onSurface.withValues(alpha: 0.35);
-    final hi = widget.theme.colorScheme.primary.withValues(alpha: 0.9);
+    final cs = widget.theme.colorScheme;
     return AnimatedBuilder(
       animation: _c,
       builder: (context, _) {
-        final t = widget.active ? _c.value : 0.0;
-        final c = Color.lerp(base, hi, t)!;
-        return Container(
-          width: 5,
-          height: 5,
-          decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(3, (i) {
+            final phase = _c.value * 2 * math.pi + i * 0.9;
+            final bounce = (math.sin(phase) + 1) / 2;
+            final dy = -5.0 * bounce;
+            return Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: Transform.translate(
+                offset: Offset(0, dy),
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: Color.lerp(
+                      cs.onSurface.withValues(alpha: 0.35),
+                      cs.primary.withValues(alpha: 0.95),
+                      bounce,
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            );
+          }),
         );
       },
     );

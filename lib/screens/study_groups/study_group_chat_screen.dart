@@ -1,28 +1,26 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/repositories/study_groups_repository.dart';
+import '../../core/models/study_group.dart';
+import '../../core/widgets/media_bubble.dart';
+import '../../core/widgets/base_chat_message_shell.dart';
+import '../../core/widgets/message_interaction_sheet.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/utils/time_formatter.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-import '../../core/models/study_group.dart';
-import '../../core/repositories/study_groups_repository.dart';
-import '../../core/utils/time_formatter.dart';
-import '../../core/widgets/base_chat_message_shell.dart';
 import '../../core/widgets/image_preview_send_sheet.dart';
-import '../../core/widgets/media_bubble.dart';
-import '../../core/widgets/message_interaction_sheet.dart';
+import 'package:file_picker/file_picker.dart';
 
-/// Group chat with pins (tabela `study_group_messages` — ver `study_group_chat.sql`).
-class StudyGroupChatScreen extends StatefulWidget {
+class StudyGroupChatScreen extends ConsumerStatefulWidget {
   const StudyGroupChatScreen({super.key, required this.group});
-
   final StudyGroup group;
 
   @override
-  State<StudyGroupChatScreen> createState() => _StudyGroupChatScreenState();
+  ConsumerState<StudyGroupChatScreen> createState() => _StudyGroupChatScreenState();
 }
 
-class _StudyGroupChatScreenState extends State<StudyGroupChatScreen> {
+class _StudyGroupChatScreenState extends ConsumerState<StudyGroupChatScreen> {
   final _repo = StudyGroupsRepository();
   final _textCtrl = TextEditingController();
   final _scroll = ScrollController();
@@ -42,16 +40,10 @@ class _StudyGroupChatScreenState extends State<StudyGroupChatScreen> {
         title: const Text('Delete message?'),
         content: const Text('This action cannot be undone.'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text(
-              'Delete',
-              style: TextStyle(color: Theme.of(ctx).colorScheme.error),
-            ),
+            child: Text('Delete', style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
           ),
         ],
       ),
@@ -73,9 +65,7 @@ class _StudyGroupChatScreenState extends State<StudyGroupChatScreen> {
       setState(() => _replyingTo = null);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to send: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to send: $e')));
       }
     }
   }
@@ -85,9 +75,7 @@ class _StudyGroupChatScreenState extends State<StudyGroupChatScreen> {
     if (file == null || !mounted) return;
     final bytes = await file.readAsBytes();
     if (!mounted) return;
-    var ext = file.path.contains('.')
-        ? file.path.split('.').last.toLowerCase()
-        : 'jpg';
+    var ext = file.path.contains('.') ? file.path.split('.').last.toLowerCase() : 'jpg';
     if (ext.isEmpty) ext = 'jpg';
 
     await showImagePreviewSendSheet(
@@ -143,8 +131,7 @@ class _StudyGroupChatScreenState extends State<StudyGroupChatScreen> {
     MessageInteractionSheet.show(
       context,
       title: widget.group.subject,
-      onEmoji: (emoji) =>
-          _repo.toggleGroupMessageReaction(msg['id'].toString(), emoji),
+      onEmoji: (emoji) => _repo.toggleGroupMessageReaction(msg['id'].toString(), emoji),
       onReply: () => setState(() => _replyingTo = msg),
       onDelete: isMe ? () => _confirmDelete(msg['id'].toString()) : null,
       canDelete: isMe,
@@ -184,65 +171,51 @@ class _StudyGroupChatScreenState extends State<StudyGroupChatScreen> {
                   );
                 }
                 final messages = snapshot.data ?? [];
-                final pinned = messages
-                    .where((m) => m['is_pinned'] == true)
-                    .toList();
-                final rest = messages
-                    .where((m) => m['is_pinned'] != true)
-                    .toList();
+                final pinned = messages.where((m) => m['is_pinned'] == true).toList();
+                final rest = messages.where((m) => m['is_pinned'] != true).toList();
 
                 return ColoredBox(
                   color: theme.brightness == Brightness.light
                       ? theme.colorScheme.surfaceContainerLow
                       : theme.scaffoldBackgroundColor,
                   child: CustomScrollView(
-                  controller: _scroll,
-                  slivers: [
-                    if (pinned.isNotEmpty)
-                      SliverToBoxAdapter(
-                        child: _PinnedStrip(pinned: pinned, theme: theme),
+                    controller: _scroll,
+                    slivers: [
+                      if (pinned.isNotEmpty)
+                        SliverToBoxAdapter(
+                          child: _PinnedStrip(pinned: pinned, theme: theme),
+                        ),
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate((context, index) {
+                            final msg = rest[index];
+                            final isMe = msg['sender_id'] == uid;
+                            return _StudyMsgTile(
+                              message: msg,
+                              isMe: isMe,
+                              theme: theme,
+                              onSwipeReply: () {
+                                HapticFeedback.lightImpact();
+                                setState(() => _replyingTo = msg);
+                              },
+                              onLongPress: () => _openActions(msg, isMe),
+                            );
+                          }, childCount: rest.length),
+                        ),
                       ),
-                    SliverPadding(
-                      padding: EdgeInsets.fromLTRB(
-                        12,
-                        8,
-                        12,
-                        8 + MediaQuery.viewInsetsOf(context).bottom,
-                      ),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate((context, index) {
-                          final msg = rest[index];
-                          final isMe = msg['sender_id'] == uid;
-                          return _StudyMsgTile(
-                            message: msg,
-                            isMe: isMe,
-                            theme: theme,
-                            onSwipeReply: () {
-                              HapticFeedback.lightImpact();
-                              setState(() => _replyingTo = msg);
-                            },
-                            onLongPress: () => _openActions(msg, isMe),
-                          );
-                        }, childCount: rest.length),
-                      ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
                 );
               },
             ),
           ),
           if (_replyingTo != null)
             Material(
-              color: theme.colorScheme.surfaceContainerHighest.withValues(
-                alpha: 0.95,
-              ),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.95),
               child: ListTile(
                 dense: true,
-                leading: Icon(
-                  Icons.reply_rounded,
-                  color: theme.colorScheme.primary,
-                ),
+                leading: Icon(Icons.reply_rounded, color: theme.colorScheme.primary),
                 title: Text(
                   _replyingTo!['content']?.toString() ?? 'Message',
                   maxLines: 1,
@@ -264,14 +237,8 @@ class _StudyGroupChatScreenState extends State<StudyGroupChatScreen> {
                 padding: const EdgeInsets.fromLTRB(4, 6, 8, 10),
                 child: Row(
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.image_outlined),
-                      onPressed: _pickImage,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.picture_as_pdf_outlined),
-                      onPressed: _pickPdf,
-                    ),
+                    IconButton(icon: const Icon(Icons.image_outlined), onPressed: _pickImage),
+                    IconButton(icon: const Icon(Icons.picture_as_pdf_outlined), onPressed: _pickPdf),
                     Expanded(
                       child: TextField(
                         controller: _textCtrl,
@@ -281,23 +248,13 @@ class _StudyGroupChatScreenState extends State<StudyGroupChatScreen> {
                         decoration: InputDecoration(
                           hintText: 'Message…',
                           filled: true,
-                          fillColor: theme.colorScheme.surfaceContainerHighest
-                              .withValues(alpha: 0.45),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
-                          ),
+                          fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                         ),
                       ),
                     ),
-                    IconButton.filled(
-                      onPressed: _sendText,
-                      icon: const Icon(Icons.send_rounded),
-                    ),
+                    IconButton.filled(onPressed: _sendText, icon: const Icon(Icons.send_rounded)),
                   ],
                 ),
               ),
@@ -311,7 +268,6 @@ class _StudyGroupChatScreenState extends State<StudyGroupChatScreen> {
 
 class _PinnedStrip extends StatelessWidget {
   const _PinnedStrip({required this.pinned, required this.theme});
-
   final List<Map<String, dynamic>> pinned;
   final ThemeData theme;
 
@@ -325,27 +281,16 @@ class _PinnedStrip extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: theme.dividerColor.withValues(alpha: 0.35)),
-          color: theme.colorScheme.surfaceContainerHighest.withValues(
-            alpha: 0.55,
-          ),
+          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.push_pin,
-                  size: 16,
-                  color: theme.colorScheme.primary,
-                ),
+                Icon(Icons.push_pin, size: 16, color: theme.colorScheme.primary),
                 const SizedBox(width: 6),
-                Text(
-                  'Pinned',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
+                Text('Pinned', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
               ],
             ),
             const SizedBox(height: 8),
@@ -357,23 +302,12 @@ class _PinnedStrip extends StatelessWidget {
                 child: Row(
                   children: [
                     Icon(
-                      type == 'image'
-                          ? Icons.image
-                          : type == 'file'
-                          ? Icons.picture_as_pdf
-                          : Icons.short_text,
+                      type == 'image' ? Icons.image : type == 'file' ? Icons.picture_as_pdf : Icons.short_text,
                       size: 18,
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        preview,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ),
+                    Expanded(child: Text(preview, maxLines: 2, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodySmall)),
                   ],
                 ),
               );
@@ -386,14 +320,7 @@ class _PinnedStrip extends StatelessWidget {
 }
 
 class _StudyMsgTile extends StatelessWidget {
-  const _StudyMsgTile({
-    required this.message,
-    required this.isMe,
-    required this.theme,
-    required this.onSwipeReply,
-    required this.onLongPress,
-  });
-
+  const _StudyMsgTile({required this.message, required this.isMe, required this.theme, required this.onSwipeReply, required this.onLongPress});
   final Map<String, dynamic> message;
   final bool isMe;
   final ThemeData theme;
@@ -406,12 +333,8 @@ class _StudyMsgTile extends StatelessWidget {
     final created = DateTime.tryParse(message['created_at']?.toString() ?? '');
     final reactions = Map<String, dynamic>.from(message['reactions'] ?? {});
 
-    final bubbleColor = isMe
-        ? theme.colorScheme.primaryContainer
-        : theme.colorScheme.surfaceContainerHighest;
-    final fg = isMe
-        ? theme.colorScheme.onPrimaryContainer
-        : theme.colorScheme.onSurface;
+    final bubbleColor = isMe ? theme.colorScheme.primaryContainer : theme.colorScheme.surfaceContainerHighest;
+    final fg = isMe ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onSurface;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -436,6 +359,14 @@ class _StudyMsgTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (!isMe)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Text(
+                      message['sender_name']?.toString() ?? 'User',
+                      style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.primary, fontWeight: FontWeight.bold, letterSpacing: 0.2),
+                    ),
+                  ),
                 if (type == 'image' && message['file_url'] != null)
                   Row(
                     mainAxisSize: MainAxisSize.min,
@@ -458,31 +389,22 @@ class _StudyMsgTile extends StatelessWidget {
                       Expanded(
                         child: Text(
                           message['file_name']?.toString() ?? 'File',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: fg,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: theme.textTheme.bodyMedium?.copyWith(color: fg, fontWeight: FontWeight.w600),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
                 ],
-                if (message['content'] != null &&
-                    message['content'].toString().isNotEmpty)
+                if (message['content'] != null && message['content'].toString().isNotEmpty)
                   Text(
                     message['content'].toString(),
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: fg,
-                      height: 1.35,
-                    ),
+                    style: theme.textTheme.bodyMedium?.copyWith(color: fg, height: 1.35),
                   ),
                 if (created != null)
                   Text(
                     TimeFormatter.format(created),
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: fg.withValues(alpha: 0.65),
-                    ),
+                    style: theme.textTheme.labelSmall?.copyWith(color: fg.withValues(alpha: 0.65)),
                   ),
                 if (reactions.isNotEmpty)
                   Padding(
@@ -491,24 +413,11 @@ class _StudyMsgTile extends StatelessWidget {
                       spacing: 6,
                       runSpacing: 4,
                       children: reactions.entries.map((e) {
-                        final n = (e.value is List)
-                            ? (e.value as List).length
-                            : 0;
+                        final n = (e.value is List) ? (e.value as List).length : 0;
                         return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surface.withValues(
-                              alpha: 0.9,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '${e.key} $n',
-                            style: const TextStyle(fontSize: 12),
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(color: theme.colorScheme.surface.withValues(alpha: 0.9), borderRadius: BorderRadius.circular(12)),
+                          child: Text('${e.key} $n', style: const TextStyle(fontSize: 12)),
                         );
                       }).toList(),
                     ),

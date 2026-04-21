@@ -7,6 +7,7 @@ import '../../core/providers/auth_provider.dart';
 import '../../core/providers/campus_provider.dart';
 import '../../core/routing/app_routes.dart';
 import '../../core/widgets/app_states.dart';
+import '../../core/widgets/notes_events_shimmer.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/avatar_helper.dart';
 
@@ -34,8 +35,7 @@ class _NotesTabState extends ConsumerState<NotesTab> {
     final isDark = theme.brightness == Brightness.dark;
 
     return notesAsync.when(
-      loading: () =>
-          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () => buildNotesTabShimmer(context),
       error: (error, _) => Scaffold(
         body: Center(
           child: AppErrorState(
@@ -426,12 +426,25 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  initialValue: selectedCategory,
-                  decoration: const InputDecoration(labelText: 'Category'),
+                  value: selectedCategory,
+                  decoration: const InputDecoration(
+                    labelText: 'Category',
+                    prefixIcon: Icon(Icons.category_rounded),
+                  ),
                   items: ['Exam', 'Lecture', 'Assignment', 'Resource', 'General']
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                      .toSet() 
+                      .followedBy([selectedCategory]) // Ensure the current value is always in the list
+                      .toSet() // Remove duplicates if selectedCategory was already in the list
+                      .map((c) => DropdownMenuItem(
+                            value: c,
+                            child: Text(c.isEmpty ? 'General' : c),
+                          ))
                       .toList(),
-                  onChanged: (v) => setDialogState(() => selectedCategory = v!),
+                  onChanged: (v) {
+                    if (v != null) {
+                      setDialogState(() => selectedCategory = v);
+                    }
+                  },
                 ),
               ],
             ),

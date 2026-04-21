@@ -59,6 +59,8 @@ dependencies:
   flutter_staggered_animations: ^1.1.1
   animate_do: ^4.2.0
   speech_to_text: ^7.3.0
+  implicitly_animated_list: ^2.3.0
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:

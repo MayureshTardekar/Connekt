@@ -39,7 +39,6 @@ class CampusRepository {
   Future<Campus> createCampus(String name) async {
     final user = _supabase.auth.currentUser;
 
-    // Check if name already exists (Case insensitive check would be better but simple eq for now)
     final existing = await _supabase
         .from('campuses')
         .select()
@@ -79,7 +78,6 @@ class CampusRepository {
         .eq('campus_id', campusId)
         .maybeSingle();
 
-    // If already a member, just return (UI will redirect)
     if (existingMembership != null) return;
 
     // 2. Check total joined count
@@ -136,7 +134,6 @@ class CampusRepository {
   }
 
   Stream<List<Map<String, dynamic>>> watchLostFoundItems({String? campusId}) {
-    // Note: Database schema for lost_found currently lacks campus_id column.
     return _supabase
         .from('lost_found')
         .stream(primaryKey: ['id'])
@@ -144,11 +141,11 @@ class CampusRepository {
   }
 
   Stream<List<Map<String, dynamic>>> watchNotes({String? campusId}) {
-     var query = _supabase.from('notes_with_profiles').stream(primaryKey: ['id']);
-     if (campusId != null) {
-       return query.eq('campus_id', campusId).order('created_at', ascending: false);
-     }
-     return query.order('created_at', ascending: false);
+    var query = _supabase.from('notes_with_profiles').stream(primaryKey: ['id']);
+    if (campusId != null) {
+      return query.eq('campus_id', campusId).order('created_at', ascending: false);
+    }
+    return query.order('created_at', ascending: false);
   }
 
   // Check if user is a member of any campus
@@ -165,65 +162,131 @@ class CampusRepository {
     return (response as List).isNotEmpty;
   }
 
-  // Combined Recent Activity Stream for Dashboard
+  // Combined Recent Activity Stream for Dashboard (kept clean for now)
   Stream<List<Map<String, dynamic>>> getRecentActivityStream({
     String? campusId,
   }) {
-    // We combine multiple sources into a single activity feed
     final notesStream = campusId != null
-        ? _supabase.from('academic_notes').stream(primaryKey: ['id']).eq('campus_id', campusId)
-        : _supabase.from('academic_notes').stream(primaryKey: ['id']);
+        ? _supabase
+            .from('notes_with_profiles')
+            .stream(primaryKey: ['id'])
+            .eq('campus_id', campusId)
+        : _supabase
+            .from('notes_with_profiles')
+            .stream(primaryKey: ['id']);
 
-
-    return notesStream.order('created_at', ascending: false).limit(10).asyncMap((
-      notes,
-    ) async {
+    return notesStream
+        .order('created_at', ascending: false)
+        .limit(10)
+        .asyncMap((notes) async {
       final List<Map<String, dynamic>> activities = [];
 
-      // Process Notes
       for (var n in notes) {
         activities.add({
+          'id': n['id'],
           'type': 'note',
-          'title': n['title'],
-          'subtitle': 'Shared a new note in ${n['category']}',
-          'created_at': DateTime.parse(n['created_at']),
-          // We can't easily join in streams, but we can store the ID and let UI/Model handle it or use a View
-          'author': n['author_name'] ?? n['author'] ?? 'Student', 
+          'title': n['title'] ?? 'Note',
+          'subtitle': 'Shared a note in ${n['category'] ?? 'General'}',
+          'created_at': DateTime.tryParse(n['created_at'] ?? '') ?? DateTime.now(),
+          'author': n['author_name'] ?? n['author'] ?? 'Student',
+          'author_id': n['author_id'],
           'author_avatar': n['author_avatar'],
           'image_url': n['file_url'],
+          'location': null,
+          'status': null,
         });
       }
 
-      // Fetch Events
       try {
         var eventsQuery = _supabase.from('events_with_profiles').select();
         if (campusId != null) {
           eventsQuery = eventsQuery.eq('campus_id', campusId);
         }
-        
-        final events = await eventsQuery.order('created_at', ascending: false).limit(5);
+        final events =
+            await eventsQuery.order('created_at', ascending: false).limit(10);
         for (var e in events) {
           activities.add({
+            'id': e['id'],
             'type': 'event',
-            'title': e['title'],
-            'subtitle': 'Organizing a campus event: ${e['location']}',
-            'created_at': DateTime.parse(e['created_at'] ?? e['date_time']),
+            'title': e['title'] ?? 'Event',
+            'subtitle': 'New event at ${e['location'] ?? 'Campus'}',
+            'created_at':
+                DateTime.tryParse(e['created_at'] ?? e['event_date'] ?? '') ??
+                    DateTime.now(),
             'author': e['author_name'] ?? e['organizer'] ?? 'Student',
+            'author_id': e['author_id'],
             'author_avatar': e['author_avatar'],
             'image_url': e['image_url'],
+            'location': e['location'],
+            'status': null,
           });
         }
       } catch (e) {
         debugPrint('Error fetching events for feed: $e');
       }
 
-      // Sort final list by recency
+      try {
+        var lostQuery = _supabase.from('lost_items_with_profiles').select();
+        if (campusId != null) {
+          lostQuery = lostQuery.eq('campus_id', campusId);
+        }
+        final lostItems =
+            await lostQuery.order('created_at', ascending: false).limit(10);
+        for (var li in lostItems) {
+          final isLost = li['type']?.toString().toLowerCase() == 'lost';
+          activities.add({
+            'id': li['id'],
+            'type': 'lost_found',
+            'title': li['title'] ?? 'Lost/Found Item',
+            'subtitle':
+                '${isLost ? 'Lost' : 'Found'} an item at ${li['location'] ?? 'Campus'}',
+            'created_at':
+                DateTime.tryParse(li['created_at'] ?? '') ?? DateTime.now(),
+            'author': li['author_name'] ?? 'Student',
+            'author_id': li['posted_by'],
+            'author_avatar': li['author_avatar'],
+            'image_url': li['image_url'],
+            'location': li['location'],
+            'status': li['status'] ?? 'Open',
+            'item_type': li['type'],
+          });
+        }
+      } catch (e) {
+        debugPrint('Error fetching lost items for feed: $e');
+      }
+
+      // NEW: Fetch campus feed posts (the Instagram style images)
+      try {
+        var feedPostsQuery = _supabase.from('campus_feed_posts_with_profiles').select();
+        if (campusId != null) {
+          feedPostsQuery = feedPostsQuery.eq('campus_id', campusId);
+        }
+        final feedPosts = await feedPostsQuery.order('created_at', ascending: false).limit(10);
+        for (var p in feedPosts) {
+          activities.add({
+            'id': p['id'],
+            'type': 'feed_post',
+            'title': p['caption'] ?? 'Social Post',
+            'subtitle': 'Shared a new photo',
+            'created_at': DateTime.tryParse(p['created_at'] ?? '') ?? DateTime.now(),
+            'author': p['author_full_name'] ?? p['author_display_name'] ?? 'Student',
+            'author_id': p['author_id'],
+            'author_avatar': p['author_avatar_url'],
+            'image_url': p['image_url'],
+            'likes_count': p['likes_count'] ?? 0,
+            'location': null,
+            'status': null,
+          });
+        }
+      } catch (e) {
+        debugPrint('Error fetching feed posts for activity: $e');
+      }
+
       activities.sort(
-        (a, b) => (b['created_at'] as DateTime).compareTo(
-          a['created_at'] as DateTime,
-        ),
+        (a, b) => (b['created_at'] as DateTime)
+            .compareTo(a['created_at'] as DateTime),
       );
-      return activities.take(15).toList();
+      return activities.take(30).toList();
     });
   }
 
@@ -239,23 +302,18 @@ class CampusRepository {
     final user = _supabase.auth.currentUser;
     if (user == null) throw Exception('Not authenticated');
 
-    // 1. Upload file to storage
     final storagePath =
         'notes/${user.id}/${DateTime.now().millisecondsSinceEpoch}_$fileName';
 
-    await _supabase.storage
-        .from('academic_resources')
-        .uploadBinary(
+    await _supabase.storage.from('academic_resources').uploadBinary(
           storagePath,
           fileBytes as dynamic,
           fileOptions: const FileOptions(contentType: 'application/pdf'),
         );
 
-    final fileUrl = _supabase.storage
-        .from('academic_resources')
-        .getPublicUrl(storagePath);
+    final fileUrl =
+        _supabase.storage.from('academic_resources').getPublicUrl(storagePath);
 
-    // 2. Insert record
     await _supabase.from('academic_notes').insert({
       'campus_id': campusId,
       'title': title,
@@ -263,9 +321,10 @@ class CampusRepository {
       'description': description,
       'file_url': fileUrl,
       'author_id': user.id,
-      'author': user.userMetadata?['full_name'] ?? 
-                user.userMetadata?['display_name'] ?? 
-                user.email?.split('@')[0] ?? 'Student',
+      'author': user.userMetadata?['full_name'] ??
+          user.userMetadata?['display_name'] ??
+          user.email?.split('@')[0] ??
+          'Student',
       'created_at': DateTime.now().toIso8601String(),
     });
   }
@@ -280,12 +339,16 @@ class CampusRepository {
     final user = _supabase.auth.currentUser;
     if (user == null) throw Exception('Not authenticated');
 
-    await _supabase.from('academic_notes').update({
-      'title': title,
-      'description': description,
-      'category': category,
-      'updated_at': DateTime.now().toIso8601String(),
-    }).eq('id', noteId).eq('author_id', user.id); // Security: only author can update
+    await _supabase
+        .from('academic_notes')
+        .update({
+          'title': title,
+          'description': description,
+          'category': category,
+          'updated_at': DateTime.now().toIso8601String(),
+        })
+        .eq('id', noteId)
+        .eq('author_id', user.id);
   }
 
   // Create campus event
@@ -306,10 +369,12 @@ class CampusRepository {
       'title': title,
       'description': description,
       'location': location,
-      'date_time': dateTime.toIso8601String(),
+      'event_date': dateTime.toIso8601String(),
       'category': category,
-      'author_id': user.id, // Better tracking
-      'organizer': user.userMetadata?['display_name'] ?? user.email?.split('@')[0] ?? 'Student',
+      'author_id': user.id,
+      'organizer': user.userMetadata?['display_name'] ??
+          user.email?.split('@')[0] ??
+          'Student',
       'image_url': imageUrl,
       'attendees': 0,
     });
@@ -328,6 +393,7 @@ class CampusRepository {
     if (user == null) throw Exception('Not authenticated');
 
     final row = <String, dynamic>{
+      'campus_id': campusId,
       'title': title,
       'description': description,
       'location': location,
@@ -336,11 +402,57 @@ class CampusRepository {
       'posted_by': user.id,
       'created_at': DateTime.now().toIso8601String(),
     };
-    // Requires `lost_found.image_url` in Supabase — run fix_db.sql section 3 if missing.
+
     if (imageUrl != null && imageUrl.trim().isNotEmpty) {
       row['image_url'] = imageUrl;
     }
     await _supabase.from('lost_found').insert(row);
+  }
+
+  /// Upload an image for Lost & Found
+  Future<String> uploadLostFoundImage(List<int> bytes, String extension) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw Exception('Not authenticated');
+
+    final fileName = 'lostfound_${user.id}_${DateTime.now().millisecondsSinceEpoch}.$extension';
+    final storagePath = 'lost_found/$fileName';
+
+    await _supabase.storage.from('campus_assets').uploadBinary(
+          storagePath,
+          bytes as dynamic,
+          fileOptions: FileOptions(
+            contentType: 'image/$extension',
+            upsert: false,
+          ),
+        );
+
+    return _supabase.storage.from('campus_assets').getPublicUrl(storagePath);
+  }
+
+  Future<void> markItemAsFound(String itemId) async {
+    await _supabase
+        .from('lost_found')
+        .update({'status': 'Found'})
+        .eq('id', itemId);
+  }
+
+  Future<void> deleteFeedPost(String postId) async {
+    await _supabase
+        .from('campus_feed_posts')
+        .delete()
+        .eq('id', postId);
+  }
+
+  Future<void> deleteNote(String noteId) async {
+    await _supabase.from('academic_notes').delete().eq('id', noteId);
+  }
+
+  Future<void> deleteEvent(String eventId) async {
+    await _supabase.from('campus_events').delete().eq('id', eventId);
+  }
+
+  Future<void> deleteLostFoundItem(String itemId) async {
+    await _supabase.from('lost_found').delete().eq('id', itemId);
   }
 
   // --- Management Methods ---
@@ -362,15 +474,14 @@ class CampusRepository {
   }
 
   Future<void> updateCampusBanner(String campusId, String imageUrl) async {
-    // We assume the column banner_url exists or we use a fallback metadata approach
-    // For now, we try to update the campuses table
     await _supabase
         .from('campuses')
         .update({'banner_url': imageUrl})
         .eq('id', campusId);
   }
 
-  Future<String> uploadCampusBanner(String campusId, List<int> fileBytes) async {
+  Future<String> uploadCampusBanner(
+      String campusId, List<int> fileBytes) async {
     final user = _supabase.auth.currentUser;
     if (user == null) throw Exception('Not authenticated');
 
@@ -383,7 +494,6 @@ class CampusRepository {
             upsert: true,
           ),
         );
-
     return _supabase.storage.from('campus_assets').getPublicUrl(storagePath);
   }
 
@@ -437,62 +547,37 @@ class CampusRepository {
     }
   }
 
-  Future<void> deleteEvent(String eventId) async {
-    final user = _supabase.auth.currentUser;
-    if (user == null) return;
-    await _supabase
-        .from('campus_events')
-        .delete()
-        .eq('id', eventId)
-        .eq('author_id', user.id);
-  }
-
-  Future<void> deleteLostFoundItem(String itemId) async {
-    final user = _supabase.auth.currentUser;
-    if (user == null) return;
-    await _supabase
-        .from('lost_found')
-        .delete()
-        .eq('id', itemId)
-        .eq('posted_by', user.id);
-  }
-
   /// Get real statistics for a campus
   Future<Map<String, dynamic>> getCampusStats(String campusId) async {
     try {
-      // 1. Notes count
       final notesRes = await _supabase
           .from('academic_notes')
           .select('id')
           .eq('campus_id', campusId);
       final notesCount = notesRes.length;
-      
-      // 2. Events count
+
       final eventsRes = await _supabase
           .from('campus_events')
           .select('id')
           .eq('campus_id', campusId);
       final eventsCount = eventsRes.length;
-          
-      // 3. Lost & Found count
+
       final lostRes = await _supabase
           .from('lost_found')
           .select('id')
           .eq('campus_id', campusId);
       final lostCount = lostRes.length;
-          
-      // Calculate engagement based on activity in the last 7 days
-      final weekAgo = DateTime.now().subtract(const Duration(days: 7)).toIso8601String();
+
+      final weekAgo =
+          DateTime.now().subtract(const Duration(days: 7)).toIso8601String();
       final recentNotesRes = await _supabase
           .from('academic_notes')
           .select('id')
           .eq('campus_id', campusId)
           .gt('created_at', weekAgo);
       final recentActivity = recentNotesRes.length;
-
       final totalActivity = notesCount + eventsCount;
 
-      
       String engagement = 'Low';
       if (recentActivity > 10) {
         engagement = 'Elite';
@@ -507,7 +592,9 @@ class CampusRepository {
         'events_count': eventsCount,
         'lost_count': lostCount,
         'engagement': engagement,
-        'growth': recentActivity > 0 ? '+${((recentActivity / (totalActivity > 0 ? totalActivity : 1)) * 100).toInt()}%' : '0%',
+        'growth': recentActivity > 0
+            ? '+${((recentActivity / (totalActivity > 0 ? totalActivity : 1)) * 100).toInt()}%'
+            : '0%',
       };
     } catch (e) {
       return {
@@ -519,5 +606,111 @@ class CampusRepository {
       };
     }
   }
-}
 
+  // ─── Campus Social Feed ───────────────────────────────────────────────────────
+
+  /// Real-time stream of photo posts for the campus social wall
+  Stream<List<Map<String, dynamic>>> watchCampusFeedPosts(String campusId) {
+    return _supabase
+        .from('campus_feed_posts')
+        .stream(primaryKey: ['id'])
+        .eq('campus_id', campusId)
+        .order('created_at', ascending: false)
+        .map((rows) => rows.cast<Map<String, dynamic>>());
+  }
+
+  /// Create a social feed post (image required, caption optional)
+  Future<void> createFeedPost({
+    required String campusId,
+    required String imageUrl,
+    String? caption,
+  }) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw Exception('Not authenticated');
+
+    await _supabase.from('campus_feed_posts').insert({
+      'campus_id': campusId,
+      'author_id': user.id,
+      'image_url': imageUrl,
+      'caption': caption,
+      'created_at': DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<String?> uploadFeedPostImage(Uint8List bytes, String extension) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return null;
+
+    final fileName =
+        'feed_${user.id}_${DateTime.now().millisecondsSinceEpoch}.$extension';
+    final path = 'feed/$fileName';
+
+    try {
+      await _supabase.storage.from('campus_assets').uploadBinary(path, bytes);
+      return _supabase.storage.from('campus_assets').getPublicUrl(path);
+    } catch (e) {
+      debugPrint('Feed image upload error: $e');
+      return null;
+    }
+  }
+
+  /// Toggle like on a feed post
+  Future<void> toggleFeedPostLike(String postId) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final existing = await _supabase
+          .from('feed_post_likes')
+          .select('id')
+          .eq('post_id', postId)
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+      final row = await _supabase
+          .from('campus_feed_posts')
+          .select('likes_count')
+          .eq('id', postId)
+          .single();
+      final current = (row['likes_count'] as int?) ?? 0;
+
+      if (existing != null) {
+        await _supabase
+            .from('feed_post_likes')
+            .delete()
+            .eq('id', existing['id']);
+        await _supabase
+            .from('campus_feed_posts')
+            .update({'likes_count': (current - 1).clamp(0, 999999)})
+            .eq('id', postId);
+      } else {
+        await _supabase
+            .from('feed_post_likes')
+            .insert({'post_id': postId, 'user_id': user.id});
+        await _supabase
+            .from('campus_feed_posts')
+            .update({'likes_count': current + 1})
+            .eq('id', postId);
+      }
+    } catch (e) {
+      debugPrint('Feed like error: $e');
+    }
+  }
+
+  /// Check if current user has liked a specific feed post
+  Future<bool> hasLikedFeedPost(String postId) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return false;
+    try {
+      final result = await _supabase
+          .from('feed_post_likes')
+          .select('id')
+          .eq('post_id', postId)
+          .eq('user_id', user.id)
+          .maybeSingle();
+      return result != null;
+    } catch (_) {
+      return false;
+    }
+  }
+}

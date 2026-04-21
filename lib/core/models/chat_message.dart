@@ -95,14 +95,14 @@ class ChatMessage {
       id: json['id']?.toString() ?? '',
       senderId: (json['senderId'] ?? json['sender_id'])?.toString() ?? '',
       senderName: (json['senderName'] ?? json['sender_name'])?.toString() ?? '',
-      text: json['text'] as String? ?? '',
-      timestamp: (json['timestamp'] ?? json['created_at']) != null
-          ? ((json['timestamp'] ?? json['created_at']) is int
+      text: (json['content'] ?? json['text'] ?? '') as String,
+      timestamp: (json['created_at'] ?? json['timestamp']) != null
+          ? ((json['created_at'] ?? json['timestamp']) is int
                 ? DateTime.fromMillisecondsSinceEpoch(
-                    (json['timestamp'] ?? json['created_at']) as int,
+                    (json['created_at'] ?? json['timestamp']) as int,
                   )
                 : DateTime.parse(
-                    (json['timestamp'] ?? json['created_at']).toString(),
+                    (json['created_at'] ?? json['timestamp']).toString(),
                   ))
           : DateTime.now(),
       isRead: (json['isRead'] ?? json['is_read']) as bool? ?? false,

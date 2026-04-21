@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/network/logger.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../core/repositories/campus_repository.dart';
 import '../../core/providers/campus_provider.dart';
+import '../../core/widgets/media_bubble.dart'; 
 import '../../theme/app_theme.dart';
 
 class PostLostItemScreen extends ConsumerStatefulWidget {
@@ -21,6 +23,18 @@ class _PostLostItemScreenState extends ConsumerState<PostLostItemScreen> {
 
   String _selectedType = 'Lost';
   bool _isPosting = false;
+  XFile? _selectedImage;
+  final _picker = ImagePicker();
+
+  Future<void> _pickImage() async {
+    final image = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 70,
+    );
+    if (image != null) {
+      setState(() => _selectedImage = image);
+    }
+  }
 
   Future<void> _handleSubmit() async {
     if (_titleController.text.isEmpty || _locationController.text.isEmpty) {
@@ -31,14 +45,15 @@ class _PostLostItemScreenState extends ConsumerState<PostLostItemScreen> {
     }
 
     setState(() => _isPosting = true);
-
     try {
       final campus = ref.read(selectedCampusProvider);
+      if (campus == null) throw Exception('No campus selected');
 
-      if (campus == null) {
-        throw Exception(
-          'No campus selected. Please select a campus and try again.',
-        );
+      String? imageUrl;
+      if (_selectedImage != null) {
+        final bytes = await _selectedImage!.readAsBytes();
+        final ext = _selectedImage!.path.split('.').last;
+        imageUrl = await CampusRepository().uploadLostFoundImage(bytes, ext);
       }
 
       await CampusRepository().reportLostFoundItem(
@@ -47,7 +62,7 @@ class _PostLostItemScreenState extends ConsumerState<PostLostItemScreen> {
         description: _descriptionController.text.trim(),
         location: _locationController.text.trim(),
         type: _selectedType,
-        imageUrl: null,
+        imageUrl: imageUrl,
       );
 
       if (mounted) {
@@ -83,6 +98,7 @@ class _PostLostItemScreenState extends ConsumerState<PostLostItemScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
@@ -242,6 +258,76 @@ class _PostLostItemScreenState extends ConsumerState<PostLostItemScreen> {
               decoration: const InputDecoration(
                 hintText: 'Where was it lost/found?',
                 prefixIcon: Icon(Icons.location_on_rounded),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Image Picker Section
+            Text('Attach Photo', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: _isPosting ? null : _pickImage,
+              child: Container(
+                width: double.infinity,
+                height: 160,
+                decoration: BoxDecoration(
+                  color: AppTheme.inputBg,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: theme.dividerColor.withValues(alpha: 0.1)),
+                ),
+                child: _selectedImage != null
+                    ? Stack(
+                        children: [
+                          Positioned.fill(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: Image.network(
+                                _selectedImage!.path,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  // Fallback for local path on web/mobile
+                                  return Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(Icons.image, size: 40, color: Colors.grey),
+                                      const SizedBox(width: 10),
+                                      const Text('Image Selected'),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: CircleAvatar(
+                              backgroundColor: Colors.black54,
+                              child: IconButton(
+                                icon: const Icon(Icons.close, color: Colors.white),
+                                onPressed: () => setState(() => _selectedImage = null),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.add_photo_alternate_rounded,
+                            size: 48,
+                            color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Click to add a photo',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.textTheme.bodySmall?.color,
+                            ),
+                          ),
+                        ],
+                      ),
               ),
             ),
             const SizedBox(height: 32),

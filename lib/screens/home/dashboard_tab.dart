@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,8 +10,36 @@ import '../../core/utils/time_formatter.dart';
 import '../../core/routing/app_routes.dart';
 import '../main_screen.dart';
 
-class DashboardTab extends ConsumerWidget {
+class DashboardTab extends ConsumerStatefulWidget {
   const DashboardTab({super.key});
+
+  @override
+  ConsumerState<DashboardTab> createState() => _DashboardTabState();
+}
+
+class _DashboardTabState extends ConsumerState<DashboardTab> {
+  final ScrollController _scrollController = ScrollController();
+  double _scrollOffset = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    final o = _scrollController.offset;
+    if ((o - _scrollOffset).abs() > 0.5) {
+      setState(() => _scrollOffset = o);
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   String _greeting() {
     final hour = DateTime.now().hour;
@@ -28,25 +58,73 @@ class DashboardTab extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final campusMembership = ref.watch(selectedCampusProvider);
-    final role = campusMembership?['role'] ?? 'member';
-    final isAdmin = role == 'admin' || role == 'owner';
+    final isAdmin = ref.watch(isCampusCreatorProvider);
     final campus = campusMembership?['campuses'];
     final bannerUrl = campus?['banner_url'];
     final campusId = campusMembership?['campus_id'] as String?;
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () async {
-            // refresh logic if needed
-          },
-          child: ListView(
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            children: [
+        child: Stack(
+          clipBehavior: Clip.hardEdge,
+          children: [
+            Positioned(
+              left: -30,
+              top: 40 - _scrollOffset * 0.14,
+              child: IgnorePointer(
+                child: RepaintBoundary(
+                  child: Container(
+                    width: 220,
+                    height: 220,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          theme.colorScheme.primary.withValues(alpha: 0.11),
+                          theme.colorScheme.primary.withValues(alpha: 0.02),
+                          Colors.transparent,
+                        ],
+                        stops: const [0.0, 0.45, 1.0],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              right: -50,
+              top: 280 - _scrollOffset * 0.09,
+              child: IgnorePointer(
+                child: RepaintBoundary(
+                  child: Container(
+                    width: 180,
+                    height: 180,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          theme.colorScheme.tertiary.withValues(alpha: 0.08),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            RefreshIndicator(
+              onRefresh: () async {
+                // refresh logic if needed
+              },
+              child: ListView(
+                controller: _scrollController,
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                children: [
               // Header
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -322,19 +400,16 @@ class DashboardTab extends ConsumerWidget {
                 ),
               ),
 
-              StreamBuilder<List<Map<String, dynamic>>>(
-                stream: CampusRepository().getRecentActivityStream(
-                  campusId: campusId,
+              ref.watch(recentActivityProvider).when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.all(32),
+                  child: Center(child: CircularProgressIndicator()),
                 ),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Padding(
-                      padding: EdgeInsets.all(32),
-                      child: Center(child: CircularProgressIndicator()),
-                    );
-                  }
-
-                  final activities = snapshot.data ?? [];
+                error: (error, _) => Padding(
+                  padding: const EdgeInsets.all(40),
+                  child: Center(child: Text('Error loading feed: $error')),
+                ),
+                data: (activities) {
                   if (activities.isEmpty) {
                     return Padding(
                       padding: const EdgeInsets.all(40),
@@ -368,8 +443,10 @@ class DashboardTab extends ConsumerWidget {
                   );
                 },
               ),
-            ],
-          ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -503,42 +580,85 @@ class _DiscoverCompactTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: theme.colorScheme.surface,
-      elevation: 1,
-      shadowColor: theme.shadowColor.withValues(alpha: 0.1),
-      borderRadius: BorderRadius.circular(12),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
+    final isDark = theme.brightness == Brightness.dark;
+    final shadowA = Colors.black.withValues(alpha: isDark ? 0.28 : 0.07);
+    final shadowB = Colors.black.withValues(alpha: isDark ? 0.16 : 0.04);
+    final borderGlass = isDark
+        ? Colors.white.withValues(alpha: 0.12)
+        : Colors.white.withValues(alpha: 0.85);
+
+    return RepaintBoundary(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(24),
+              child: Ink(
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: color.withValues(alpha: 0.2)),
+                  borderRadius: BorderRadius.circular(24),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      theme.colorScheme.surface.withValues(alpha: isDark ? 0.42 : 0.55),
+                      theme.colorScheme.surface.withValues(alpha: isDark ? 0.28 : 0.42),
+                    ],
+                  ),
+                  border: Border.all(
+                    color: borderGlass,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: shadowA,
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                      spreadRadius: -2,
+                    ),
+                    BoxShadow(
+                      color: shadowB,
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                child: Icon(icon, color: color, size: 24),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 9.5,
-                  height: 1.1,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: color.withValues(alpha: 0.22),
+                          ),
+                        ),
+                        child: Icon(icon, color: color, size: 21),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        label,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 9.5,
+                          height: 1.1,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -698,38 +818,26 @@ class _PostCardState extends ConsumerState<_PostCard> {
   }
 
   Future<void> _checkLikeStatus() async {
-    final liked = await ref
-        .read(campusRepositoryProvider)
-        .hasLiked(
+    final liked = await ref.read(campusRepositoryProvider).hasLiked(
           widget.activity['id']?.toString() ?? '',
           widget.activity['type'] ?? 'note',
         );
     if (mounted) {
-      setState(() {
-        _isLiked = liked;
-      });
+      setState(() => _isLiked = liked);
     }
   }
 
   Future<void> _handleLike() async {
     final activityId = widget.activity['id']?.toString() ?? '';
     final type = widget.activity['type'] ?? 'note';
-
-    // Optimistic Update
     final previousState = _isLiked;
-    setState(() {
-      _isLiked = !(_isLiked ?? false);
-    });
+    
+    setState(() => _isLiked = !(_isLiked ?? false));
 
     try {
       await ref.read(campusRepositoryProvider).toggleLike(activityId, type);
     } catch (e) {
-      // Revert on error
-      if (mounted) {
-        setState(() {
-          _isLiked = previousState;
-        });
-      }
+      if (mounted) setState(() => _isLiked = previousState);
     }
   }
 
@@ -739,103 +847,117 @@ class _PostCardState extends ConsumerState<_PostCard> {
     final isDark = theme.brightness == Brightness.dark;
     final timeStr = TimeFormatter.format(widget.activity['created_at']);
     final liked = _isLiked ?? false;
+    final type = widget.activity['type'] as String;
+    final status = widget.activity['status']?.toString();
+    final isFound = status?.toLowerCase() == 'found';
+    final user = Supabase.instance.client.auth.currentUser;
+    final isAuthor = widget.activity['author_id'] == user?.id;
+    final isAdmin = ref.watch(isCampusCreatorProvider);
 
     return Container(
+      margin: const EdgeInsets.only(bottom: 1),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         border: Border(
-          top: BorderSide(color: theme.dividerColor.withValues(alpha: 0.5)),
-          bottom: BorderSide(color: theme.dividerColor.withValues(alpha: 0.5)),
+          bottom: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1)),
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Post Header
+          // Header
           Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
                 CircleAvatar(
-                  radius: 16,
-                  backgroundColor: theme.colorScheme.primary.withValues(
-                    alpha: 0.1,
-                  ),
-                  child: Text(
-                    (widget.activity['title'] as String?)?[0] ?? 'C',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  radius: 18,
+                  backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+                  backgroundImage: widget.activity['author_avatar'] != null 
+                    ? NetworkImage(widget.activity['author_avatar']) : null,
+                  child: widget.activity['author_avatar'] == null 
+                    ? Text(_getAuthorName(widget.activity)[0]) : null,
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         _getAuthorName(widget.activity),
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        widget.activity['type'] == 'note' ? 'Notes' : 'Event',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontSize: 11,
-                        ),
+                        _getTypeLabel(type),
+                        style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
                       ),
                     ],
                   ),
                 ),
+                if (isAuthor || isAdmin)
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert_rounded),
+                    onSelected: (val) => _handleMenuAction(val, context),
+                    itemBuilder: (context) => [
+                      if (type == 'lost_found' && !isFound && isAuthor)
+                        const PopupMenuItem(value: 'mark_found', child: Text('Mark as Found')),
+                      const PopupMenuItem(
+                        value: 'delete', 
+                        child: Text('Delete Post', style: TextStyle(color: Colors.red))
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),
 
-          // Post Media
+          // Media
           AspectRatio(
             aspectRatio: 1.1,
-            child: Container(
-              color: isDark ? Colors.grey[900] : Colors.grey[200],
-              child: Image.network(
-                _getImageUrl(widget.activity),
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Center(
-                  child: Icon(
-                    widget.activity['type'] == 'note'
-                        ? Icons.description_outlined
-                        : Icons.celebration_outlined,
-                    size: 48,
-                    color: theme.dividerColor,
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // Post Actions
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-            child: Row(
+            child: Stack(
+              fit: StackFit.expand,
               children: [
-                IconButton(
-                  onPressed: _handleLike,
-                  icon: Icon(
-                    liked
-                        ? Icons.favorite_rounded
-                        : Icons.favorite_border_rounded,
-                    color: liked ? Colors.red : null,
+                Image.network(
+                  _getImageUrl(widget.activity),
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    child: Icon(_getTypeIcon(type), size: 48, color: theme.dividerColor),
                   ),
                 ),
+                if (isFound)
+                  Container(
+                    color: Colors.black45,
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(20)),
+                        child: const Text('FOUND', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
 
-          // Post Content
+          // Actions
+          Row(
+            children: [
+              IconButton(
+                onPressed: _handleLike,
+                icon: Icon(liked ? Icons.favorite_rounded : Icons.favorite_border_rounded, color: liked ? Colors.red : null),
+              ),
+              const Spacer(),
+              Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: Text(timeStr, style: theme.textTheme.bodySmall?.copyWith(fontSize: 11)),
+              ),
+            ],
+          ),
+
+          // Caption/Content
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 0, 14, 16),
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -843,29 +965,22 @@ class _PostCardState extends ConsumerState<_PostCard> {
                   TextSpan(
                     style: theme.textTheme.bodyMedium,
                     children: [
-                      TextSpan(
-                        text: '${_getAuthorName(widget.activity)} ',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      TextSpan(text: '${widget.activity['title']}'),
+                      TextSpan(text: '${_getAuthorName(widget.activity)} ', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      TextSpan(text: widget.activity['title'] ?? widget.activity['caption'] ?? ''),
                     ],
                   ),
-                  maxLines: 4,
-                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  widget.activity['subtitle'] ?? '',
-                  style: theme.textTheme.bodySmall,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  timeStr,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontSize: 10,
-                    letterSpacing: 0.5,
+                if (widget.activity['location'] != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.location_on_outlined, size: 12, color: Colors.grey),
+                        const SizedBox(width: 4),
+                        Text(widget.activity['location'], style: theme.textTheme.bodySmall?.copyWith(fontSize: 11)),
+                      ],
+                    ),
                   ),
-                ),
               ],
             ),
           ),
@@ -874,20 +989,76 @@ class _PostCardState extends ConsumerState<_PostCard> {
     );
   }
 
-  String _getAuthorName(Map<String, dynamic> activity) {
-    return activity['author'] ?? 'Campus Member';
+  String _getTypeLabel(String type) {
+    switch (type) {
+      case 'note': return 'Academic Note';
+      case 'event': return 'Campus Event';
+      case 'lost_found': return 'Lost & Found';
+      case 'feed_post': return 'Campus Feed';
+      default: return 'Update';
+    }
+  }
+
+  IconData _getTypeIcon(String type) {
+    switch (type) {
+      case 'note': return Icons.description_outlined;
+      case 'event': return Icons.celebration_outlined;
+      case 'lost_found': return Icons.manage_search_outlined;
+      case 'feed_post': return Icons.auto_awesome_mosaic_outlined;
+      default: return Icons.feed_outlined;
+    }
+  }
+
+  void _handleMenuAction(String action, BuildContext context) async {
+    final activityId = widget.activity['id']?.toString() ?? '';
+    final type = widget.activity['type'] ?? '';
+
+    if (action == 'delete') {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Delete Post?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+          ],
+        ),
+      );
+
+      if (confirm == true) {
+        try {
+          final repo = ref.read(campusRepositoryProvider);
+          if (type == 'note') await repo.deleteNote(activityId);
+          else if (type == 'event') await repo.deleteEvent(activityId);
+          else if (type == 'lost_found') await repo.deleteLostFoundItem(activityId);
+          else if (type == 'feed_post') await repo.deleteFeedPost(activityId);
+          ref.invalidate(recentActivityProvider);
+        } catch (e) {
+          if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        }
+      }
+    } else if (action == 'mark_found') {
+      try {
+        await ref.read(campusRepositoryProvider).markItemAsFound(activityId);
+        ref.invalidate(recentActivityProvider);
+      } catch (e) {
+        if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
   }
 
   String _getImageUrl(Map<String, dynamic> activity) {
-    if (activity['type'] == 'event' && activity['image_url'] != null) {
+    if (activity['image_url'] != null && activity['image_url'].toString().isNotEmpty) {
       return activity['image_url'];
     }
-    if (activity['type'] == 'note') {
-      return 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?q=80&w=800';
-    }
-    if (activity['type'] == 'lost_item') {
-      return 'https://images.unsplash.com/photo-1540324155974-7523202daa3f?q=80&w=800';
-    }
+    final type = activity['type'] as String;
+    if (type == 'note') return 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?q=80&w=800';
+    if (type == 'lost_found') return 'https://images.unsplash.com/photo-1540324155974-7523202daa3f?q=80&w=800';
+    if (type == 'event') return 'https://images.unsplash.com/photo-1541339907198-e08756ebafe3?q=80&w=800';
     return 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=800';
+  }
+
+  String _getAuthorName(Map<String, dynamic> activity) {
+    return activity['author_name'] ?? activity['author'] ?? 'Campus Member';
   }
 }

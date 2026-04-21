@@ -262,7 +262,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                           message: 'Missing chat conversation data.',
                         );
                       }
-                      return ChatDetailScreen(conversation: extra);
+                      return ChatDetailScreen(
+                        targetId: extra.participantId,
+                        name: extra.participantName,
+                        isCommunity: false,
+                      );
                     },
                   ),
                 ],

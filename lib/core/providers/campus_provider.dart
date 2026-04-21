@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/academic_note.dart';
 import '../models/campus_event.dart';
@@ -132,4 +133,25 @@ final academicNotesProvider = StreamProvider<List<AcademicNote>>((ref) {
 
 final ghostPostsProvider = StreamProvider<List<GhostPost>>((ref) {
   return ref.watch(ghostRepositoryProvider).watchPosts();
+});
+
+final recentActivityProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
+  final campusId = ref.watch(selectedCampusIdProvider);
+  return ref.watch(campusRepositoryProvider).getRecentActivityStream(campusId: campusId);
+});
+
+/// True only if the current user is the CREATOR of the selected campus.
+/// Uses campuses.created_by — no role column needed.
+final isCampusCreatorProvider = Provider<bool>((ref) {
+  final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+  if (currentUserId == null) return false;
+
+  final membership = ref.watch(selectedCampusProvider);
+  if (membership == null) return false;
+
+  // campusMembership contains a nested 'campuses' map from getMyCampuses()
+  final campusData = membership['campuses'] as Map<String, dynamic>?;
+  final createdBy = campusData?['created_by']?.toString();
+
+  return createdBy != null && createdBy == currentUserId;
 });

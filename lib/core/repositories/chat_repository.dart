@@ -64,7 +64,7 @@ class ChatRepository {
     }
   }
 
-  // Real-time stream of messages
+  // Real-time stream of messages (returns ChatMessage models)
   Stream<List<ChatMessage>> watchMessages(String conversationId) {
     final userId = _supabase.auth.currentUser?.id;
     return _supabase
@@ -82,7 +82,64 @@ class ChatRepository {
         );
   }
 
-  // Send a new message
+  /// Raw stream of DM messages as Maps — used by ChatDetailScreen
+  Stream<List<Map<String, dynamic>>> watchRawMessages(String receiverId) {
+    final currentUserId = _supabase.auth.currentUser?.id;
+    if (currentUserId == null) return Stream.value([]);
+    // Use a consistent conversation ID derived from both user IDs
+    final ids = [currentUserId, receiverId]..sort();
+    final conversationId = ids.join('_');
+    return _supabase
+        .from('chat_messages')
+        .stream(primaryKey: ['id'])
+        .eq('conversation_id', conversationId)
+        .order('timestamp', ascending: false)
+        .map((data) => data.map((e) {
+              final m = Map<String, dynamic>.from(e);
+              // Standardize keys for the UI
+              m['content'] = e['content'] ?? e['text'] ?? '';
+              m['created_at'] = e['created_at'] ?? e['timestamp'] ?? DateTime.now().toIso8601String();
+              m['sender_name'] ??= 'User';
+              return m;
+            }).toList());
+  }
+
+  /// Send a direct message to another user (used by ChatDetailScreen)
+  Future<void> sendDirectMessage({
+    required String receiverId,
+    required String content,
+    String? replyToId,
+  }) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw Exception('Not authenticated');
+
+    final profile = await _supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .maybeSingle();
+    final senderName = profile?['full_name'] ??
+        user.userMetadata?['display_name'] ??
+        user.email?.split('@').first ??
+        'User';
+
+    // Consistent conversation ID: sorted user IDs joined by _
+    final ids = [user.id, receiverId]..sort();
+    final conversationId = ids.join('_');
+
+    await _supabase.from('chat_messages').insert({
+      'conversation_id': conversationId,
+      'sender_id': user.id,
+      'sender_name': senderName,
+      'text': content,
+      'content': content, // Redundant but safe if migration is run
+      'timestamp': DateTime.now().toIso8601String(),
+      'created_at': DateTime.now().toIso8601String(),
+      'reply_to_id': replyToId,
+    });
+  }
+
+  // Send a new message (legacy — used by ChatTab's existing flow)
   Future<void> sendMessage(
     String conversationId,
     ChatMessage message, {
@@ -288,6 +345,51 @@ class ChatRepository {
       AppLogger.error('Image upload error: $e');
       return null;
     }
+  }
+  /// Watch messages for a community (community_messages table)
+  Stream<List<Map<String, dynamic>>> watchCommunityMessages(String communityId) {
+    return _supabase
+        .from('community_messages')
+        .stream(primaryKey: ['id'])
+        .eq('community_id', communityId)
+        .order('created_at', ascending: false)
+        .map((data) => data.map((e) {
+              final m = Map<String, dynamic>.from(e);
+              // Ensure consistent keys with DMs
+              m['sender_name'] ??= 'User';
+              // content is already there, created_at is already there
+              return m;
+            }).toList());
+  }
+
+  /// Send a message to a campus community
+  Future<void> sendCommunityMessage({
+    required String communityId,
+    required String content,
+    String? replyToId,
+  }) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw Exception('Not authenticated');
+
+    final profile = await _supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .maybeSingle();
+
+    final senderName = profile?['full_name'] ??
+        user.userMetadata?['display_name'] ??
+        user.email?.split('@').first ??
+        'User';
+
+    await _supabase.from('community_messages').insert({
+      'community_id': communityId,
+      'sender_id': user.id,
+      'sender_name': senderName,
+      'content': content,
+      'reply_to_id': replyToId,
+      'created_at': DateTime.now().toIso8601String(),
+    });
   }
 }
 

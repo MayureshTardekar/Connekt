@@ -3,6 +3,7 @@ class Campus {
   final String name;
   final String? createdBy;
   final String? bannerUrl;
+  final String? joinPin;
   final DateTime createdAt;
 
   Campus({
@@ -10,6 +11,7 @@ class Campus {
     required this.name,
     this.createdBy,
     this.bannerUrl,
+    this.joinPin,
     required this.createdAt,
   });
 
@@ -19,6 +21,7 @@ class Campus {
       name: json['name'],
       createdBy: json['created_by'],
       bannerUrl: json['banner_url'],
+      joinPin: json['join_pin'],
       createdAt: DateTime.parse(json['created_at']),
     );
   }

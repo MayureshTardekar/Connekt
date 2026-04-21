@@ -14,10 +14,10 @@ import '../../core/providers/campus_provider.dart';
 import '../../core/repositories/auth_repository.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/base_chat_message_shell.dart';
-import '../../core/widgets/image_preview_send_sheet.dart';
+import '../../core/widgets/image_preview_send_screen.dart';
 import '../../core/widgets/media_bubble.dart';
+import 'package:implicitly_animated_list/implicitly_animated_list.dart';
 import '../../core/widgets/message_interaction_sheet.dart';
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:animate_do/animate_do.dart';
 import 'dart:ui';
 
@@ -36,6 +36,7 @@ class _GhostTabState extends ConsumerState<GhostTab>
 
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  double _prevKeyboardInset = 0;
   final AudioRecorder _audioRecorder = AudioRecorder();
   bool _isRecording = false;
   bool _isSendingLocally = false;
@@ -47,6 +48,20 @@ class _GhostTabState extends ConsumerState<GhostTab>
     _scrollController.dispose();
     _audioRecorder.dispose();
     super.dispose();
+  }
+
+  void _scrollChatWithKeyboard(double bottomInset) {
+    if (bottomInset > _prevKeyboardInset && bottomInset > 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_scrollController.hasClients) return;
+        _scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeOut,
+        );
+      });
+    }
+    _prevKeyboardInset = bottomInset;
   }
 
   Future<void> _startRecording() async {
@@ -70,8 +85,9 @@ class _GhostTabState extends ConsumerState<GhostTab>
     }
   }
 
-  /// Pick from gallery → preview + optional caption → upload only after Send.
+  /// Pick from gallery → full-screen Hero preview + optional caption → upload only after Send.
   Future<void> _pickImageForPreview() async {
+    HapticFeedback.lightImpact();
     final picker = ImagePicker();
     final file = await picker.pickImage(
       source: ImageSource.gallery,
@@ -84,12 +100,13 @@ class _GhostTabState extends ConsumerState<GhostTab>
     var ext = p.extension(file.path).replaceAll('.', '').toLowerCase();
     if (ext.isEmpty) ext = 'jpg';
 
-    await showImagePreviewSendSheet(
+    await openImagePreviewSendScreen(
       context: context,
       imageBytes: bytes,
       fileExtension: ext,
       initialCaption: _messageController.text,
       title: 'Send image',
+      heroTag: kGhostImagePickerHeroTag,
       onConfirm: (b, e, caption) async {
         _messageController.text = caption;
         await _sendMessage(imageBytes: b, imageExtension: e);
@@ -114,6 +131,7 @@ class _GhostTabState extends ConsumerState<GhostTab>
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
 
+    HapticFeedback.lightImpact();
     setState(() => _isSendingLocally = true);
 
     try {
@@ -193,6 +211,7 @@ class _GhostTabState extends ConsumerState<GhostTab>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    _scrollChatWithKeyboard(MediaQuery.viewInsetsOf(context).bottom);
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       resizeToAvoidBottomInset: true,
@@ -250,30 +269,55 @@ class _GhostTabState extends ConsumerState<GhostTab>
                           );
                         }
 
-                        return AnimationLimiter(
-                          child: ListView.builder(
-                            controller: _scrollController,
-                            padding: EdgeInsets.fromLTRB(
-                              16,
-                              widget.isTab ? 10 : 90,
-                              16,
-                              20,
-                            ),
-                            reverse: true,
-                            itemCount: posts.length,
-                            itemBuilder: (context, index) {
-                              return AnimationConfiguration.staggeredList(
-                                position: index,
-                                duration: const Duration(milliseconds: 375),
-                                child: SlideAnimation(
-                                  verticalOffset: 50.0,
-                                  child: FadeInAnimation(
-                                    child: _buildChatBubble(posts[index]),
-                                  ),
+                        return ImplicitlyAnimatedList<GhostPost>(
+                          controller: _scrollController,
+                          reverse: true,
+                          initialAnimation: false,
+                          insertDuration: const Duration(milliseconds: 340),
+                          deleteDuration: const Duration(milliseconds: 280),
+                          itemEquality: (a, b) => a.id == b.id,
+                          insertAnimation: (context, child, animation) {
+                            final curved = CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeOutCubic,
+                            );
+                            return SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(0, 0.14),
+                                end: Offset.zero,
+                              ).animate(curved),
+                              child: ScaleTransition(
+                                scale: Tween<double>(begin: 0.94, end: 1)
+                                    .animate(curved),
+                                child: FadeTransition(
+                                  opacity: curved,
+                                  child: child,
                                 ),
-                              );
-                            },
+                              ),
+                            );
+                          },
+                          deleteAnimation: (context, child, animation) {
+                            final curved = CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeInCubic,
+                            );
+                            return SizeTransition(
+                              sizeFactor: curved,
+                              child: FadeTransition(
+                                opacity: curved,
+                                child: child,
+                              ),
+                            );
+                          },
+                          padding: EdgeInsets.fromLTRB(
+                            16,
+                            widget.isTab ? 10 : 90,
+                            16,
+                            20,
                           ),
+                          itemData: posts,
+                          itemBuilder: (context, post) =>
+                              _buildChatBubble(post),
                         );
                       },
                       loading: () => const Center(
@@ -366,7 +410,10 @@ class _GhostTabState extends ConsumerState<GhostTab>
                 const Spacer(),
                 IconButton.filledTonal(
                   icon: const Icon(Icons.shield_outlined, size: 20),
-                  onPressed: _showAliasDialog,
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    _showAliasDialog();
+                  },
                   style: IconButton.styleFrom(
                     backgroundColor: Colors.white.withValues(alpha: 0.05),
                     foregroundColor: Colors.white70,
@@ -711,9 +758,15 @@ class _GhostTabState extends ConsumerState<GhostTab>
             ),
           Row(
             children: [
-              IconButton(
-                icon: const Icon(Icons.image_outlined, color: Colors.white54),
-                onPressed: _isSendingLocally ? null : _pickImageForPreview,
+              Hero(
+                tag: kGhostImagePickerHeroTag,
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: IconButton(
+                    icon: const Icon(Icons.image_outlined, color: Colors.white54),
+                    onPressed: _isSendingLocally ? null : _pickImageForPreview,
+                  ),
+                ),
               ),
               Expanded(
                 child: Container(
