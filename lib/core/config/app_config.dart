@@ -1,38 +1,23 @@
 import 'package:flutter/foundation.dart';
 
 class AppConfig {
-  /// Defines whether the app should use mock data repositories or live backend.
-  /// Now automatically defaults to true if Supabase configuration is missing.
-  /// Defines whether the app should use mock data repositories or live backend.
+  /// Whether the app should use mock data repositories or live backend.
   static bool get useMockBackend {
     return const bool.fromEnvironment('USE_MOCK_BACKEND', defaultValue: false);
   }
 
-  /// Defines whether to log analytics and app events locally.
+  /// Whether to log analytics and app events locally.
   static const bool enableLogging = true;
 
-  // Supabase Configuration
-  // ACTION: Replace with your own Supabase project details
-  static const String supabaseUrl = String.fromEnvironment(
-    'SUPABASE_URL',
-    defaultValue: 'https://jqevsymgsahaijijgqif.supabase.co', 
-  );
-  static const String supabaseAnonKey = String.fromEnvironment(
-    'SUPABASE_ANON_KEY',
-    defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxZXZzeW1nc2FoYWlqaWpncWlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNTY3OTMsImV4cCI6MjA5MTYzMjc5M30.nfl8ERMTJeSfp3A_6OwagoNWszwJfzNW01rbbtX6PCU',
-  );
+  // Supabase — set at build time: --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...
+  // Never commit real values; use CI secrets for release builds.
+  static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
+  static const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
-  // Gemini Configuration
-  // ACTION: Replace with your Google AI Studio API Key
-  static const String geminiApiKey = String.fromEnvironment(
-    'GEMINI_API_KEY',
-    defaultValue: 'AIzaSyD15gKjnQWrbtfAy4deTHVj6IFhIubDk1A',
-  );
-  static const String geminiApiKeyBackup = String.fromEnvironment(
-    'GEMINI_API_KEY_BACKUP',
-    defaultValue: 'AIzaSyAfy9TdW6oUFucM6B-BQ9by4HXzim10iVE',
-  );
-
+  // Gemini / AI — set at build time, e.g. --dart-define=GEMINI_API_KEY=...
+  static const String geminiApiKey = String.fromEnvironment('GEMINI_API_KEY');
+  static const String geminiApiKeyBackup =
+      String.fromEnvironment('GEMINI_API_KEY_BACKUP');
   // Redirect URLs
   /// Optional override (e.g. staging). If empty on web, [oauthRedirectUrl] uses the
   /// current browser origin so the port matches `flutter run` (avoids localhost:3000
@@ -56,20 +41,14 @@ class AppConfig {
 
   // Fallback / Helper getters
   static bool get isSupabaseConfigured =>
-      supabaseUrl.isNotEmpty && 
+      supabaseUrl.isNotEmpty &&
       supabaseUrl != 'YOUR_SUPABASE_URL' &&
       supabaseAnonKey.isNotEmpty &&
       supabaseAnonKey != 'YOUR_SUPABASE_ANON_KEY';
 
-  // Grok/Other settings remain as environment variables or placeholders
   static const String xaiApiKey = String.fromEnvironment('XAI_API_KEY');
   static const String nvidiaApiKey = String.fromEnvironment('NVIDIA_API_KEY');
-  /// Fallback when Gemini quota/404 fails (native only; override with `--dart-define=GROQ_API_KEY=` in CI).
-  static const String groqApiKey = String.fromEnvironment(
-    'GROQ_API_KEY',
-    defaultValue:
-        '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',
-  );
+  static const String groqApiKey = String.fromEnvironment('GROQ_API_KEY');
   static const String geminiApiKeyTertiary =
       String.fromEnvironment('GEMINI_API_KEY_TERTIARY');
 
@@ -86,7 +65,7 @@ class AppConfig {
     return t.length >= 20;
   }
 
-  /// At least one Gemini key from env / defaults is usable.
+  /// At least one Gemini key from env is usable.
   static bool get hasConfiguredGeminiKey =>
       keyLooksConfigured(geminiApiKey) ||
       keyLooksConfigured(geminiApiKeyBackup) ||
