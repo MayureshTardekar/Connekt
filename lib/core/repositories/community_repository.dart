@@ -4,12 +4,16 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../utils/reactions_json.dart';
+import '../utils/validation_utils.dart';
 
 class CommunityRepository {
   SupabaseClient get supabase => Supabase.instance.client;
 
   // 1. Fetch communities for current campus
   Stream<List<Map<String, dynamic>>> watchCommunities(String campusId) {
+    if (!ValidationUtils.isValidUuid(campusId)) {
+      return Stream.value([]);
+    }
     return supabase
         .from('communities')
         .stream(primaryKey: ['id'])
@@ -47,6 +51,9 @@ class CommunityRepository {
 
   // 3. Join logic
   Future<void> joinCommunity(String communityId, bool isPrivate) async {
+    if (!ValidationUtils.isValidUuid(communityId)) {
+      throw Exception('Invalid community ID format');
+    }
     final user = supabase.auth.currentUser;
     if (user == null) throw Exception('Not authenticated');
 
@@ -67,6 +74,9 @@ class CommunityRepository {
 
   // 4. Message Streaming
   Stream<List<Map<String, dynamic>>> watchMessages(String communityId) {
+    if (!ValidationUtils.isValidUuid(communityId)) {
+      return Stream.value([]);
+    }
     return supabase
         .from('community_messages')
         .stream(primaryKey: ['id'])
@@ -83,6 +93,9 @@ class CommunityRepository {
     Uint8List? fileBytes,
     String? replyToId,
   }) async {
+    if (!ValidationUtils.isValidUuid(communityId)) {
+      throw Exception('Invalid community ID format');
+    }
     final user = supabase.auth.currentUser;
     if (user == null) throw Exception('Not authenticated');
 
@@ -162,6 +175,7 @@ class CommunityRepository {
 
   // Check membership status
   Future<String?> getMembershipStatus(String communityId) async {
+    if (!ValidationUtils.isValidUuid(communityId)) return null;
     final user = supabase.auth.currentUser;
     if (user == null) return null;
 

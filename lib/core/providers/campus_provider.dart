@@ -10,6 +10,7 @@ import '../models/lost_item.dart';
 import '../repositories/campus_repository.dart';
 import '../repositories/ghost_repository.dart';
 import '../repositories/notes_repository.dart';
+import '../utils/validation_utils.dart';
 
 final campusRepositoryProvider = Provider((ref) => CampusRepository());
 final ghostRepositoryProvider = Provider((ref) => GhostRepository());
@@ -43,8 +44,14 @@ class CampusSelectionNotifier extends StateNotifier<String?> {
     final savedId = prefs.getString(_prefKey);
     
     if (savedId != null) {
-      state = savedId;
-      return;
+      final sanitized = ValidationUtils.sanitizeUuid(savedId);
+      if (sanitized != null) {
+        state = sanitized;
+        return;
+      } else {
+        // Clear invalid ID (likely a leftover from mock mode or malformed)
+        await prefs.remove(_prefKey);
+      }
     }
 
     // Try auto-selection if only one campus joined

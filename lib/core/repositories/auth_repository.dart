@@ -4,7 +4,12 @@ import '../config/app_config.dart';
 
 class AuthRepository {
   /// Safely access supabase only if configured
-  SupabaseClient get _supabase => Supabase.instance.client;
+  SupabaseClient get _supabase {
+    if (!AppConfig.isSupabaseConfigured) {
+      throw Exception('Supabase is not initialized. Please run with --dart-define or use Mock mode.');
+    }
+    return Supabase.instance.client;
+  }
 
   // Get current user
   User? get currentUser {

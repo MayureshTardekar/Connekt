@@ -3,7 +3,8 @@ import 'package:flutter/foundation.dart';
 class AppConfig {
   /// Whether the app should use mock data repositories or live backend.
   static bool get useMockBackend {
-    return const bool.fromEnvironment('USE_MOCK_BACKEND', defaultValue: false);
+    const isMock = bool.fromEnvironment('USE_MOCK_BACKEND', defaultValue: false);
+    return isMock || !isSupabaseConfigured;
   }
 
   /// Whether to log analytics and app events locally.

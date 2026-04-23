@@ -13,6 +13,6 @@ final authStateProvider = StreamProvider<AuthState>((ref) {
 });
 
 final currentUserProvider = Provider<User?>((ref) {
-  final authState = ref.watch(authStateProvider).value;
-  return authState?.session?.user ?? Supabase.instance.client.auth.currentUser;
+  // Use the repository instead of direct Supabase access to respect mock settings
+  return ref.watch(authRepositoryProvider).currentUser;
 });
