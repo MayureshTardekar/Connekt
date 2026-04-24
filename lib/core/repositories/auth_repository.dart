@@ -94,7 +94,15 @@ class AuthRepository {
   }
 
   Future<void> sendPasswordResetEmail(String email) async {
-    await _supabase.auth.resetPasswordForEmail(email);
+    try {
+      await _supabase.auth.resetPasswordForEmail(email);
+    } on AuthException catch (e) {
+      debugPrint('Password reset auth error: ${e.message}');
+      rethrow;
+    } catch (e) {
+      debugPrint('Password reset unexpected error: $e');
+      throw Exception('Could not send reset email. Check your connection.');
+    }
   }
 
   Future<bool> signInWithOAuth(OAuthProvider provider) async {
@@ -245,7 +253,15 @@ class AuthRepository {
 
       await _supabase.from('profiles').upsert(updates);
     } catch (e) {
-      debugPrint('Sync profile warning (table might not exist): $e');
+      // Distinguish: if the table truly doesn't exist (rare), warn and swallow.
+      // Any other upsert error (e.g. RLS policy) should be surfaced.
+      final errStr = e.toString().toLowerCase();
+      if (errStr.contains('does not exist') || errStr.contains('relation')) {
+        debugPrint('Sync profile warning: profiles table not found — $e');
+      } else {
+        debugPrint('Sync profile error (RLS / constraint): $e');
+        rethrow;
+      }
     }
   }
 

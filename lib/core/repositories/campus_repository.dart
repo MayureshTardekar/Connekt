@@ -134,10 +134,13 @@ class CampusRepository {
   }
 
   Stream<List<Map<String, dynamic>>> watchLostFoundItems({String? campusId}) {
-    return _supabase
+    var query = _supabase
         .from('lost_found')
-        .stream(primaryKey: ['id'])
-        .order('created_at', ascending: false);
+        .stream(primaryKey: ['id']);
+    if (campusId != null) {
+      return query.eq('campus_id', campusId).order('created_at', ascending: false);
+    }
+    return query.order('created_at', ascending: false);
   }
 
   Stream<List<Map<String, dynamic>>> watchNotes({String? campusId}) {

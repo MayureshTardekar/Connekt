@@ -17,12 +17,13 @@ class Campus {
 
   factory Campus.fromJson(Map<String, dynamic> json) {
     return Campus(
-      id: json['id'],
-      name: json['name'],
-      createdBy: json['created_by'],
-      bannerUrl: json['banner_url'],
-      joinPin: json['join_pin'],
-      createdAt: DateTime.parse(json['created_at']),
+      id: json['id'] as String,
+      name: json['name'] as String,
+      createdBy: json['created_by'] as String?,
+      bannerUrl: json['banner_url'] as String?,
+      // join_pin may not exist in the DB yet — read safely
+      joinPin: json.containsKey('join_pin') ? json['join_pin'] as String? : null,
+      createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
 }

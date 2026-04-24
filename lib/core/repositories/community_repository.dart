@@ -217,29 +217,43 @@ class CommunityRepository {
   // --- NEW: ADMIN AUTHORITIES ---
 
   /// Whether this campus requires a non-empty [campuses.join_pin] before joining.
+  /// Falls back to false (no pin required) if the column doesn't exist in the DB yet.
   Future<bool> campusRequiresJoinPin(String campusId) async {
-    final data = await supabase
-        .from('campuses')
-        .select('join_pin')
-        .eq('id', campusId)
-        .single();
-    final p = data['join_pin'];
-    return p != null && p.toString().trim().isNotEmpty;
+    try {
+      final data = await supabase
+          .from('campuses')
+          .select('join_pin')
+          .eq('id', campusId)
+          .single();
+      final p = data['join_pin'];
+      return p != null && p.toString().trim().isNotEmpty;
+    } catch (e) {
+      // Column may not exist yet — treat as no PIN required
+      debugPrint('campusRequiresJoinPin error (column may be missing): $e');
+      return false;
+    }
   }
 
   /// Institute PIN check for campus entry. If [join_pin] is null/empty in DB, any PIN is accepted (no gate).
+  /// Falls back to true (access granted) if the column doesn't exist in the DB yet.
   Future<bool> verifyCampusPin(String campusId, String pin) async {
-    final data = await supabase
-        .from('campuses')
-        .select('join_pin')
-        .eq('id', campusId)
-        .single();
+    try {
+      final data = await supabase
+          .from('campuses')
+          .select('join_pin')
+          .eq('id', campusId)
+          .single();
 
-    final expected = data['join_pin'];
-    if (expected == null || expected.toString().trim().isEmpty) {
+      final expected = data['join_pin'];
+      if (expected == null || expected.toString().trim().isEmpty) {
+        return true;
+      }
+      return expected.toString().trim() == pin.trim();
+    } catch (e) {
+      // Column may not exist yet — grant access to prevent blocking users
+      debugPrint('verifyCampusPin error (column may be missing): $e');
       return true;
     }
-    return expected.toString().trim() == pin.trim();
   }
 
   // Kick Member

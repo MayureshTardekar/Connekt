@@ -281,11 +281,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.communityChat,
-        builder: (context, state) => CommunityChatScreen(communityId: state.pathParameters['id']!),
+        builder: (context, state) => CommunityChatScreen(communityId: state.pathParameters['id'] ?? ''),
       ),
       GoRoute(
         path: '/communities/:id/admin',
-        builder: (context, state) => CommunityAdminScreen(communityId: state.pathParameters['id']!),
+        builder: (context, state) => CommunityAdminScreen(communityId: state.pathParameters['id'] ?? ''),
       ),
     ],
   );

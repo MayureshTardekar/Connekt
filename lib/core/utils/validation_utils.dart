@@ -21,9 +21,11 @@ class ValidationUtils {
   /// Clean an ID if it's accidentally prefixed (like by some mock data generators).
   static String? sanitizeUuid(String? id) {
     if (id == null) return null;
-    
-    // Remove leading underscore if present
-    var cleanId = id;
+
+    // Trim whitespace first to handle any accidental padding
+    var cleanId = id.trim();
+
+    // Remove leading underscore if present (known mock-data artifact)
     if (cleanId.startsWith('_')) {
       cleanId = cleanId.substring(1);
     }
