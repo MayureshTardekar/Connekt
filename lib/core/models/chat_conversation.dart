@@ -5,7 +5,10 @@ class ChatConversation {
   final String lastMessage;
   final DateTime lastMessageTime;
   final int unreadCount;
+  final String? campusId;
   final bool isPinned;
+  final bool isOfficial;
+  final bool isGroup;
 
   ChatConversation({
     required this.id,
@@ -15,6 +18,9 @@ class ChatConversation {
     required this.lastMessageTime,
     this.unreadCount = 0,
     this.isPinned = false,
+    this.campusId,
+    this.isOfficial = false,
+    this.isGroup = false,
   });
 
   factory ChatConversation.fromJson(Map<String, dynamic> json) {
@@ -43,6 +49,9 @@ class ChatConversation {
           : DateTime.now(),
       unreadCount: (json['unreadCount'] ?? json['unread_count']) as int? ?? 0,
       isPinned: (json['isPinned'] ?? json['is_pinned']) as bool? ?? false,
+      campusId: (json['campusId'] ?? json['campus_id'])?.toString(),
+      isOfficial: (json['isOfficial'] ?? json['is_official']) as bool? ?? false,
+      isGroup: (json['isGroup'] ?? json['is_group']) as bool? ?? false,
     );
   }
 
@@ -54,6 +63,9 @@ class ChatConversation {
     DateTime? lastMessageTime,
     int? unreadCount,
     bool? isPinned,
+    String? campusId,
+    bool? isOfficial,
+    bool? isGroup,
   }) {
     return ChatConversation(
       id: id ?? this.id,
@@ -63,6 +75,9 @@ class ChatConversation {
       lastMessageTime: lastMessageTime ?? this.lastMessageTime,
       unreadCount: unreadCount ?? this.unreadCount,
       isPinned: isPinned ?? this.isPinned,
+      campusId: campusId ?? this.campusId,
+      isOfficial: isOfficial ?? this.isOfficial,
+      isGroup: isGroup ?? this.isGroup,
     );
   }
 
@@ -75,6 +90,9 @@ class ChatConversation {
       'lastMessageTime': lastMessageTime.toIso8601String(),
       'unreadCount': unreadCount,
       'isPinned': isPinned,
+      'campus_id': campusId,
+      'is_official': isOfficial,
+      'is_group': isGroup,
     };
   }
 }

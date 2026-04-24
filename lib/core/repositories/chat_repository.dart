@@ -98,7 +98,7 @@ class ChatRepository {
               final m = Map<String, dynamic>.from(e);
               // Standardize keys for the UI
               m['content'] = e['content'] ?? e['text'] ?? '';
-              m['created_at'] = e['created_at'] ?? e['timestamp'] ?? DateTime.now().toIso8601String();
+              m['created_at'] = e['created_at'] ?? e['timestamp'] ?? DateTime.now().toUtc().toIso8601String();
               m['sender_name'] ??= 'User';
               return m;
             }).toList());
@@ -133,8 +133,8 @@ class ChatRepository {
       'sender_name': senderName,
       'text': content,
       'content': content, // Redundant but safe if migration is run
-      'timestamp': DateTime.now().toIso8601String(),
-      'created_at': DateTime.now().toIso8601String(),
+      'timestamp': DateTime.now().toUtc().toIso8601String(),
+      'created_at': DateTime.now().toUtc().toIso8601String(),
       'reply_to_id': replyToId,
     });
   }
@@ -155,6 +155,7 @@ class ChatRepository {
         'other_user_name': conversation?.participantName ?? 'Conversation',
         'last_message': message.text,
         'last_message_time': message.timestamp.toIso8601String(),
+        'campus_id': conversation?.campusId,
       };
 
       // Try to create/update the conversation record first.
@@ -388,7 +389,7 @@ class ChatRepository {
       'sender_name': senderName,
       'content': content,
       'reply_to_id': replyToId,
-      'created_at': DateTime.now().toIso8601String(),
+      'created_at': DateTime.now().toUtc().toIso8601String(),
     });
   }
 }

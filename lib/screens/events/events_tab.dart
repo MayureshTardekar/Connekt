@@ -3,13 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../core/models/campus_event.dart';
-import '../../core/providers/auth_provider.dart';
 import '../../core/providers/campus_provider.dart';
 import '../../core/routing/app_routes.dart';
 import '../../core/widgets/app_states.dart';
 import '../../core/widgets/notes_events_shimmer.dart';
 import '../../theme/app_theme.dart';
-import '../../theme/avatar_helper.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:flutter/services.dart';
 

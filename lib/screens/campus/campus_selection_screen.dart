@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/models/campus_model.dart';
 import '../../core/providers/campus_provider.dart';
-import '../../core/providers/community_provider.dart';
 import '../../core/routing/app_routes.dart';
 import '../../theme/app_theme.dart';
 
@@ -22,6 +21,7 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
   final _uidController = TextEditingController();
   final _customCourseController = TextEditingController();
   final _customBranchController = TextEditingController();
+  final _pinController = TextEditingController();
 
   String? _selectedCourse;
   String? _selectedBranch;
@@ -44,6 +44,7 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
     _uidController.dispose();
     _customCourseController.dispose();
     _customBranchController.dispose();
+    _pinController.dispose();
     super.dispose();
   }
 
@@ -74,6 +75,7 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
   void _showJoinDialog(Campus campus) {
     // Reset controllers and local state before showing dialog
     _uidController.clear();
+    _pinController.clear();
     _customCourseController.clear();
     _customBranchController.clear();
     _selectedCourse = null;
@@ -168,6 +170,15 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
                     Icons.account_tree_outlined,
                   ),
                 ],
+                const SizedBox(height: 16),
+
+                // PIN Field for Gatekeeping
+                _buildTextField(
+                  _pinController,
+                  'Campus Join PIN (Ask Admin)',
+                  Icons.lock_outline_rounded,
+                  isObscure: true,
+                ),
                 const SizedBox(height: 32),
 
                 SizedBox(
@@ -220,32 +231,6 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
     }
 
     try {
-      final commRepo = ref.read(communityRepositoryProvider);
-      final needsPin = await commRepo.campusRequiresJoinPin(campusId);
-      if (needsPin && mounted) {
-        final pin = await _showInstitutePinDialog();
-        if (pin == null || pin.trim().isEmpty) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Institute PIN is required to join this campus.')),
-            );
-          }
-          return;
-        }
-        final ok = await commRepo.verifyCampusPin(campusId, pin);
-        if (!ok) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Invalid institute PIN. Ask your campus admin.'),
-                backgroundColor: Colors.redAccent,
-              ),
-            );
-          }
-          return;
-        }
-      }
-
       await ref
           .read(campusRepositoryProvider)
           .joinCampus(
@@ -253,6 +238,7 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
             uid: _uidController.text,
             course: finalCourse,
             branch: finalBranch,
+            pin: _pinController.text.trim().isEmpty ? null : _pinController.text.trim(),
           );
       
       // Invalidate membership providers to fetch fresh data
@@ -268,12 +254,16 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception:', '')),
+            backgroundColor: Colors.redAccent,
+          ),
         );
       }
     }
   }
 
+  /*
   /// Institute PIN before [joinCampus] — campus gatekeeper (not used inside Communities).
   Future<String?> _showInstitutePinDialog() {
     String pin = '';
@@ -324,6 +314,7 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
       ),
     );
   }
+  */
 
   Widget _buildTextField(
     TextEditingController controller,
@@ -331,10 +322,12 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
     IconData icon, {
     Widget? suffixIcon,
     int? maxLength,
+    bool isObscure = false,
   }) {
     return TextField(
       controller: controller,
       maxLength: maxLength,
+      obscureText: isObscure,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,

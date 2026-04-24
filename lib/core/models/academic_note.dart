@@ -42,7 +42,7 @@ class AcademicNote {
       author: map['author_name'] ?? map['author'] ?? 'Anonymous',
       authorId: map['author_id']?.toString(),
       category: map['category'] ?? 'General',
-      createdAt: DateTime.parse(map['created_at']),
+      createdAt: DateTime.parse(map['created_at']).toUtc(),
       fileUrl: map['file_url'],
       authorAvatar: map['author_avatar'],
     );

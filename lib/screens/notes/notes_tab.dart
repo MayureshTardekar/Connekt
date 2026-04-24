@@ -403,19 +403,17 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: selectedCategory,
+                  initialValue: selectedCategory,
                   decoration: const InputDecoration(
                     labelText: 'Category',
                     prefixIcon: Icon(Icons.category_rounded),
                   ),
-                  items: ['Exam', 'Lecture', 'Assignment', 'Resource', 'General']
-                      .toSet() 
-                      .followedBy([selectedCategory]) // Ensure the current value is always in the list
-                      .toSet() // Remove duplicates if selectedCategory was already in the list
-                      .map((c) => DropdownMenuItem(
-                            value: c,
-                            child: Text(c.isEmpty ? 'General' : c),
-                          ))
+                  items: <String>{
+                    'Exam', 'Lecture', 'Assignment', 'Resource', 'General', selectedCategory,
+                  }.map((c) => DropdownMenuItem(
+                        value: c,
+                        child: Text(c.isEmpty ? 'General' : c),
+                      ))
                       .toList(),
                   onChanged: (v) {
                     if (v != null) {

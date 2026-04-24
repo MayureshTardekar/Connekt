@@ -100,11 +100,12 @@ class ChatMessage {
           ? ((json['created_at'] ?? json['timestamp']) is int
                 ? DateTime.fromMillisecondsSinceEpoch(
                     (json['created_at'] ?? json['timestamp']) as int,
+                    isUtc: true,
                   )
                 : DateTime.parse(
                     (json['created_at'] ?? json['timestamp']).toString(),
-                  ))
-          : DateTime.now(),
+                  ).toUtc())
+          : DateTime.now().toUtc(),
       isRead: (json['isRead'] ?? json['is_read']) as bool? ?? false,
       isFromMe: (json['isFromMe'] ?? json['is_from_me']) as bool? ?? false,
       reactions: parseReactionsJson(json['reactions']),

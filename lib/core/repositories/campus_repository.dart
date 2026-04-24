@@ -60,12 +60,13 @@ class CampusRepository {
     return Campus.fromJson(response);
   }
 
-  // Join a campus with details
+  // Join a campus with details and security PIN
   Future<void> joinCampus({
     required String campusId,
     required String uid,
     required String course,
     required String branch,
+    String? pin,
   }) async {
     final user = _supabase.auth.currentUser;
     if (user == null) throw Exception('Not authenticated');
@@ -80,13 +81,27 @@ class CampusRepository {
 
     if (existingMembership != null) return;
 
-    // 2. Check total joined count
+    // 2. Enforce Single Campus Logic (Student can only be in one college)
     final count = await getJoinedCampusCount();
-    if (count >= 3) {
-      throw Exception('Limit reached: You can join at most 3 campuses');
+    if (count >= 1) {
+      throw Exception('You are already a member of a campus. Please leave your current campus to join a new one.');
     }
 
-    // 3. New join
+    // 3. Security Check: Verify PIN if set
+    final campusData = await _supabase
+        .from('campuses')
+        .select('join_pin')
+        .eq('id', campusId)
+        .maybeSingle();
+    
+    final requiredPin = campusData?['join_pin']?.toString();
+    if (requiredPin != null && requiredPin.isNotEmpty) {
+      if (pin == null || pin.trim() != requiredPin.trim()) {
+        throw Exception('Invalid Campus PIN. Please ask your campus administrator for the correct PIN.');
+      }
+    }
+
+    // 4. New join
     await _supabase.from('campus_members').insert({
       'campus_id': campusId,
       'user_id': user.id,
@@ -169,25 +184,7 @@ class CampusRepository {
   Stream<List<Map<String, dynamic>>> getRecentActivityStream({
     String? campusId,
   }) {
-    // Create a combined trigger stream that fires whenever anything relevant changes
-    final List<Stream<List<Map<String, dynamic>>>> streams = [
-      _supabase.from('academic_notes').stream(primaryKey: ['id']),
-      _supabase.from('campus_events').stream(primaryKey: ['id']),
-      _supabase.from('lost_found').stream(primaryKey: ['id']),
-      _supabase.from('campus_feed_posts').stream(primaryKey: ['id']),
-      _supabase.from('note_likes').stream(primaryKey: ['id']),
-      _supabase.from('event_likes').stream(primaryKey: ['id']),
-      _supabase.from('feed_post_likes').stream(primaryKey: ['id']),
-    ];
 
-    // Simple way to combine triggers: emit when ANY stream emits
-    final combinedTrigger = streams.first.asyncMap((_) async => null); 
-    // Note: asyncMap(_) will fire whenever the first stream changes.
-    // For a truly reactive dashboard, we should merge all of them.
-    
-    // Using a simple periodic check or a manual invalidation is often more stable for complex views,
-    // but here we will at least listen to the main content tables.
-    
     return _supabase
         .from('academic_notes') // Main trigger
         .stream(primaryKey: ['id'])
@@ -533,8 +530,19 @@ class CampusRepository {
     final user = _supabase.auth.currentUser;
     if (user == null) return;
 
-    final table = type == 'event' ? 'event_likes' : 'note_likes';
-    final columnId = type == 'event' ? 'event_id' : 'note_id';
+    String table;
+    String columnId;
+    
+    if (type == 'event') {
+      table = 'event_likes';
+      columnId = 'event_id';
+    } else if (type == 'lost_found') {
+      table = 'lost_found_likes';
+      columnId = 'item_id';
+    } else {
+      table = 'note_likes';
+      columnId = 'note_id';
+    }
 
     try {
       final existing = await _supabase
@@ -565,8 +573,19 @@ class CampusRepository {
     final user = _supabase.auth.currentUser;
     if (user == null) return false;
 
-    final table = type == 'event' ? 'event_likes' : 'note_likes';
-    final columnId = type == 'event' ? 'event_id' : 'note_id';
+    String table;
+    String columnId;
+    
+    if (type == 'event') {
+      table = 'event_likes';
+      columnId = 'event_id';
+    } else if (type == 'lost_found') {
+      table = 'lost_found_likes';
+      columnId = 'item_id';
+    } else {
+      table = 'note_likes';
+      columnId = 'note_id';
+    }
 
     try {
       final response = await _supabase
@@ -582,18 +601,42 @@ class CampusRepository {
   }
 
   Future<int> getLikesCount(String activityId, String type) async {
+    if (type == 'feed_post') {
+      return getFeedPostLikesCount(activityId);
+    }
+
+    String table;
+    String columnId;
+    
+    if (type == 'event') {
+      table = 'event_likes';
+      columnId = 'event_id';
+    } else if (type == 'lost_found') {
+      table = 'lost_found_likes';
+      columnId = 'item_id';
+    } else {
+      table = 'note_likes';
+      columnId = 'note_id';
+    }
+
     try {
-      if (type == 'feed_post') {
-        final res = await _supabase.from('feed_post_likes').select('id').eq('post_id', activityId);
-        return res.length;
-      } else if (type == 'event') {
-        final res = await _supabase.from('event_likes').select('id').eq('event_id', activityId);
-        return res.length;
-      } else if (type == 'note') {
-        final res = await _supabase.from('note_likes').select('id').eq('note_id', activityId);
-        return res.length;
-      }
+      final response = await _supabase
+          .from(table)
+          .select('id')
+          .eq(columnId, activityId);
+      return (response as List).length;
+    } catch (_) {
       return 0;
+    }
+  }
+
+  Future<int> getFeedPostLikesCount(String postId) async {
+    try {
+      final response = await _supabase
+          .from('feed_post_likes')
+          .select('id')
+          .eq('post_id', postId);
+      return (response as List).length;
     } catch (_) {
       return 0;
     }

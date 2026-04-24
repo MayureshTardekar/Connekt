@@ -1,12 +1,9 @@
-import 'dart:ui' show ImageFilter;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/providers/campus_provider.dart';
 import '../../core/providers/auth_provider.dart';
-import '../../core/repositories/campus_repository.dart';
 import '../../core/utils/time_formatter.dart';
 import '../../core/routing/app_routes.dart';
 import '../main_screen.dart';
@@ -65,7 +62,6 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
     final isAdmin = ref.watch(isCampusCreatorProvider);
     final campus = campusMembership?['campuses'];
     final bannerUrl = campus?['banner_url'];
-    final campusId = campusMembership?['campus_id'] as String?;
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -891,143 +887,159 @@ class _PostCardState extends ConsumerState<_PostCard> {
     final sharesCount = 0;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: theme.brightness == Brightness.light ? [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))
-        ] : null,
+        color: isDark 
+          ? theme.colorScheme.surface.withValues(alpha: 0.85) 
+          : theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark 
+            ? Colors.white.withValues(alpha: 0.05) 
+            : theme.colorScheme.primary.withValues(alpha: 0.06),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark 
+              ? Colors.black.withValues(alpha: 0.2) 
+              : theme.colorScheme.primary.withValues(alpha: 0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
-                backgroundImage: widget.activity['author_avatar'] != null 
-                  ? NetworkImage(widget.activity['author_avatar']) : null,
-                child: widget.activity['author_avatar'] == null 
-                  ? Text(_getAuthorName(widget.activity)[0]) : null,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _getAuthorName(widget.activity),
-                      style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      timeStr,
-                      style: theme.textTheme.bodySmall?.copyWith(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+                  backgroundImage: widget.activity['author_avatar'] != null 
+                    ? NetworkImage(widget.activity['author_avatar']) : null,
+                  child: widget.activity['author_avatar'] == null 
+                    ? Text(_getAuthorName(widget.activity)[0]) : null,
                 ),
-              ),
-              if (isAuthor || isAdmin)
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert_rounded, color: Colors.grey),
-                  onSelected: (val) => _handleMenuAction(val, context),
-                  itemBuilder: (context) => [
-                    if (type == 'lost_found' && !isFound && isAuthor)
-                      const PopupMenuItem(value: 'mark_found', child: Text('Mark as Found')),
-                    const PopupMenuItem(
-                      value: 'delete', 
-                      child: Text('Delete Post', style: TextStyle(color: Colors.red))
-                    ),
-                  ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _getAuthorName(widget.activity),
+                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        timeStr,
+                        style: theme.textTheme.bodySmall?.copyWith(fontSize: 12, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+                      ),
+                    ],
+                  ),
                 ),
-            ],
-          ),
+                if (isAuthor || isAdmin)
+                  PopupMenuButton<String>(
+                    icon: Icon(Icons.more_vert_rounded, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+                    onSelected: (val) => _handleMenuAction(val, context),
+                    itemBuilder: (context) => [
+                      if (type == 'lost_found' && !isFound && isAuthor)
+                        const PopupMenuItem(value: 'mark_found', child: Text('Mark as Found')),
+                      const PopupMenuItem(
+                        value: 'delete', 
+                        child: Text('Delete Post', style: TextStyle(color: Colors.red))
+                      ),
+                    ],
+                  ),
+              ],
+            ),
 
-          const SizedBox(height: 16),
-          // Content
-          Text(
-            widget.activity['title'] ?? widget.activity['caption'] ?? '',
-            style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
-          ),
-          
-          if (widget.activity['location'] != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
+            const SizedBox(height: 16),
+            // Content
+            Text(
+              widget.activity['title'] ?? widget.activity['caption'] ?? '',
+              style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
+            ),
+            
+            if (widget.activity['location'] != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Row(
+                  children: [
+                    Icon(Icons.location_on_outlined, size: 14, color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
+                    const SizedBox(width: 4),
+                    Text(widget.activity['location'], style: theme.textTheme.bodySmall?.copyWith(fontSize: 12, color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
+                  ],
+                ),
+              ),
+            
+            if (isFound)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(12)),
+                  child: const Text('FOUND', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12)),
+                ),
+              ),
+
+            const SizedBox(height: 16),
+            // Actions Footer
+            Container(
+              padding: const EdgeInsets.only(top: 16),
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: theme.dividerColor.withValues(alpha: 0.08))),
+              ),
               child: Row(
                 children: [
-                  const Icon(Icons.location_on_outlined, size: 14, color: Colors.grey),
-                  const SizedBox(width: 4),
-                  Text(widget.activity['location'], style: theme.textTheme.bodySmall?.copyWith(fontSize: 12, color: Colors.grey)),
+                  _buildActionIcon(
+                    liked ? Icons.favorite_rounded : Icons.favorite_border_rounded, 
+                    likesCount.toString(), 
+                    liked ? Colors.redAccent : theme.colorScheme.onSurface.withValues(alpha: 0.5), 
+                    onTap: _handleLike,
+                    isActive: liked,
+                  ),
+                  const SizedBox(width: 24),
+                  _buildActionIcon(Icons.chat_bubble_outline_rounded, commentsCount.toString(), theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+                  const SizedBox(width: 24),
+                  _buildActionIcon(Icons.share_outlined, sharesCount.toString(), theme.colorScheme.onSurface.withValues(alpha: 0.5)),
                 ],
               ),
             ),
-          
-          if (isFound)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
-                child: const Text('FOUND', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionIcon(IconData icon, String count, Color color, {VoidCallback? onTap, bool isActive = false}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: color),
+            const SizedBox(width: 6),
+            Text(
+              count, 
+              style: TextStyle(
+                color: color.withValues(alpha: 0.9), 
+                fontSize: 13,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
               ),
             ),
-
-          const SizedBox(height: 16),
-          // Actions Footer
-          Row(
-            children: [
-              _buildActionIcon(
-                liked ? Icons.favorite_rounded : Icons.favorite_border_rounded, 
-                likesCount.toString(), 
-                liked ? Colors.red : Colors.grey, 
-                onTap: _handleLike
-              ),
-              const SizedBox(width: 24),
-              _buildActionIcon(Icons.chat_bubble_outline_rounded, commentsCount.toString(), Colors.blue),
-              const SizedBox(width: 24),
-              _buildActionIcon(Icons.share_outlined, sharesCount.toString(), Colors.grey),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildActionIcon(IconData icon, String count, Color color, {VoidCallback? onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: color),
-          const SizedBox(width: 6),
-          Text(count, style: const TextStyle(color: Colors.grey, fontSize: 13)),
-        ],
-      ),
-    );
-  }
 
-  String _getTypeLabel(String type) {
-    switch (type) {
-      case 'note': return 'Academic Note';
-      case 'event': return 'Campus Event';
-      case 'lost_found': return 'Lost & Found';
-      case 'feed_post': return 'Campus Feed';
-      default: return 'Update';
-    }
-  }
-
-  IconData _getTypeIcon(String type) {
-    switch (type) {
-      case 'note': return Icons.description_outlined;
-      case 'event': return Icons.celebration_outlined;
-      case 'lost_found': return Icons.manage_search_outlined;
-      case 'feed_post': return Icons.auto_awesome_mosaic_outlined;
-      default: return Icons.feed_outlined;
-    }
-  }
 
   void _handleMenuAction(String action, BuildContext context) async {
     final activityId = widget.activity['id']?.toString() ?? '';
@@ -1048,13 +1060,13 @@ class _PostCardState extends ConsumerState<_PostCard> {
       if (confirm == true) {
         try {
           final repo = ref.read(campusRepositoryProvider);
-          if (type == 'note') await repo.deleteNote(activityId);
-          else if (type == 'event') await repo.deleteEvent(activityId);
-          else if (type == 'lost_found') await repo.deleteLostFoundItem(activityId);
-          else if (type == 'feed_post') await repo.deleteFeedPost(activityId);
+          if (type == 'note') { await repo.deleteNote(activityId); }
+          else if (type == 'event') { await repo.deleteEvent(activityId); }
+          else if (type == 'lost_found') { await repo.deleteLostFoundItem(activityId); }
+          else if (type == 'feed_post') { await repo.deleteFeedPost(activityId); }
           ref.invalidate(recentActivityProvider);
         } catch (e) {
-          if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+          if (context.mounted) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'))); }
         }
       }
     } else if (action == 'mark_found') {
@@ -1062,21 +1074,11 @@ class _PostCardState extends ConsumerState<_PostCard> {
         await ref.read(campusRepositoryProvider).markItemAsFound(activityId);
         ref.invalidate(recentActivityProvider);
       } catch (e) {
-        if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        if (context.mounted) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'))); }
       }
     }
   }
 
-  String _getImageUrl(Map<String, dynamic> activity) {
-    if (activity['image_url'] != null && activity['image_url'].toString().isNotEmpty) {
-      return activity['image_url'];
-    }
-    final type = activity['type'] as String;
-    if (type == 'note') return 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?q=80&w=800';
-    if (type == 'lost_found') return 'https://images.unsplash.com/photo-1540324155974-7523202daa3f?q=80&w=800';
-    if (type == 'event') return 'https://images.unsplash.com/photo-1541339907198-e08756ebafe3?q=80&w=800';
-    return 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=800';
-  }
 
   String _getAuthorName(Map<String, dynamic> activity) {
     return activity['author_name'] ?? activity['author'] ?? 'Campus Member';

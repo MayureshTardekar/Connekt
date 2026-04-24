@@ -211,9 +211,10 @@ class _GhostTabState extends ConsumerState<GhostTab>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final theme = Theme.of(context);
     _scrollChatWithKeyboard(MediaQuery.viewInsetsOf(context).bottom);
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
@@ -343,6 +344,7 @@ class _GhostTabState extends ConsumerState<GhostTab>
   }
 
   Widget _buildHeader() {
+    final theme = Theme.of(context);
     if (widget.isTab) return const SizedBox.shrink();
     final currentAlias = AuthRepository().currentGhostAlias;
     return Positioned(
@@ -360,11 +362,9 @@ class _GhostTabState extends ConsumerState<GhostTab>
               right: 20,
             ),
             decoration: BoxDecoration(
-              color: Theme.of(
-                context,
-              ).scaffoldBackgroundColor.withValues(alpha: 0.7),
+              color: theme.scaffoldBackgroundColor.withValues(alpha: 0.7),
               border: Border(
-                bottom: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+                bottom: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1)),
               ),
             ),
             child: Row(
@@ -602,37 +602,40 @@ class _GhostTabState extends ConsumerState<GhostTab>
   void _deleteMessage(String postId) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1F1B2E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text(
-          'Delete Message?',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: const Text(
-          'This action cannot be undone.',
-          style: TextStyle(color: Colors.white60),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.white38),
-            ),
+      builder: (context) {
+        final theme = Theme.of(context);
+        return AlertDialog(
+          backgroundColor: theme.colorScheme.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Text(
+            'Delete Message?',
+            style: TextStyle(color: theme.colorScheme.onSurface),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+          content: Text(
+            'This action cannot be undone.',
+            style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.7)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
               ),
             ),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Delete', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
     );
 
     if (confirmed == true) {
@@ -651,58 +654,63 @@ class _GhostTabState extends ConsumerState<GhostTab>
   void _showReportDialog(String postId) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1F1B2E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text(
-          'Report Message',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: const Text(
-          'Is this message inappropriate or offensive?',
-          style: TextStyle(color: Colors.white60),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.white38),
-            ),
+      builder: (context) {
+        final theme = Theme.of(context);
+        return AlertDialog(
+          backgroundColor: theme.colorScheme.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Text(
+            'Report Message',
+            style: TextStyle(color: theme.colorScheme.onSurface),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+          content: Text(
+            'Is this message inappropriate or offensive?',
+            style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.7)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
               ),
             ),
-            onPressed: () async {
-              await ref.read(ghostRepositoryProvider).reportPost(postId);
-              if (context.mounted) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Report submitted. Thank you.')),
-                );
-              }
-            },
-            child: const Text('Report', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () async {
+                await ref.read(ghostRepositoryProvider).reportPost(postId);
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Report submitted. Thank you.')),
+                  );
+                }
+              },
+              child: const Text('Report', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
     );
   }
 
   Widget _buildInputArea() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFF161129)
-            : Theme.of(context).cardColor,
+        color: isDark
+            ? theme.colorScheme.surfaceContainer
+            : theme.cardColor,
         border: Border(
           top: BorderSide(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+            color: theme.dividerColor.withValues(alpha: 0.1),
           ),
         ),
       ),

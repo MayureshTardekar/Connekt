@@ -6,8 +6,6 @@ import '../../core/widgets/base_chat_message_shell.dart';
 import '../../core/widgets/media_bubble.dart';
 import '../../core/widgets/message_interaction_sheet.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../theme/app_theme.dart';
-import 'package:go_router/go_router.dart';
 
 class ChatDetailScreen extends ConsumerStatefulWidget {
   const ChatDetailScreen({
@@ -16,12 +14,14 @@ class ChatDetailScreen extends ConsumerStatefulWidget {
     required this.name,
     this.avatarUrl,
     this.isCommunity = false,
+    this.isOfficial = false,
   });
 
   final String targetId;
   final String name;
   final String? avatarUrl;
   final bool isCommunity;
+  final bool isOfficial;
 
   @override
   ConsumerState<ChatDetailScreen> createState() => _ChatDetailScreenState();
@@ -96,56 +96,106 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
           ],
         ),
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: StreamBuilder<List<Map<String, dynamic>>>(
-              stream: widget.isCommunity 
-                  ? _chatRepo.watchCommunityMessages(widget.targetId)
-                  : _chatRepo.watchRawMessages(widget.targetId),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final messages = snapshot.data ?? [];
-                
-                return ListView.builder(
-                  controller: _scrollController,
-                  reverse: true,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    final msg = messages[index];
-                    final isMe = msg['sender_id'] == currentUserId;
-                    
-                    // Grouping logic
-                    final nextMsg = index > 0 ? messages[index - 1] : null;
-                    final prevMsg = index < messages.length - 1 ? messages[index + 1] : null;
-                    
-                    final startsGroup = prevMsg == null || prevMsg['sender_id'] != msg['sender_id'];
-                    final endsGroup = nextMsg == null || nextMsg['sender_id'] != msg['sender_id'];
-
-                    return _MessageBubble(
-                      message: msg,
-                      isMe: isMe,
-                      startsGroup: startsGroup,
-                      endsGroup: endsGroup,
-                      isCommunity: widget.isCommunity,
-                      onReply: () => setState(() => _replyingTo = msg),
-                    );
-                  },
-                );
-              },
+          Positioned(
+            top: 100,
+            right: -50,
+            child: Container(
+              width: 200,
+              height: 200,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: theme.colorScheme.primary.withValues(alpha: 0.03),
+              ),
             ),
           ),
-          if (_replyingTo != null)
-            _ReplyPreview(
-              message: _replyingTo!,
-              onCancel: () => setState(() => _replyingTo = null),
-            ),
-          _ChatInput(
-            controller: _textController,
-            onSend: _sendMessage,
+          Column(
+            children: [
+              Expanded(
+                child: StreamBuilder<List<Map<String, dynamic>>>(
+                  stream: widget.isCommunity 
+                      ? _chatRepo.watchCommunityMessages(widget.targetId)
+                      : _chatRepo.watchRawMessages(widget.targetId),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final messages = snapshot.data ?? [];
+                    
+                    return ListView.builder(
+                      controller: _scrollController,
+                      reverse: true,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                      itemCount: messages.length,
+                      itemBuilder: (context, index) {
+                        final msg = messages[index];
+                        final isMe = msg['sender_id'] == currentUserId;
+                        
+                        final nextMsg = index > 0 ? messages[index - 1] : null;
+                        final prevMsg = index < messages.length - 1 ? messages[index + 1] : null;
+                        
+                        final startsGroup = prevMsg == null || prevMsg['sender_id'] != msg['sender_id'];
+                        final endsGroup = nextMsg == null || nextMsg['sender_id'] != msg['sender_id'];
+
+                        return _MessageBubble(
+                          message: msg,
+                          isMe: isMe,
+                          startsGroup: startsGroup,
+                          endsGroup: endsGroup,
+                          isCommunity: widget.isCommunity,
+                          onReply: () => setState(() => _replyingTo = msg),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              if (_replyingTo != null)
+                _ReplyPreview(
+                  message: _replyingTo!,
+                  onCancel: () => setState(() => _replyingTo = null),
+                ),
+              if (widget.isOfficial)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    border: Border(top: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1))),
+                  ),
+                  child: SafeArea(
+                    top: false,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.1)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.lock_outline_rounded, size: 16, color: theme.colorScheme.primary),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Only admins can post announcements',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+              else
+                _ChatInput(
+                  controller: _textController,
+                  onSend: _sendMessage,
+                ),
+            ],
           ),
         ],
       ),
@@ -208,14 +258,21 @@ class _MessageBubble extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
                   color: isMe
-                      ? theme.colorScheme.primaryContainer
+                      ? theme.colorScheme.primary
                       : theme.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.only(
-                    topLeft: const Radius.circular(16),
-                    topRight: const Radius.circular(16),
-                    bottomLeft: Radius.circular(isMe ? 16 : (endsGroup ? 4 : 16)),
-                    bottomRight: Radius.circular(isMe ? (endsGroup ? 4 : 16) : 16),
+                    topLeft: const Radius.circular(20),
+                    topRight: const Radius.circular(20),
+                    bottomLeft: Radius.circular(isMe ? 20 : (endsGroup ? 4 : 20)),
+                    bottomRight: Radius.circular(isMe ? (endsGroup ? 4 : 20) : 20),
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -265,7 +322,7 @@ class _MessageBubble extends StatelessWidget {
                         message['content'],
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: isMe
-                              ? theme.colorScheme.onPrimaryContainer
+                              ? theme.colorScheme.onPrimary
                               : theme.colorScheme.onSurface,
                         ),
                       ),
@@ -278,9 +335,9 @@ class _MessageBubble extends StatelessWidget {
                       style: theme.textTheme.labelSmall?.copyWith(
                         fontSize: 9,
                         color: (isMe
-                                ? theme.colorScheme.onPrimaryContainer
+                                ? theme.colorScheme.onPrimary
                                 : theme.colorScheme.onSurface)
-                            .withValues(alpha: 0.5),
+                            .withValues(alpha: 0.6),
                       ),
                     ),
                   ],
@@ -331,34 +388,67 @@ class _ChatInput extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        border: Border(top: BorderSide(color: theme.dividerColor)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                hintText: 'Type a message...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: theme.colorScheme.surfaceContainerHighest,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          IconButton.filled(
-            onPressed: onSend,
-            icon: const Icon(Icons.send_rounded),
+        border: Border(top: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1))),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, -4),
           ),
         ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(28),
+                ),
+                child: TextField(
+                  controller: controller,
+                  style: theme.textTheme.bodyMedium,
+                  decoration: InputDecoration(
+                    hintText: 'Type a message...',
+                    hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [
+                    theme.colorScheme.primary,
+                    theme.colorScheme.primary.withValues(alpha: 0.8),
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: IconButton(
+                onPressed: onSend,
+                icon: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

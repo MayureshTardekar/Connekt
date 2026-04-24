@@ -35,7 +35,7 @@ class FriendRequest {
     senderName: map['sender_name'] ?? 'Unknown',
     receiverId: map['receiver_id'] ?? '',
     status: map['status'] ?? 'pending',
-    createdAt: DateTime.tryParse(map['created_at'] ?? '') ?? DateTime.now(),
+    createdAt: (DateTime.tryParse(map['created_at'] ?? '') ?? DateTime.now()).toUtc(),
     mutualCount: map['mutual_count'] ?? 0,
   );
 

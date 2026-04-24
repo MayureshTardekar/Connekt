@@ -46,7 +46,7 @@ class CampusEvent {
       title: map['title'] ?? '',
       description: map['description'] ?? '',
       location: map['location'] ?? 'Campus',
-      dateTime: DateTime.parse(map['event_date'] ?? map['date_time'] ?? DateTime.now().toIso8601String()),
+      dateTime: DateTime.parse(map['event_date'] ?? map['date_time'] ?? DateTime.now().toUtc().toIso8601String()).toUtc(),
       organizer: map['author_name'] ?? map['organizer'] ?? 'Unknown',
       organizerId: map['author_id'] ?? map['organizer_id'] ?? '',
       category: map['category'] ?? 'General',

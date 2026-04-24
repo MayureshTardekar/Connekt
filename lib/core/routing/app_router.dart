@@ -44,7 +44,6 @@ import '../models/lost_item.dart';
 import '../models/study_group.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authStateProvider);
   
   return GoRouter(
     initialLocation: AppRoutes.splash,
@@ -71,17 +70,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         return isLoggingIn ? null : AppRoutes.login;
       }
       
-      if (isLoggingIn && authState.hasValue) {
-        // NEW: Check if user has joined any campus
-        final memberships = ref.watch(myMembershipsProvider).value;
-        if (memberships != null && memberships.isEmpty) {
+      // If logged in, check memberships to decide destination
+      // We use .value to check the current state without triggering an infinite loop
+      final memberships = ref.watch(myMembershipsProvider).value;
+
+      if (isLoggingIn) {
+        if (memberships == null) return null; // Still loading, wait on Splash
+        
+        if (memberships.isEmpty) {
           return AppRoutes.campusSelect;
         }
         return AppRoutes.dashboard;
       }
 
-      // NEW: Force campus selection if user is logged in but has no campuses
-      final memberships = ref.watch(myMembershipsProvider).value;
+      // Safeguard: If user is logged in but managed to get past selection without joining, force them back
       if (memberships != null && memberships.isEmpty && location != AppRoutes.campusSelect) {
         return AppRoutes.campusSelect;
       }
@@ -263,9 +265,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                         );
                       }
                       return ChatDetailScreen(
-                        targetId: extra.participantId,
+                        targetId: (extra.isGroup || extra.isOfficial) ? extra.id : extra.participantId,
                         name: extra.participantName,
-                        isCommunity: false,
+                        isCommunity: extra.isGroup || extra.isOfficial,
+                        isOfficial: extra.isOfficial,
                       );
                     },
                   ),

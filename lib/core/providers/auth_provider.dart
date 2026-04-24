@@ -7,8 +7,11 @@ final authRepositoryProvider = Provider((ref) => AuthRepository());
 
 final authStateProvider = StreamProvider<AuthState>((ref) {
   return ref.read(authRepositoryProvider).authStateChanges.handleError((e) {
+    // Skip logging for the common PKCE/Hot-Restart "Code verifier" noise
+    if (e is AuthException && e.message.contains('Code verifier')) {
+      return;
+    }
     debugPrint('Auth Stream Error: $e');
-    // We return an empty AuthState or handle it silently to prevent crashes
   });
 });
 

@@ -6,7 +6,6 @@ import '../../core/network/logger.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/repositories/campus_repository.dart';
 import '../../core/providers/campus_provider.dart';
-import '../../core/widgets/media_bubble.dart'; 
 import '../../theme/app_theme.dart';
 
 class PostLostItemScreen extends ConsumerStatefulWidget {

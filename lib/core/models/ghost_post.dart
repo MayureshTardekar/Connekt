@@ -46,6 +46,8 @@ class GhostPost {
       'reply_to_text': replyToText,
       'reply_to_name': replyToName,
       'reactions': reactions,
+      'likes_count': likes,
+      'likes': likes, // Legacy/compatibility
     };
   }
 
@@ -57,9 +59,9 @@ class GhostPost {
       authorAlias: map['author_alias'] ?? map['profiles']?['ghost_alias'],
       mood: map['mood'] ?? 'Neutral',
       createdAt: map['created_at'] != null
-          ? DateTime.parse(map['created_at']).toLocal()
-          : DateTime.now(),
-      likes: map['likes'] ?? 0,
+          ? DateTime.parse(map['created_at']).toUtc()
+          : DateTime.now().toUtc(),
+      likes: map['likes_count'] ?? map['likes'] ?? 0,
       audioUrl: map['audio_url'],
       imageUrl: map['image_url'],
       replyToId: map['reply_to_id'],
