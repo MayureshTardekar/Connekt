@@ -23,6 +23,18 @@ class AuthRepository {
     return _supabase.auth.onAuthStateChange;
   }
 
+  // Get total registered users (accounts created)
+  Future<int> getTotalUserCount() async {
+    try {
+      if (AppConfig.useMockBackend) return 150; // mock count
+      final response = await _supabase.from('profiles').select('id');
+      return (response as List).length;
+    } catch (e) {
+      debugPrint('Error getting total users: $e');
+      return 0;
+    }
+  }
+
   // Email & Password Sign In
   Future<dynamic> signInWithEmail({
     required String email,

@@ -38,7 +38,7 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
             centerTitle: true,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back_rounded),
-              color: AppTheme.textPrimary,
+              color: theme.colorScheme.onSurface,
               onPressed: () => context.pop(),
             ),
           ),

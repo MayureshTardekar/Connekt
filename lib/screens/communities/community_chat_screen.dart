@@ -210,10 +210,22 @@ class _CommunityChatScreenState extends ConsumerState<CommunityChatScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
-        crossAxisAlignment: isMe
-            ? CrossAxisAlignment.end
-            : CrossAxisAlignment.start,
+        crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
+          if (!isMe)
+            Padding(
+              padding: const EdgeInsets.only(left: 4, bottom: 4),
+              child: Text(
+                message['author_full_name']?.toString() ?? 
+                message['sender_name']?.toString() ?? 
+                'User',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ),
           Align(
             alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
             child: BaseChatMessageShell(
@@ -260,7 +272,7 @@ class _CommunityChatScreenState extends ConsumerState<CommunityChatScreen> {
                   children: [
                     if (message['reply_to_id'] != null)
                       _buildQuotedMessage(theme),
-                    _buildMessageContent(message, type, theme),
+                    _buildMessageContent(message, type, theme, isMe),
                   ],
                 ),
               ),
@@ -290,8 +302,11 @@ class _CommunityChatScreenState extends ConsumerState<CommunityChatScreen> {
       padding: const EdgeInsets.all(8),
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(8),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+        ),
       ),
       child: Row(
         children: [
@@ -381,8 +396,9 @@ class _CommunityChatScreenState extends ConsumerState<CommunityChatScreen> {
     Map<String, dynamic> message,
     String type,
     ThemeData theme,
+    bool isMe,
   ) {
-    final fg = theme.colorScheme.onSurface;
+    final fg = isMe ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onSurface;
     switch (type) {
       case 'image':
         return Column(
@@ -491,16 +507,16 @@ class _CommunityChatScreenState extends ConsumerState<CommunityChatScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.lock_person_outlined,
               size: 80,
-              color: Colors.white24,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.24),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'Private Community',
               style: TextStyle(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
               ),
@@ -511,7 +527,7 @@ class _CommunityChatScreenState extends ConsumerState<CommunityChatScreen> {
                   ? 'Your request is pending approval.'
                   : 'You must join this community to see the messages.',
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white60),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
             ),
             const SizedBox(height: 32),
             if (status != 'pending')
@@ -579,7 +595,7 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
         IconButton(
           icon: Icon(
             _isPlaying ? Icons.pause_circle : Icons.play_circle,
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.onSurface,
             size: 30,
           ),
           onPressed: _togglePlay,
@@ -589,8 +605,8 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
             value: _position.inSeconds.toDouble(),
             max: _duration.inSeconds.toDouble(),
             onChanged: (v) => _audioPlayer.seek(Duration(seconds: v.toInt())),
-            activeColor: Colors.white,
-            inactiveColor: Colors.white24,
+            activeColor: Theme.of(context).colorScheme.primary,
+            inactiveColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.24),
           ),
         ),
       ],

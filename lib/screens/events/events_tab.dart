@@ -12,7 +12,6 @@ import '../../theme/app_theme.dart';
 import '../../theme/avatar_helper.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:flutter/services.dart';
-import 'dart:ui';
 
 class EventsTab extends ConsumerStatefulWidget {
   const EventsTab({super.key});
@@ -23,391 +22,580 @@ class EventsTab extends ConsumerStatefulWidget {
 
 class _EventsTabState extends ConsumerState<EventsTab> {
   int _selectedDayIndex = 0;
-  String _selectedCategory = 'All';
 
   @override
   Widget build(BuildContext context) {
     final eventsAsync = ref.watch(campusEventsProvider);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-    return eventsAsync.when(
-      loading: () => buildEventsTabShimmer(context),
-      error: (error, _) => Scaffold(
-        body: Center(
-          child: AppErrorState(
-            message: error.toString(),
-            onRetry: () => ref.invalidate(campusEventsProvider),
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: SafeArea(
+        child: eventsAsync.when(
+          loading: () => buildEventsTabShimmer(context),
+          error: (error, _) => Center(
+            child: AppErrorState(
+              message: error.toString(),
+              onRetry: () => ref.invalidate(campusEventsProvider),
+            ),
           ),
-        ),
-      ),
-      data: (events) {
-        final categories = <String>{
-          'All',
-          ...events
-              .map((event) => event.category.trim())
-              .where((it) => it.isNotEmpty),
-        }.toList();
-        final effectiveCategory = categories.contains(_selectedCategory)
-            ? _selectedCategory
-            : 'All';
-        final today = DateTime.now();
-        final selectedDate = DateTime(
-          today.year,
-          today.month,
-          today.day,
-        ).add(Duration(days: _selectedDayIndex));
+          data: (events) {
+            final today = DateTime.now();
+            final selectedDate = DateTime(
+              today.year,
+              today.month,
+              today.day,
+            ).add(Duration(days: _selectedDayIndex));
 
-        final filteredEvents = events.where((event) {
-          final eventDate = DateTime(
-            event.dateTime.year,
-            event.dateTime.month,
-            event.dateTime.day,
-          );
-          final matchesDay = eventDate == selectedDate;
-          final matchesCategory =
-              effectiveCategory == 'All' || event.category == effectiveCategory;
-          return matchesDay && matchesCategory;
-        }).toList()..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+            final filteredEvents = events.where((event) {
+              final eventDate = DateTime(
+                event.dateTime.year,
+                event.dateTime.month,
+                event.dateTime.day,
+              );
+              return eventDate == selectedDate;
+            }).toList()
+              ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
 
-        // Admin check: only the campus CREATOR has admin controls
-        final isAdmin = ref.watch(isCampusCreatorProvider);
+            final isAdmin = ref.watch(isCampusCreatorProvider);
 
-        return Scaffold(
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          body: Stack(
-            children: [
-              // Event Content
-              AnimationLimiter(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(24, 100, 24, 32),
+            CampusEvent? featuredEvent;
+            if (filteredEvents.isNotEmpty) {
+              featuredEvent = filteredEvents.first;
+            }
+
+            return AnimationLimiter(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+                children: AnimationConfiguration.toStaggeredList(
+                  duration: const Duration(milliseconds: 375),
+                  childAnimationBuilder: (widget) => SlideAnimation(
+                    verticalOffset: 50.0,
+                    child: FadeInAnimation(child: widget),
+                  ),
                   children: [
-                    AnimationConfiguration.staggeredList(
-                      position: 0,
-                      duration: const Duration(milliseconds: 375),
-                      child: SlideAnimation(
-                        verticalOffset: 50.0,
-                        child: FadeInAnimation(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Featured Events',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 2,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Discover Campus',
-                                style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: -1,
-                                ),
-                              ),
-                            ],
+                    // Header Section
+                    Row(
+                      children: [
+                        const Icon(Icons.calendar_today_outlined, size: 16, color: AppTheme.textSecondary),
+                        const SizedBox(width: 6),
+                        Text(
+                          'CAMPUS EVENTS',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: AppTheme.textSecondary,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.5,
                           ),
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Discover what's\nhappening.",
+                      style: theme.textTheme.displaySmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        height: 1.1,
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${DateFormat('MMMM yyyy').format(today)} · ${events.length} upcoming events',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Date Selector Header
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'This week',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: () {},
+                          icon: const Icon(Icons.calendar_month_outlined, size: 16),
+                          label: const Text('View month'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppTheme.textSecondary,
+                          ),
+                        )
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Horizontal Date Selector
                     SizedBox(
-                      height: 84,
+                      height: 90,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(vertical: 4),
                         itemBuilder: (context, index) {
-                          final date = DateTime.now().add(Duration(days: index));
+                          final date = today.add(Duration(days: index));
                           final isSelected = _selectedDayIndex == index;
                           return InkWell(
                             onTap: () {
                               HapticFeedback.selectionClick();
                               setState(() => _selectedDayIndex = index);
                             },
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(16),
                             child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 250),
-                              width: 74,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              duration: const Duration(milliseconds: 200),
+                              width: 65,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
                               decoration: BoxDecoration(
-                                color: isSelected
-                                    ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.15)
-                                    : Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: isSelected ? [
-                                  BoxShadow(
-                                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
-                                  )
-                                ] : null,
+                                color: isSelected 
+                                    ? (isDark ? Colors.white : Colors.black)
+                                    : (isDark ? const Color(0xFF1A1A1A) : Colors.grey.shade100),
+                                borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: isSelected
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(context).dividerColor.withValues(alpha: 0.1),
+                                  color: isSelected 
+                                      ? Colors.transparent
+                                      : theme.dividerColor.withValues(alpha: 0.1),
                                 ),
                               ),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    DateFormat('EEE').format(date),
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(
-                                          color: isSelected
-                                              ? Theme.of(context).colorScheme.primary
-                                              : Theme.of(context).textTheme.bodySmall?.color,
-                                        ),
+                                    DateFormat('EEE').format(date).toUpperCase(),
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: isSelected
+                                          ? (isDark ? Colors.black54 : Colors.white70)
+                                          : AppTheme.textSecondary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     DateFormat('d').format(date),
-                                    style: Theme.of(context).textTheme.titleMedium
-                                        ?.copyWith(
-                                          color: isSelected
-                                              ? Theme.of(context).colorScheme.primary
-                                              : null,
-                                        ),
+                                    style: theme.textTheme.titleLarge?.copyWith(
+                                      color: isSelected
+                                          ? (isDark ? Colors.black : Colors.white)
+                                          : theme.textTheme.bodyLarge?.color,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
+                                  if (isSelected) ...[
+                                    const SizedBox(height: 4),
+                                    Container(
+                                      width: 4,
+                                      height: 4,
+                                      decoration: BoxDecoration(
+                                        color: isDark ? Colors.black : Colors.white,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    )
+                                  ]
                                 ],
                               ),
                             ),
                           );
                         },
-                        separatorBuilder: (_, __) => const SizedBox(width: 10),
-                        itemCount: 7,
+                        separatorBuilder: (_, __) => const SizedBox(width: 8),
+                        itemCount: 14, // 2 weeks
                       ),
                     ),
-                    if (categories.length > 1) ...[
-                      const SizedBox(height: 18),
-                      SizedBox(
-                        height: 42,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemBuilder: (context, index) {
-                            final category = categories[index];
-                            final isSelected = effectiveCategory == category;
-                            return ChoiceChip(
-                              label: Text(category),
-                              selected: isSelected,
-                              onSelected: (_) {
-                                setState(() => _selectedCategory = category);
-                              },
-                              backgroundColor: Theme.of(context).colorScheme.surface,
-                              selectedColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
-                              side: BorderSide(
-                                color: Theme.of(context).dividerColor,
+                    const SizedBox(height: 32),
+
+                    // Selected Date Header
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              DateFormat('EEEE, MMMM d').format(selectedDate),
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
                               ),
-                              labelStyle: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: isSelected
-                                        ? Theme.of(context).colorScheme.primary
-                                        : Theme.of(context).textTheme.bodySmall?.color,
-                                    fontWeight: isSelected
-                                        ? FontWeight.w600
-                                        : FontWeight.w500,
-                                  ),
-                            );
-                          },
-                          separatorBuilder: (_, __) => const SizedBox(width: 8),
-                          itemCount: categories.length,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${filteredEvents.length} events scheduled',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: AppTheme.textSecondary,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                    const SizedBox(height: 22),
-                    Text(
-                      '${filteredEvents.length} events',
-                      style: Theme.of(context).textTheme.titleMedium,
+                        TextButton.icon(
+                          onPressed: () {},
+                          icon: const Icon(Icons.tune_rounded, size: 16),
+                          label: const Text('Filter'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: theme.textTheme.bodyMedium?.color,
+                          ),
+                        )
+                      ],
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 20),
+
+                    // Content
                     if (filteredEvents.isEmpty)
                       Container(
-                        padding: const EdgeInsets.all(24),
+                        padding: const EdgeInsets.all(32),
+                        alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(22),
-                          border: Border.all(color: Theme.of(context).dividerColor),
+                          color: isDark ? const Color(0xFF1A1A1A) : Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(24),
                         ),
                         child: Text(
-                          'No events are scheduled for this selection.',
-                          style: Theme.of(context).textTheme.bodyMedium,
+                          'No events for this day.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: AppTheme.textSecondary,
+                          ),
                         ),
                       )
-                    else
-                      ...filteredEvents.map((e) => _buildEventCard(e, isAdmin)),
+                    else ...[
+                      if (featuredEvent != null) _buildFeaturedCard(featuredEvent, isAdmin, theme, isDark),
+                      const SizedBox(height: 16),
+                      ...filteredEvents
+                          .skip(1)
+                          .map((e) => _buildCompactEventCard(e, isAdmin, theme, isDark)),
+                    ],
                   ],
                 ),
               ),
-              // Glassmorphic Header
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: ClipRect(
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                    child: Container(
-                      padding: EdgeInsets.only(
-                        top: MediaQuery.of(context).padding.top + 10,
-                        bottom: 12,
-                        left: 24,
-                        right: 24,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.8),
-                        border: Border(
-                          bottom: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Campus Events',
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                              ),
-                              Text(
-                                DateFormat('MMMM yyyy').format(DateTime.now()),
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white38),
-                              ),
-                            ],
-                          ),
-                          const Spacer(),
-                          if (isAdmin)
-                            IconButton.filled(
-                              onPressed: () => context.push(AppRoutes.eventPost),
-                              icon: const Icon(Icons.add_rounded, color: Colors.white),
-                              style: IconButton.styleFrom(
-                                backgroundColor: Theme.of(context).colorScheme.primary,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+            );
+          },
+        ),
+      ),
+      floatingActionButton: ref.watch(isCampusCreatorProvider)
+          ? FloatingActionButton(
+              onPressed: () => context.push(AppRoutes.eventPost),
+              backgroundColor: const Color(0xFFFF4F4F),
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : null,
     );
   }
 
-
-  Widget _buildEventCard(CampusEvent event, bool isAdmin) {
-    final theme = Theme.of(context);
-    final accent = _categoryColor(event.category);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: InkWell(
-        onTap: () => context.push(AppRoutes.eventDetail, extra: event),
-        borderRadius: BorderRadius.circular(22),
-        child: Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: theme.dividerColor),
-            boxShadow: AppTheme.softShadow,
+  Widget _buildFeaturedCard(CampusEvent event, bool isAdmin, ThemeData theme, bool isDark) {
+    return InkWell(
+      onTap: () => context.push(AppRoutes.eventDetail, extra: event),
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        height: 220,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          image: DecorationImage(
+            image: NetworkImage(
+              event.imageUrl ?? 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=800',
+            ),
+            fit: BoxFit.cover,
+            colorFilter: ColorFilter.mode(
+              Colors.black.withValues(alpha: 0.4),
+              BlendMode.darken,
+            ),
           ),
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.transparent,
+                Colors.black.withValues(alpha: 0.8),
+              ],
+            ),
+          ),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: accent.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(999),
+                      color: const Color(0xFFFF4F4F),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(
-                      event.category,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: accent,
+                    child: const Text(
+                      'LIVE SOON',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'Featured',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
                   const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.bookmark_border_rounded, color: Colors.white, size: 18),
+                  )
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    DateFormat('h:mm a').format(event.dateTime),
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                event.title,
-                style: theme.textTheme.titleMedium?.copyWith(fontSize: 17),
-              ),
-              if (event.description.trim().isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Text(
-                  event.description,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall,
-                ),
-              ],
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.location_on_outlined,
-                    size: 16,
-                    color: AppTheme.textSecondary,
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      event.location,
-                      style: theme.textTheme.bodySmall,
-                      overflow: TextOverflow.ellipsis,
+                    event.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  avatarWidget(event.organizer, radius: 10),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      event.attendees > 0
-                          ? '${event.attendees} confirmed'
-                          : 'Hosted by ${event.organizer}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w500,
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.access_time_rounded, color: Colors.white70, size: 14),
+                      const SizedBox(width: 4),
+                      Text(
+                        DateFormat('h:mm a').format(event.dateTime),
+                        style: const TextStyle(color: Colors.white70, fontSize: 13),
                       ),
+                      const SizedBox(width: 12),
+                      const Icon(Icons.location_on_outlined, color: Colors.white70, size: 14),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          event.location,
+                          style: const TextStyle(color: Colors.white70, fontSize: 13),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      // Avatar placeholders
+                      SizedBox(
+                        width: 70,
+                        height: 28,
+                        child: Stack(
+                          children: [
+                            Positioned(
+                              left: 0,
+                              child: CircleAvatar(radius: 14, backgroundColor: Colors.blue.shade300),
+                            ),
+                            Positioned(
+                              left: 18,
+                              child: CircleAvatar(radius: 14, backgroundColor: Colors.green.shade300),
+                            ),
+                            Positioned(
+                              left: 36,
+                              child: CircleAvatar(
+                                radius: 14,
+                                backgroundColor: Colors.orange.shade300,
+                                child: const Text('+42', style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Spacer(),
+                      if (isAdmin)
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                          onPressed: () => _deleteEvent(event.id),
+                        ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          'RSVP',
+                          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                      )
+                    ],
+                  )
+                ],
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactEventCard(CampusEvent event, bool isAdmin, ThemeData theme, bool isDark) {
+    final accent = _categoryColor(event.category);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        onTap: () => context.push(AppRoutes.eventDetail, extra: event),
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: isDark ? null : Border.all(color: Colors.grey.shade200),
+            boxShadow: isDark ? null : [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              )
+            ],
+          ),
+          child: Row(
+            children: [
+              // Date Box
+              Container(
+                width: 60,
+                height: 70,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF252525) : Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      DateFormat('MMM').format(event.dateTime).toUpperCase(),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: AppTheme.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      DateFormat('dd').format(event.dateTime),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              
+              // Details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: accent.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            event.category.toUpperCase(),
+                            style: TextStyle(
+                              color: accent,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          DateFormat('h:mm a').format(event.dateTime),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppTheme.textSecondary,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      event.title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  if (event.organizerId == ref.read(currentUserProvider)?.id || isAdmin)
-                    IconButton(
-                      onPressed: () => _deleteEvent(event.id),
-                      icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 18),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    )
-                  else
-                    TextButton(
-                      onPressed: () =>
-                          context.push(AppRoutes.eventDetail, extra: event),
-                      child: const Text('Open'),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on_outlined, size: 12, color: AppTheme.textSecondary),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            event.location,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppTheme.textSecondary,
+                              fontSize: 12,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 12),
+              
+              // Thumbnail
+              if (event.imageUrl != null)
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    image: DecorationImage(
+                      image: NetworkImage(event.imageUrl!),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF252525) : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.event, color: AppTheme.textSecondary.withValues(alpha: 0.5)),
+                ),
+                
+              if (isAdmin)
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                  onPressed: () => _deleteEvent(event.id),
+                ),
             ],
           ),
         ),
@@ -446,15 +634,14 @@ class _EventsTabState extends ConsumerState<EventsTab> {
   Color _categoryColor(String category) {
     switch (category.toLowerCase()) {
       case 'workshop':
-        return const Color(0xFF2563EB);
-      case 'fest':
-        return const Color(0xFFE11D48);
+      case 'tech':
+        return const Color(0xFF00B074);
       case 'sports':
-        return const Color(0xFF059669);
-      case 'seminar':
         return const Color(0xFFD97706);
-      case 'social':
+      case 'art':
         return const Color(0xFF7C3AED);
+      case 'social':
+        return const Color(0xFF2563EB);
       default:
         return AppTheme.primary;
     }

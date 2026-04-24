@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/providers/campus_provider.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../core/repositories/campus_repository.dart';
 import '../../core/utils/time_formatter.dart';
 import '../../core/routing/app_routes.dart';
@@ -70,8 +71,11 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
       resizeToAvoidBottomInset: true,
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
-        child: Stack(
-          clipBehavior: Clip.hardEdge,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: Stack(
+              clipBehavior: Clip.hardEdge,
           children: [
             Positioned(
               left: -30,
@@ -119,7 +123,10 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
             ),
             RefreshIndicator(
               onRefresh: () async {
-                // refresh logic if needed
+                ref.invalidate(recentActivityProvider);
+                ref.invalidate(campusEventsProvider);
+                ref.invalidate(academicNotesProvider);
+                ref.invalidate(totalAppUsersProvider);
               },
               child: ListView(
                 controller: _scrollController,
@@ -364,9 +371,18 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                   children: [
                     Padding(
                       padding: const EdgeInsets.only(left: 4, bottom: 8),
-                      child: Text(
-                        'Discover',
-                        style: theme.textTheme.titleLarge,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Discover',
+                            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          TextButton(
+                            onPressed: () {},
+                            child: const Text('See all', style: TextStyle(color: Colors.blue)),
+                          ),
+                        ],
                       ),
                     ),
                     _DiscoverQuickGrid(
@@ -394,8 +410,13 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Campus Feed', style: theme.textTheme.titleLarge),
+                    Text('Campus Feed', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                    TextButton(
+                      onPressed: () {},
+                      child: const Text('View all', style: TextStyle(color: Colors.blue)),
+                    ),
                   ],
                 ),
               ),
@@ -432,22 +453,113 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                     );
                   }
 
-                  return ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: activities.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 20),
-                    itemBuilder: (context, index) {
-                      return _PostCard(activity: activities[index]);
-                    },
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: activities.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 16),
+                      itemBuilder: (context, index) {
+                        return _PostCard(activity: activities[index]);
+                      },
+                    ),
                   );
                 },
               ),
+
+              const SizedBox(height: 32),
+              
+              // Quick Stats Section
+              _buildQuickStats(context, theme),
+              const SizedBox(height: 32),
                 ],
               ),
             ),
           ],
         ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickStats(BuildContext context, ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : theme.colorScheme.surface;
+    
+    // Dynamic fetching of stats
+    final eventsCount = ref.watch(campusEventsProvider).value?.length ?? 0;
+    final notesCount = ref.watch(academicNotesProvider).value?.length ?? 0;
+    
+    // Fetch actual members count
+    final activeUsersCountRaw = ref.watch(totalAppUsersProvider).value ?? 0;
+    final activeUsersStr = activeUsersCountRaw > 999 
+        ? '${(activeUsersCountRaw / 1000).toStringAsFixed(1)}K' 
+        : activeUsersCountRaw.toString();
+    
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Quick Stats', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(child: _buildStatCard(theme, cardColor, Icons.people_outline_rounded, activeUsersStr, 'Active Users', Colors.blue)),
+              const SizedBox(width: 12),
+              Expanded(child: _buildStatCard(theme, cardColor, Icons.calendar_today_rounded, eventsCount.toString(), 'Events', Colors.green)),
+              const SizedBox(width: 12),
+              Expanded(child: _buildStatCard(theme, cardColor, Icons.description_outlined, notesCount.toString(), 'Notes', Colors.orange)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard(ThemeData theme, Color bgColor, IconData icon, String count, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14), // Reduced padding
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.brightness == Brightness.light 
+              ? theme.dividerColor.withValues(alpha: 0.8) 
+              : Colors.transparent,
+          width: 1,
+        ),
+        boxShadow: theme.brightness == Brightness.light ? [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))
+        ] : null,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 8),
+          Text(
+            count,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.brightness == Brightness.light 
+                  ? const Color(0xFF111827) 
+                  : Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.brightness == Brightness.light 
+                  ? const Color(0xFF6B7280) 
+                  : Colors.white70,
+              fontSize: 10,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -481,186 +593,75 @@ class _DiscoverQuickGridState extends State<_DiscoverQuickGrid> {
 
   @override
   Widget build(BuildContext context) {
-    final specs = <_QuickGridSpec>[
-      _QuickGridSpec(
-        Icons.auto_stories_rounded,
-        'Notes',
-        Colors.blue,
-        widget.onNotes,
-      ),
-      _QuickGridSpec(
-        Icons.event_rounded,
-        'Events',
-        Colors.orange,
-        widget.onEvents,
-      ),
-      _QuickGridSpec(Icons.forum_rounded, 'Chat', Colors.teal, widget.onChat),
-      _QuickGridSpec(
-        Icons.manage_search_rounded,
-        'Lost & Found',
-        Colors.deepPurple,
-        widget.onLostFound,
-      ),
-      _QuickGridSpec(
-        Icons.groups_rounded,
-        'Study',
-        Colors.pink,
-        widget.onStudy,
-      ),
-      _QuickGridSpec(
-        Icons.auto_awesome_rounded,
-        'AI Chat',
-        Colors.amber,
-        widget.onAi,
-      ),
+    final isDark = widget.theme.brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF2A2A2A) : widget.theme.colorScheme.surface;
+
+    final List<Map<String, dynamic>> items = [
+      {'icon': Icons.menu_book_rounded, 'label': 'Notes', 'color': const Color(0xFF3B82F6), 'onTap': widget.onNotes},
+      {'icon': Icons.calendar_today_rounded, 'label': 'Events', 'color': const Color(0xFF10B981), 'onTap': widget.onEvents},
+      {'icon': Icons.chat_bubble_outline_rounded, 'label': 'Chat', 'color': const Color(0xFFF59E0B), 'onTap': widget.onChat},
+      {'icon': Icons.search_rounded, 'label': 'Lost', 'color': const Color(0xFF8B5CF6), 'onTap': widget.onLostFound},
+      {'icon': Icons.people_outline_rounded, 'label': 'Clubs', 'color': const Color(0xFFEC4899), 'onTap': widget.onStudy},
+      {'icon': Icons.auto_awesome_rounded, 'label': 'AI Chat', 'color': const Color(0xFFF59E0B), 'onTap': widget.onAi},
     ];
 
-    final visible = _expanded ? specs : specs.take(4).toList();
+    final visibleItems = _expanded ? items : items.take(4).toList();
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            GridView.count(
-              crossAxisCount: 4,
-              childAspectRatio: 1.22,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 6,
-              crossAxisSpacing: 6,
-              padding: EdgeInsets.zero,
-              children: visible
-                  .map(
-                    (s) => _DiscoverCompactTile(
-                      theme: widget.theme,
-                      icon: s.icon,
-                      label: s.label,
-                      color: s.color,
-                      onTap: s.onTap,
-                    ),
-                  )
-                  .toList(),
-            ),
-            const SizedBox(height: 4),
-            TextButton(
-              onPressed: () => setState(() => _expanded = !_expanded),
-              child: Text(_expanded ? 'Show Less' : 'Show More'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _QuickGridSpec {
-  const _QuickGridSpec(this.icon, this.label, this.color, this.onTap);
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback? onTap;
-}
-
-/// Compact Discover chip (~≤120px tall depending on grid); small icon + label.
-class _DiscoverCompactTile extends StatelessWidget {
-  const _DiscoverCompactTile({
-    required this.theme,
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  final ThemeData theme;
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = theme.brightness == Brightness.dark;
-    final shadowA = Colors.black.withValues(alpha: isDark ? 0.28 : 0.07);
-    final shadowB = Colors.black.withValues(alpha: isDark ? 0.16 : 0.04);
-    final borderGlass = isDark
-        ? Colors.white.withValues(alpha: 0.12)
-        : Colors.white.withValues(alpha: 0.85);
-
-    return RepaintBoundary(
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(24),
-              child: Ink(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      theme.colorScheme.surface.withValues(alpha: isDark ? 0.42 : 0.55),
-                      theme.colorScheme.surface.withValues(alpha: isDark ? 0.28 : 0.42),
-                    ],
-                  ),
-                  border: Border.all(
-                    color: borderGlass,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: shadowA,
-                      blurRadius: 18,
-                      offset: const Offset(0, 8),
-                      spreadRadius: -2,
-                    ),
-                    BoxShadow(
-                      color: shadowB,
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(5),
-                        decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: color.withValues(alpha: 0.22),
-                          ),
-                        ),
-                        child: Icon(icon, color: color, size: 21),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        label,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 9.5,
-                          height: 1.1,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: visibleItems.map((item) => Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: _buildIcon(cardColor, item['icon'], item['label'], item['color'], item['onTap']),
+            )).toList(),
           ),
         ),
+        const SizedBox(height: 8),
+        Center(
+          child: TextButton(
+            onPressed: () => setState(() => _expanded = !_expanded),
+            child: Text(_expanded ? 'Show Less ▲' : 'Show More ▼', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIcon(Color bgColor, IconData icon, String label, Color iconColor, VoidCallback? onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: widget.theme.brightness == Brightness.light 
+                    ? widget.theme.dividerColor.withValues(alpha: 0.8) 
+                    : Colors.transparent,
+                width: 1,
+              ),
+              boxShadow: widget.theme.brightness == Brightness.light ? [
+                BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))
+              ] : null,
+            ),
+            child: Icon(icon, color: iconColor, size: 28),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: widget.theme.textTheme.labelSmall?.copyWith(color: widget.theme.textTheme.bodySmall?.color, fontSize: 11),
+          ),
+        ],
       ),
     );
   }
@@ -730,16 +731,27 @@ class _SpotlightCarouselState extends State<_SpotlightCarousel> {
                   clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      width: 1,
+                    ),
                     image: DecorationImage(
                       image: NetworkImage(slide['image']!),
                       fit: BoxFit.cover,
-                      colorFilter: ColorFilter.mode(
-                        theme.colorScheme.shadow.withValues(alpha: 0.45),
-                        BlendMode.darken,
-                      ),
                     ),
                   ),
-                  child: Padding(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.7),
+                        ],
+                        stops: const [0.4, 1.0],
+                      ),
+                    ),
                     padding: const EdgeInsets.all(24),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -769,10 +781,8 @@ class _SpotlightCarouselState extends State<_SpotlightCarousel> {
                         const SizedBox(height: 8),
                         Text(
                           slide['title']!,
-                          style: TextStyle(
-                            color: theme.brightness == Brightness.light
-                                ? theme.colorScheme.surface
-                                : theme.colorScheme.onSurface,
+                          style: const TextStyle(
+                            color: Colors.white,
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                           ),
@@ -780,9 +790,7 @@ class _SpotlightCarouselState extends State<_SpotlightCarousel> {
                         Text(
                           slide['subtitle']!,
                           style: TextStyle(
-                            color: theme.brightness == Brightness.light
-                                ? theme.colorScheme.surface.withValues(alpha: 0.92)
-                                : theme.colorScheme.onSurface.withValues(alpha: 0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                             fontSize: 14,
                           ),
                         ),
@@ -810,11 +818,23 @@ class _PostCard extends ConsumerStatefulWidget {
 
 class _PostCardState extends ConsumerState<_PostCard> {
   bool? _isLiked;
+  int _likesCount = 0;
 
   @override
   void initState() {
     super.initState();
+    _likesCount = widget.activity['likes_count'] ?? 0;
     _checkLikeStatus();
+    _fetchLikesCount();
+  }
+
+  Future<void> _fetchLikesCount() async {
+    final activityId = widget.activity['id']?.toString() ?? '';
+    final type = widget.activity['type'] ?? 'note';
+    final count = await ref.read(campusRepositoryProvider).getLikesCount(activityId, type);
+    if (mounted) {
+      setState(() => _likesCount = count);
+    }
   }
 
   Future<void> _checkLikeStatus() async {
@@ -831,13 +851,24 @@ class _PostCardState extends ConsumerState<_PostCard> {
     final activityId = widget.activity['id']?.toString() ?? '';
     final type = widget.activity['type'] ?? 'note';
     final previousState = _isLiked;
+    final previousCount = _likesCount;
     
-    setState(() => _isLiked = !(_isLiked ?? false));
+    setState(() {
+      _isLiked = !(_isLiked ?? false);
+      _likesCount += (_isLiked! ? 1 : -1);
+    });
 
     try {
       await ref.read(campusRepositoryProvider).toggleLike(activityId, type);
+      // Force refresh the activity feed to get the latest DB counts
+      ref.invalidate(recentActivityProvider);
     } catch (e) {
-      if (mounted) setState(() => _isLiked = previousState);
+      if (mounted) {
+        setState(() {
+          _isLiked = previousState;
+          _likesCount = previousCount;
+        });
+      }
     }
   }
 
@@ -854,136 +885,125 @@ class _PostCardState extends ConsumerState<_PostCard> {
     final isAuthor = widget.activity['author_id'] == user?.id;
     final isAdmin = ref.watch(isCampusCreatorProvider);
 
+    // Show actual likes from DB, mock others as requested for UI display
+    final likesCount = _likesCount;
+    final commentsCount = 0;
+    final sharesCount = 0;
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 1),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1)),
-        ),
+        color: isDark ? const Color(0xFF1E1E1E) : theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: theme.brightness == Brightness.light ? [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))
+        ] : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 18,
-                  backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
-                  backgroundImage: widget.activity['author_avatar'] != null 
-                    ? NetworkImage(widget.activity['author_avatar']) : null,
-                  child: widget.activity['author_avatar'] == null 
-                    ? Text(_getAuthorName(widget.activity)[0]) : null,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _getAuthorName(widget.activity),
-                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        _getTypeLabel(type),
-                        style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
-                      ),
-                    ],
-                  ),
-                ),
-                if (isAuthor || isAdmin)
-                  PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert_rounded),
-                    onSelected: (val) => _handleMenuAction(val, context),
-                    itemBuilder: (context) => [
-                      if (type == 'lost_found' && !isFound && isAuthor)
-                        const PopupMenuItem(value: 'mark_found', child: Text('Mark as Found')),
-                      const PopupMenuItem(
-                        value: 'delete', 
-                        child: Text('Delete Post', style: TextStyle(color: Colors.red))
-                      ),
-                    ],
-                  ),
-              ],
-            ),
-          ),
-
-          // Media
-          AspectRatio(
-            aspectRatio: 1.1,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Image.network(
-                  _getImageUrl(widget.activity),
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    child: Icon(_getTypeIcon(type), size: 48, color: theme.dividerColor),
-                  ),
-                ),
-                if (isFound)
-                  Container(
-                    color: Colors.black45,
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(20)),
-                        child: const Text('FOUND', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-
-          // Actions
           Row(
             children: [
-              IconButton(
-                onPressed: _handleLike,
-                icon: Icon(liked ? Icons.favorite_rounded : Icons.favorite_border_rounded, color: liked ? Colors.red : null),
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+                backgroundImage: widget.activity['author_avatar'] != null 
+                  ? NetworkImage(widget.activity['author_avatar']) : null,
+                child: widget.activity['author_avatar'] == null 
+                  ? Text(_getAuthorName(widget.activity)[0]) : null,
               ),
-              const Spacer(),
-              Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: Text(timeStr, style: theme.textTheme.bodySmall?.copyWith(fontSize: 11)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _getAuthorName(widget.activity),
+                      style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      timeStr,
+                      style: theme.textTheme.bodySmall?.copyWith(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
               ),
+              if (isAuthor || isAdmin)
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert_rounded, color: Colors.grey),
+                  onSelected: (val) => _handleMenuAction(val, context),
+                  itemBuilder: (context) => [
+                    if (type == 'lost_found' && !isFound && isAuthor)
+                      const PopupMenuItem(value: 'mark_found', child: Text('Mark as Found')),
+                    const PopupMenuItem(
+                      value: 'delete', 
+                      child: Text('Delete Post', style: TextStyle(color: Colors.red))
+                    ),
+                  ],
+                ),
             ],
           ),
 
-          // Caption/Content
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text.rich(
-                  TextSpan(
-                    style: theme.textTheme.bodyMedium,
-                    children: [
-                      TextSpan(text: '${_getAuthorName(widget.activity)} ', style: const TextStyle(fontWeight: FontWeight.bold)),
-                      TextSpan(text: widget.activity['title'] ?? widget.activity['caption'] ?? ''),
-                    ],
-                  ),
-                ),
-                if (widget.activity['location'] != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.location_on_outlined, size: 12, color: Colors.grey),
-                        const SizedBox(width: 4),
-                        Text(widget.activity['location'], style: theme.textTheme.bodySmall?.copyWith(fontSize: 11)),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
+          const SizedBox(height: 16),
+          // Content
+          Text(
+            widget.activity['title'] ?? widget.activity['caption'] ?? '',
+            style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
           ),
+          
+          if (widget.activity['location'] != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                children: [
+                  const Icon(Icons.location_on_outlined, size: 14, color: Colors.grey),
+                  const SizedBox(width: 4),
+                  Text(widget.activity['location'], style: theme.textTheme.bodySmall?.copyWith(fontSize: 12, color: Colors.grey)),
+                ],
+              ),
+            ),
+          
+          if (isFound)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
+                child: const Text('FOUND', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12)),
+              ),
+            ),
+
+          const SizedBox(height: 16),
+          // Actions Footer
+          Row(
+            children: [
+              _buildActionIcon(
+                liked ? Icons.favorite_rounded : Icons.favorite_border_rounded, 
+                likesCount.toString(), 
+                liked ? Colors.red : Colors.grey, 
+                onTap: _handleLike
+              ),
+              const SizedBox(width: 24),
+              _buildActionIcon(Icons.chat_bubble_outline_rounded, commentsCount.toString(), Colors.blue),
+              const SizedBox(width: 24),
+              _buildActionIcon(Icons.share_outlined, sharesCount.toString(), Colors.grey),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionIcon(IconData icon, String count, Color color, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: color),
+          const SizedBox(width: 6),
+          Text(count, style: const TextStyle(color: Colors.grey, fontSize: 13)),
         ],
       ),
     );

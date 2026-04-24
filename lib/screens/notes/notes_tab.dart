@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/models/academic_note.dart';
 import '../../core/utils/time_formatter.dart';
 import '../../core/providers/auth_provider.dart';
@@ -72,64 +73,52 @@ class _NotesTabState extends ConsumerState<NotesTab> {
           body: CustomScrollView(
             slivers: [
               SliverAppBar(
-                expandedHeight: 180,
+                expandedHeight: 160,
                 floating: false,
                 pinned: true,
                 backgroundColor: theme.scaffoldBackgroundColor,
                 surfaceTintColor: Colors.transparent,
                 flexibleSpace: FlexibleSpaceBar(
-                  background: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Positioned(
-                        top: -50,
-                        right: -50,
-                        child: Container(
-                          width: 200,
-                          height: 200,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: theme.colorScheme.primary.withValues(alpha: 0.08),
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 80, 24, 0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
+                  background: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 60, 24, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
                           children: [
+                            Icon(Icons.menu_book_rounded, color: theme.colorScheme.primary, size: 20),
+                            const SizedBox(width: 8),
                             Text(
-                              'Academic Notes',
-                              style: theme.textTheme.displaySmall?.copyWith(
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -0.8,
+                              'NOTES LIBRARY',
+                              style: TextStyle(
+                                color: isDark ? Colors.white70 : Colors.black54,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                                fontSize: 12,
                               ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Premium repository of your campus resources.',
-                              style: theme.textTheme.bodyMedium,
                             ),
                           ],
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                actions: [
-                  Container(
-                    margin: const EdgeInsets.only(right: 16),
-                    child: IconButton(
-                      onPressed: () => context.push(AppRoutes.noteUpload),
-                      style: IconButton.styleFrom(
-                        backgroundColor: theme.colorScheme.primary,
-                        foregroundColor: Colors.white,
-                      ),
-                      icon: const Icon(Icons.add_rounded),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Academic Notes',
+                          style: theme.textTheme.displaySmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.8,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Premium repository of campus resources',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: isDark ? Colors.white70 : Colors.black54,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
               SliverToBoxAdapter(
                 child: Padding(
@@ -142,10 +131,16 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                         onChanged: (_) => setState(() {}),
                         decoration: InputDecoration(
                           prefixIcon: const Icon(Icons.search_rounded),
+                          suffixIcon: const Icon(Icons.tune_rounded), // Added filter icon
                           hintText: 'Search subjects or authors...',
+                          filled: true,
                           fillColor: isDark 
-                              ? const Color(0xFF1E232E) 
+                              ? const Color(0xFF1E1E1E) 
                               : const Color(0xFFF1F5F9),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
                         ),
                       ),
                       if (categories.length > 1) ...[
@@ -252,146 +247,128 @@ class _NotesTabState extends ConsumerState<NotesTab> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final accent = _categoryColor(note.category);
+    final timeStr = TimeFormatter.format(note.createdAt);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E232E) : Colors.white,
+        color: isDark ? const Color(0xFF161616) : Colors.white, // Darker background
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark ? const Color(0xFF2B313D) : const Color(0xFFE2E8F0),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => context.push(AppRoutes.noteDetail, extra: note),
-            child: Stack(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () => context.push(AppRoutes.noteDetail, extra: note),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
+                // Left Document Image Placeholder
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF222222) : const Color(0xFFF0F0F0),
+                    borderRadius: BorderRadius.circular(16),
+                    image: const DecorationImage(
+                      image: NetworkImage('https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?q=80&w=200'),
+                      fit: BoxFit.cover,
+                      opacity: 0.6,
+                    ),
+                  ),
+                  child: Center(
+                    child: Icon(Icons.description_rounded, color: isDark ? Colors.white70 : Colors.black54, size: 32),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                
+                // Content
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
                           Container(
-                            width: 44,
-                            height: 44,
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [accent, accent.withValues(alpha: 0.7)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
+                              color: accent.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(6),
                             ),
-                            child: const Icon(
-                              Icons.description_rounded,
-                              color: Colors.white,
-                              size: 22,
+                            child: Text(
+                              note.category.toUpperCase(),
+                              style: TextStyle(color: accent, fontSize: 10, fontWeight: FontWeight.bold),
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  note.title,
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 16,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  note.category,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: accent,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                          const SizedBox(width: 8),
                           Text(
-                            TimeFormatter.format(note.createdAt),
-                            style: theme.textTheme.bodySmall,
+                            '•  $timeStr',
+                            style: TextStyle(color: isDark ? Colors.white60 : Colors.black54, fontSize: 12),
                           ),
                         ],
                       ),
-                      if (note.description.trim().isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        Text(
-                          note.description,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontSize: 13,
-                            color: isDark ? Colors.white70 : Colors.black87,
+                      const SizedBox(height: 6),
+                      Text(
+                        note.title,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          avatarWidget(
+                            note.author,
+                            radius: 8,
+                            imageUrl: note.authorAvatar,
                           ),
-                        ),
-                      ],
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.black26 : const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            avatarWidget(
-                              note.author,
-                              radius: 10,
-                              imageUrl: note.authorAvatar,
+                          const SizedBox(width: 6),
+                          Text(
+                            note.author,
+                            style: TextStyle(
+                              color: isDark ? Colors.white70 : Colors.black87,
+                              fontSize: 12,
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                note.author,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark ? Colors.white60 : Colors.black54,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                // Edit button for author
-                if (note.authorId == ref.read(currentUserProvider)?.id)
-                  Positioned(
-                    top: 12,
-                    right: 12,
-                    child: IconButton(
-                      onPressed: () => _showEditNoteDialog(note),
-                      style: IconButton.styleFrom(
-                        backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.8),
-                        padding: const EdgeInsets.all(8),
-                      ),
-                      icon: Icon(
-                        Icons.edit_rounded,
-                        size: 18,
-                        color: theme.colorScheme.primary,
-                      ),
+                
+                // Right Download Icon
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.file_download_outlined, color: theme.colorScheme.primary),
+                      onPressed: () async {
+                        if (note.fileUrl == null) {
+                          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No file associated with this note.')));
+                          return;
+                        }
+                        final uri = Uri.parse(note.fileUrl!);
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                        } else {
+                          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not open file.')));
+                        }
+                      },
                     ),
-                  ),
+                    if (note.authorId == ref.read(currentUserProvider)?.id)
+                      IconButton(
+                        icon: const Icon(Icons.edit_rounded, size: 18, color: Colors.grey),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onPressed: () => _showEditNoteDialog(note),
+                      ),
+                  ],
+                ),
               ],
             ),
           ),

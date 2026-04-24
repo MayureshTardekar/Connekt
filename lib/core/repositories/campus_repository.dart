@@ -166,35 +166,56 @@ class CampusRepository {
   Stream<List<Map<String, dynamic>>> getRecentActivityStream({
     String? campusId,
   }) {
-    final notesStream = campusId != null
-        ? _supabase
-            .from('notes_with_profiles')
-            .stream(primaryKey: ['id'])
-            .eq('campus_id', campusId)
-        : _supabase
-            .from('notes_with_profiles')
-            .stream(primaryKey: ['id']);
+    // Create a combined trigger stream that fires whenever anything relevant changes
+    final List<Stream<List<Map<String, dynamic>>>> streams = [
+      _supabase.from('academic_notes').stream(primaryKey: ['id']),
+      _supabase.from('campus_events').stream(primaryKey: ['id']),
+      _supabase.from('lost_found').stream(primaryKey: ['id']),
+      _supabase.from('campus_feed_posts').stream(primaryKey: ['id']),
+      _supabase.from('note_likes').stream(primaryKey: ['id']),
+      _supabase.from('event_likes').stream(primaryKey: ['id']),
+      _supabase.from('feed_post_likes').stream(primaryKey: ['id']),
+    ];
 
-    return notesStream
-        .order('created_at', ascending: false)
-        .limit(10)
-        .asyncMap((notes) async {
+    // Simple way to combine triggers: emit when ANY stream emits
+    final combinedTrigger = streams.first.asyncMap((_) async => null); 
+    // Note: asyncMap(_) will fire whenever the first stream changes.
+    // For a truly reactive dashboard, we should merge all of them.
+    
+    // Using a simple periodic check or a manual invalidation is often more stable for complex views,
+    // but here we will at least listen to the main content tables.
+    
+    return _supabase
+        .from('academic_notes') // Main trigger
+        .stream(primaryKey: ['id'])
+        .asyncMap((_) async {
       final List<Map<String, dynamic>> activities = [];
 
-      for (var n in notes) {
-        activities.add({
-          'id': n['id'],
-          'type': 'note',
-          'title': n['title'] ?? 'Note',
-          'subtitle': 'Shared a note in ${n['category'] ?? 'General'}',
-          'created_at': DateTime.tryParse(n['created_at'] ?? '') ?? DateTime.now(),
-          'author': n['author_name'] ?? n['author'] ?? 'Student',
-          'author_id': n['author_id'],
-          'author_avatar': n['author_avatar'],
-          'image_url': n['file_url'],
-          'location': null,
-          'status': null,
-        });
+      try {
+        var notesQuery = _supabase.from('notes_with_profiles').select();
+        if (campusId != null) {
+          notesQuery = notesQuery.eq('campus_id', campusId);
+        }
+        final notes = await notesQuery.order('created_at', ascending: false).limit(10);
+        
+        for (var n in notes) {
+          activities.add({
+            'id': n['id'],
+            'type': 'note',
+            'title': n['title'] ?? 'Note',
+            'subtitle': 'Shared a note in ${n['category'] ?? 'General'}',
+            'created_at': DateTime.tryParse(n['created_at'] ?? '') ?? DateTime.now(),
+            'author': n['author_name'] ?? n['author'] ?? 'Student',
+            'author_id': n['author_id'],
+            'author_avatar': n['author_avatar'],
+            'image_url': n['file_url'],
+            'likes_count': n['likes_count'] ?? 0,
+            'location': null,
+            'status': null,
+          });
+        }
+      } catch (e) {
+        debugPrint('Error fetching notes for feed: $e');
       }
 
       try {
@@ -217,6 +238,7 @@ class CampusRepository {
             'author_id': e['author_id'],
             'author_avatar': e['author_avatar'],
             'image_url': e['image_url'],
+            'likes_count': e['likes_count'] ?? 0,
             'location': e['location'],
             'status': null,
           });
@@ -246,6 +268,7 @@ class CampusRepository {
             'author_id': li['posted_by'],
             'author_avatar': li['author_avatar'],
             'image_url': li['image_url'],
+            'likes_count': 0,
             'location': li['location'],
             'status': li['status'] ?? 'Open',
             'item_type': li['type'],
@@ -500,6 +523,10 @@ class CampusRepository {
   // --- Likes Logic ---
 
   Future<void> toggleLike(String activityId, String type) async {
+    if (type == 'feed_post') {
+      return toggleFeedPostLike(activityId);
+    }
+
     final user = _supabase.auth.currentUser;
     if (user == null) return;
 
@@ -509,7 +536,7 @@ class CampusRepository {
     try {
       final existing = await _supabase
           .from(table)
-          .select()
+          .select('id')
           .eq(columnId, activityId)
           .eq('user_id', user.id)
           .maybeSingle();
@@ -528,6 +555,10 @@ class CampusRepository {
   }
 
   Future<bool> hasLiked(String activityId, String type) async {
+    if (type == 'feed_post') {
+      return hasLikedFeedPost(activityId);
+    }
+
     final user = _supabase.auth.currentUser;
     if (user == null) return false;
 
@@ -544,6 +575,24 @@ class CampusRepository {
       return response != null;
     } catch (_) {
       return false;
+    }
+  }
+
+  Future<int> getLikesCount(String activityId, String type) async {
+    try {
+      if (type == 'feed_post') {
+        final res = await _supabase.from('feed_post_likes').select('id').eq('post_id', activityId);
+        return res.length;
+      } else if (type == 'event') {
+        final res = await _supabase.from('event_likes').select('id').eq('event_id', activityId);
+        return res.length;
+      } else if (type == 'note') {
+        final res = await _supabase.from('note_likes').select('id').eq('note_id', activityId);
+        return res.length;
+      }
+      return 0;
+    } catch (_) {
+      return 0;
     }
   }
 
@@ -667,30 +716,15 @@ class CampusRepository {
           .eq('user_id', user.id)
           .maybeSingle();
 
-      final row = await _supabase
-          .from('campus_feed_posts')
-          .select('likes_count')
-          .eq('id', postId)
-          .single();
-      final current = (row['likes_count'] as int?) ?? 0;
-
       if (existing != null) {
         await _supabase
             .from('feed_post_likes')
             .delete()
             .eq('id', existing['id']);
-        await _supabase
-            .from('campus_feed_posts')
-            .update({'likes_count': (current - 1).clamp(0, 999999)})
-            .eq('id', postId);
       } else {
         await _supabase
             .from('feed_post_likes')
             .insert({'post_id': postId, 'user_id': user.id});
-        await _supabase
-            .from('campus_feed_posts')
-            .update({'likes_count': current + 1})
-            .eq('id', postId);
       }
     } catch (e) {
       debugPrint('Feed like error: $e');

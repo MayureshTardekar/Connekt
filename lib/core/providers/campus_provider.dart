@@ -107,6 +107,12 @@ final joinedCampusCountProvider = Provider<int>((ref) {
   return ref.watch(myMembershipsProvider).value?.length ?? 0;
 });
 
+final campusMemberCountProvider = FutureProvider<int>((ref) async {
+  final campusId = ref.watch(selectedCampusIdProvider);
+  if (campusId == null) return 0;
+  return ref.watch(campusRepositoryProvider).getMemberCount(campusId);
+});
+
 // Streams
 final campusEventsProvider = StreamProvider<List<CampusEvent>>((ref) {
   final selectedCampusId = ref.watch(selectedCampusIdProvider);

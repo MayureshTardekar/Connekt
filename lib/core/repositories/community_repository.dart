@@ -11,13 +11,14 @@ class CommunityRepository {
 
   // 1. Fetch communities for current campus
   Stream<List<Map<String, dynamic>>> watchCommunities(String campusId) {
-    if (!ValidationUtils.isValidUuid(campusId)) {
+    final cleanId = ValidationUtils.sanitizeUuid(campusId);
+    if (cleanId == null) {
       return Stream.value([]);
     }
     return supabase
         .from('communities')
         .stream(primaryKey: ['id'])
-        .eq('campus_id', campusId)
+        .eq('campus_id', cleanId)
         .order('created_at', ascending: false);
   }
 
@@ -74,13 +75,14 @@ class CommunityRepository {
 
   // 4. Message Streaming
   Stream<List<Map<String, dynamic>>> watchMessages(String communityId) {
-    if (!ValidationUtils.isValidUuid(communityId)) {
+    final cleanId = ValidationUtils.sanitizeUuid(communityId);
+    if (cleanId == null) {
       return Stream.value([]);
     }
     return supabase
-        .from('community_messages')
+        .from('community_messages_with_profiles')
         .stream(primaryKey: ['id'])
-        .eq('community_id', communityId)
+        .eq('community_id', cleanId)
         .order('created_at', ascending: false);
   }
 
@@ -93,9 +95,9 @@ class CommunityRepository {
     Uint8List? fileBytes,
     String? replyToId,
   }) async {
-    if (!ValidationUtils.isValidUuid(communityId)) {
-      throw Exception('Invalid community ID format');
-    }
+    final cleanCommunityId = ValidationUtils.sanitizeUuid(communityId);
+    if (cleanCommunityId == null) throw Exception('Invalid community ID format');
+    
     final user = supabase.auth.currentUser;
     if (user == null) throw Exception('Not authenticated');
 
@@ -105,7 +107,7 @@ class CommunityRepository {
     if (type != 'text' && (filePath != null || fileBytes != null)) {
       final fileName =
           '${DateTime.now().millisecondsSinceEpoch}_${type == 'voice' ? 'voice.m4a' : 'img.jpg'}';
-      final storagePath = 'messages/$communityId/$fileName';
+      final storagePath = 'messages/$cleanCommunityId/$fileName';
 
       final Uint8List bytes;
       if (fileBytes != null) {
@@ -121,7 +123,7 @@ class CommunityRepository {
     }
 
     await supabase.from('community_messages').insert({
-      'community_id': communityId,
+      'community_id': cleanCommunityId,
       'sender_id': user.id,
       'content': content,
       'message_type': type,
@@ -132,6 +134,9 @@ class CommunityRepository {
 
   // --- REACTIONS ---
   Future<void> toggleReaction(String messageId, String emoji) async {
+    final cleanId = ValidationUtils.sanitizeUuid(messageId);
+    if (cleanId == null) return;
+
     final user = supabase.auth.currentUser;
     if (user == null) return;
 
@@ -139,9 +144,10 @@ class CommunityRepository {
       final message = await supabase
           .from('community_messages')
           .select('reactions')
-          .eq('id', messageId)
-          .single();
+          .eq('id', cleanId)
+          .maybeSingle();
 
+      if (message == null) return;
       var reactions = parseReactionsJson(message['reactions']);
 
       if (!reactions.containsKey(emoji)) {
@@ -164,38 +170,48 @@ class CommunityRepository {
 
   // --- DELETE MESSAGE ---
   Future<void> deleteMessage(String messageId) async {
+    final cleanId = ValidationUtils.sanitizeUuid(messageId);
+    if (cleanId == null) return;
+
     final user = supabase.auth.currentUser;
     if (user == null) return;
     await supabase
         .from('community_messages')
         .delete()
-        .eq('id', messageId)
+        .eq('id', cleanId)
         .eq('sender_id', user.id);
   }
 
   // Check membership status
   Future<String?> getMembershipStatus(String communityId) async {
-    if (!ValidationUtils.isValidUuid(communityId)) return null;
+    final cleanId = ValidationUtils.sanitizeUuid(communityId);
+    if (cleanId == null) return null;
+
     final user = supabase.auth.currentUser;
     if (user == null) return null;
 
-    final data = await supabase
-        .from('community_members')
-        .select('role')
-        .eq('community_id', communityId)
-        .eq('user_id', user.id)
-        .maybeSingle();
+    try {
+      final response = await supabase
+          .from('community_members')
+          .select('role')
+          .eq('community_id', cleanId)
+          .eq('user_id', user.id)
+          .maybeSingle();
 
-    if (data != null) return 'member';
+      if (response != null) return 'member';
 
-    final request = await supabase
-        .from('community_requests')
-        .select('status')
-        .eq('community_id', communityId)
-        .eq('user_id', user.id)
-        .maybeSingle();
+      final request = await supabase
+          .from('community_requests')
+          .select('status')
+          .eq('community_id', cleanId)
+          .eq('user_id', user.id)
+          .maybeSingle();
 
-    return request?['status'];
+      return request?['status'];
+    } catch (e) {
+      debugPrint('Error checking membership: $e');
+      return null;
+    }
   }
 
   // --- NEW: ADMIN AUTHORITIES ---
