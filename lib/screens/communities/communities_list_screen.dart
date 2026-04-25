@@ -82,6 +82,20 @@ class _CommunitiesListScreenState extends ConsumerState<CommunitiesListScreen>
         ),
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back,
+            color: theme.colorScheme.onSurface,
+            size: 24,
+          ),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              context.pop();
+            } else {
+              context.go('/dashboard');
+            }
+          },
+        ),
         actions: [
           IconButton(
             icon: Icon(Icons.add_circle_outline, color: theme.colorScheme.primary),

@@ -15,6 +15,20 @@ class CommunityAdminScreen extends ConsumerWidget {
         title: Text('Admin Controls', style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.black,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back,
+            color: Colors.white,
+            size: 24,
+          ),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              Navigator.of(context).maybePop();
+            }
+          },
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),

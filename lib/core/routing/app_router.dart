@@ -48,7 +48,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: AppRoutes.splash,
     redirect: (context, state) {
-      final user = ref.read(currentUserProvider);
+      final user = ref.read(authRepositoryProvider).currentUser;
       final location = state.matchedLocation;
       
       // LOGS FOR DEBUGGING (Visible in terminal)

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/providers/campus_provider.dart';
 
 class CampusManagementScreen extends ConsumerStatefulWidget {
@@ -103,6 +104,20 @@ class _CampusManagementScreenState extends ConsumerState<CampusManagementScreen>
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back,
+            color: theme.colorScheme.onSurface,
+            size: 24,
+          ),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              context.pop();
+            } else {
+              context.go('/dashboard');
+            }
+          },
+        ),
         title: Column(
           children: [
             Text(

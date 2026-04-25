@@ -10,6 +10,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../../core/providers/ai_provider.dart';
 import '../../core/services/ai_context_bridge.dart';
+import '../../core/widgets/premium_background.dart';
 
 class AIChatScreen extends ConsumerStatefulWidget {
   final String? initialPrompt;
@@ -25,6 +26,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen>
     with SingleTickerProviderStateMixin {
   final TextEditingController _messageController = TextEditingController();
   final stt.SpeechToText _speech = stt.SpeechToText();
+  late final FocusNode _focusNode;
   final List<Map<String, String>> _messages = [];
   /// Supabase + local campus context (loadAiPromptContext) — runs before getChatResponse.
   bool _isLoadingContext = false;
@@ -63,11 +65,15 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen>
   @override
   void initState() {
     super.initState();
+    _focusNode = FocusNode();
     _micPulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 700),
     );
     _initSpeech();
+    _focusNode.addListener(() {
+      if (mounted) setState(() {});
+    });
     if (widget.initialPrompt != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _messageController.text = widget.initialPrompt!;
@@ -98,6 +104,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen>
     _micPulseController.dispose();
     _speech.stop();
     _messageController.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -293,237 +300,223 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final onSurface = theme.colorScheme.onSurface;
+    final surfaceColor = isDark ? const Color(0xFF18181B) : Colors.white;
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: theme.scaffoldBackgroundColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.history_rounded, color: cs.onSurface),
-          onPressed: _showHistorySheet,
-        ),
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.auto_awesome, color: cs.primary, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              'Connekt AI',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: cs.onSurface,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.close_rounded, color: cs.onSurface.withValues(alpha: 0.7)),
-            onPressed: _close,
-          ),
-        ],
-      ),
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-                if (widget.scrollController == null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4, bottom: 4),
-                    child: Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: cs.onSurface.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(2),
+      backgroundColor: Colors.transparent,
+      body: PremiumBackground(
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              // Top App Bar
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Back Button
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: onSurface.withValues(alpha: 0.05),
+                        shape: BoxShape.circle,
+                        border:
+                            Border.all(color: onSurface.withValues(alpha: 0.1)),
+                      ),
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        icon: Icon(Icons.arrow_back, color: onSurface, size: 20),
+                        onPressed: _close,
+                      ),
+                    ),
+                    // Title
+                    Row(
+                      children: [
+                        Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF9047FF), Color(0xFF6B3DFF)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF9047FF)
+                                    .withValues(alpha: 0.4),
+                                blurRadius: 12,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(Icons.auto_awesome,
+                              color: Colors.white, size: 14),
                         ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Connekt AI',
+                          style: TextStyle(
+                            color: onSurface,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                    // History Button
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: onSurface.withValues(alpha: 0.05),
+                        shape: BoxShape.circle,
+                        border:
+                            Border.all(color: onSurface.withValues(alpha: 0.1)),
+                      ),
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        icon: Icon(Icons.history_rounded,
+                            color: onSurface, size: 20),
+                        onPressed: _showHistorySheet,
                       ),
                     ),
-                  ),
-                if (_showErrorBanner)
-                  Material(
-                    color: cs.surfaceContainerHighest.withValues(alpha: 0.95),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline_rounded,
-                            color: cs.tertiary,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              _bannerTextForDisplay(_bannerErrorText),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: cs.onSurface,
-                                height: 1.2,
-                              ),
-                            ),
-                          ),
-                          TextButton(
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 0,
-                              ),
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            onPressed: _tryAgainAfterError,
-                            child: const Text('Retry'),
-                          ),
-                          IconButton(
-                            visualDensity: VisualDensity.compact,
-                            icon: Icon(
-                              Icons.close,
-                              size: 18,
-                              color: cs.onSurface.withValues(alpha: 0.45),
-                            ),
-                            onPressed: () => setState(() {
-                              _showErrorBanner = false;
-                              _bannerErrorText = null;
-                            }),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                Expanded(
-                  child: _messages.isEmpty
-                      ? _buildSuggestionsArea(theme)
-                      : _buildChatList(theme),
+                  ],
                 ),
-            _buildInputArea(theme),
-          ],
+              ),
+              if (_showErrorBanner)
+                Material(
+                  color: Colors.redAccent.withValues(alpha: 0.15),
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.info_outline_rounded,
+                            color: Colors.redAccent, size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _bannerTextForDisplay(_bannerErrorText),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: onSurface, fontSize: 12),
+                          ),
+                        ),
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 0,
+                            ),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          onPressed: _tryAgainAfterError,
+                          child: const Text('Retry'),
+                        ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          icon: Icon(
+                            Icons.close,
+                            size: 18,
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.45),
+                          ),
+                          onPressed: () => setState(() {
+                            _showErrorBanner = false;
+                            _bannerErrorText = null;
+                          }),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              Expanded(
+                child: _messages.isEmpty
+                    ? _buildSuggestionsArea(theme)
+                    : _buildChatList(theme),
+              ),
+              _buildInputArea(theme),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildSuggestionsArea(ThemeData theme) {
-    final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     return SingleChildScrollView(
       controller: widget.scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // AI Online Indicator
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00E676),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF00E676).withValues(alpha: 0.5),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'AI ONLINE',
+                style: TextStyle(
+                  color: Color(0xFF9F9FA9),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Greeting Text
           Text(
-            "Hi there — pick a starter or use the mic:",
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: cs.primary,
-              fontWeight: FontWeight.w600,
+            'Hi there —',
+            style: TextStyle(
+              color: isDark ? Colors.white : Colors.black87,
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              height: 1.1,
+              letterSpacing: -1,
             ),
           ),
-          const SizedBox(height: 24),
-          _buildSuggestionCard(
-            theme: theme,
-            title: 'Summarize campus activity',
-            subtitle:
-                'Briefing from live notes, events, lost & found, and communities.',
-            icon: Icons.auto_awesome_motion_rounded,
-            accent: cs.primary,
-            onTap: () => _sendMessage(
-              "Summarize what's happening on my campus using the data you have.",
+          Text(
+            'ask me anything.',
+            style: TextStyle(
+              color: isDark ? const Color(0xFF9F9FA9) : Colors.black54,
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              height: 1.1,
+              letterSpacing: -1,
             ),
           ),
-          _buildSuggestionCard(
-            theme: theme,
-            title: 'Lost & Found',
-            subtitle: 'Ask about phones, wallets, or anything reported missing.',
-            icon: Icons.search_rounded,
-            accent: cs.tertiary,
-            onTap: () => _sendMessage(
-              'Are there any recent lost or found reports, especially phones?',
-            ),
-          ),
-          _buildSuggestionCard(
-            theme: theme,
-            title: 'Communities',
-            subtitle: 'What groups exist and which are public?',
-            icon: Icons.groups_rounded,
-            accent: cs.secondary,
-            onTap: () => _sendMessage(
-              'What communities are listed for my campus, and which are private?',
-            ),
-          ),
+          const SizedBox(height: 32),
         ],
       ),
     );
   }
 
-  Widget _buildSuggestionCard({
-    required ThemeData theme,
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Color accent,
-    required VoidCallback onTap,
-  }) {
-    final cs = theme.colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Material(
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, color: accent, size: 22),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: cs.onSurface,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: cs.onSurface.withValues(alpha: 0.75),
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(Icons.chevron_right, color: cs.onSurface.withValues(alpha: 0.4)),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildChatList(ThemeData theme) {
     final hasTail = _isLoadingContext || _isLoading;
@@ -552,9 +545,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen>
     );
   }
 
-  /// Shown while loadAiPromptContext (Supabase + local providers) runs.
   Widget _buildContextSyncIndicator(ThemeData theme) {
-    final cs = theme.colorScheme;
     return Padding(
       padding: const EdgeInsets.only(top: 16),
       child: Row(
@@ -562,20 +553,21 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen>
         children: [
           _buildAIAvatar(theme, thinking: true),
           const SizedBox(width: 12),
-          SizedBox(
-            width: 20,
-            height: 20,
+          const SizedBox(
+            width: 16,
+            height: 16,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              color: cs.primary,
+              color: Color(0xFF6B3DFF),
             ),
           ),
           const SizedBox(width: 10),
-          Expanded(
+          const Expanded(
             child: Text(
               'Gathering campus data…',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: cs.onSurface.withValues(alpha: 0.7),
+              style: TextStyle(
+                color: Color(0xFF9F9FA9),
+                fontSize: 14,
               ),
             ),
           ),
@@ -585,7 +577,9 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen>
   }
 
   Widget _buildTypingIndicator(ThemeData theme) {
-    final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final surfaceColor = isDark ? const Color(0xFF18181B) : Colors.white;
+    final onSurface = theme.colorScheme.onSurface;
     return Padding(
       padding: const EdgeInsets.only(top: 16),
       child: Row(
@@ -597,10 +591,10 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest.withValues(alpha: 0.85),
+                color: surfaceColor,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: cs.outline.withValues(alpha: 0.12),
+                  color: onSurface.withValues(alpha: 0.1),
                 ),
               ),
               child: Column(
@@ -609,9 +603,10 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen>
                 children: [
                   Text(
                     'Thinking…',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: cs.onSurface.withValues(alpha: 0.65),
+                    style: TextStyle(
+                      color: onSurface.withValues(alpha: 0.65),
                       fontWeight: FontWeight.w600,
+                      fontSize: 12,
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -626,7 +621,6 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen>
   }
 
   Widget _buildAIAvatar(ThemeData theme, {bool thinking = false}) {
-    final cs = theme.colorScheme;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       transform: thinking
@@ -636,20 +630,29 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen>
       width: 32,
       height: 32,
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF9047FF), Color(0xFF6B3DFF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF9047FF).withValues(alpha: 0.4),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        borderRadius: BorderRadius.circular(10),
       ),
-      child: Icon(Icons.auto_awesome, color: cs.primary, size: 18),
+      child: const Icon(Icons.auto_awesome, color: Colors.white, size: 16),
     );
   }
 
   Widget _buildMessageBubble(ThemeData theme, String text, bool isAI) {
-    final cs = theme.colorScheme;
     return Padding(
       padding: const EdgeInsets.only(top: 20),
       child: Row(
-        mainAxisAlignment:
-            isAI ? MainAxisAlignment.start : MainAxisAlignment.end,
+        mainAxisAlignment: isAI ? MainAxisAlignment.start : MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (isAI) ...[_buildAIAvatar(theme), const SizedBox(width: 12)],
@@ -661,17 +664,46 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen>
               decoration: isAI
                   ? null
                   : BoxDecoration(
-                      color: cs.primary,
-                      borderRadius: BorderRadius.circular(16),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF9047FF), Color(0xFF6B3DFF)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF9047FF).withValues(alpha: 0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
               child: isAI
-                  ? MarkdownBody(data: text, styleSheet: _markdownStyle(theme))
+                  ? MarkdownBody(
+                      data: text, 
+                      styleSheet: MarkdownStyleSheet(
+                        p: TextStyle(
+                            color: theme.colorScheme.onSurface,
+                            fontSize: 15,
+                            height: 1.5),
+                        strong: TextStyle(
+                            color: theme.colorScheme.onSurface,
+                            fontWeight: FontWeight.bold),
+                        listBullet:
+                            TextStyle(color: theme.colorScheme.onSurface),
+                        code: TextStyle(
+                          color: theme.brightness == Brightness.dark
+                              ? const Color(0xFF00E676)
+                              : const Color(0xFF00C853),
+                          backgroundColor: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.1),
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    )
                   : Text(
                       text,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: cs.onPrimary,
-                        height: 1.5,
-                      ),
+                      style: const TextStyle(color: Colors.white, fontSize: 15, height: 1.5),
                     ),
             ),
           ),
@@ -681,111 +713,180 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen>
   }
 
   Widget _buildInputArea(ThemeData theme) {
-    final cs = theme.colorScheme;
-    final fill = cs.surfaceContainerHighest.withValues(alpha: 0.55);
+    final isDark = theme.brightness == Brightness.dark;
+    final onSurface = theme.colorScheme.onSurface;
+    final surfaceColor = isDark ? const Color(0xFF18181B) : Colors.white;
     final busy = _isLoading || _isLoadingContext;
     final sendLocked = busy || _blockSendUntilRetry;
-    return Material(
-      color: theme.scaffoldBackgroundColor,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
-        child: Material(
-            color: fill,
-            elevation: 0,
-            shadowColor: Colors.transparent,
-            surfaceTintColor: Colors.transparent,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(26),
-              side: BorderSide(color: cs.outline.withValues(alpha: 0.12)),
+    final isFocused = _focusNode.hasFocus;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom > 0 ? 12 : 32,
+        top: 12,
+      ),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(32),
+          boxShadow: [
+            if (isFocused)
+              BoxShadow(
+                color: const Color(0xFF9047FF).withValues(alpha: 0.25),
+                blurRadius: 20,
+                spreadRadius: 2,
+              ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(32),
+          child: Container(
+            padding: const EdgeInsets.all(1),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(32),
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF9047FF).withValues(alpha: 0.5),
+                  const Color(0xFF6B3DFF).withValues(alpha: 0.2),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
             ),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(4, 2, 4, 2),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              decoration: BoxDecoration(
+                color: surfaceColor.withValues(alpha: isDark ? 0.85 : 0.95),
+                borderRadius: BorderRadius.circular(31),
+                boxShadow: _focusNode.hasFocus
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFF9047FF)
+                              .withValues(alpha: isDark ? 0.25 : 0.15),
+                          blurRadius: 20,
+                          spreadRadius: 2,
+                        )
+                      ]
+                    : [
+                        BoxShadow(
+                          color:
+                              Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        )
+                      ],
+                border: Border.all(
+                  color: _focusNode.hasFocus
+                      ? const Color(0xFF9047FF).withValues(alpha: 0.4)
+                      : onSurface.withValues(alpha: 0.08),
+                  width: 1.5,
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  if (!kIsWeb)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 2, bottom: 4),
-                      child: ScaleTransition(
-                        scale: Tween<double>(begin: 1.0, end: 1.12).animate(
-                          CurvedAnimation(
-                            parent: _micPulseController,
-                            curve: Curves.easeInOut,
-                          ),
+                  // Professional Voice Input Button
+                  GestureDetector(
+                    onTap: busy || !_speechReady ? null : _toggleMic,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        color: _isListening
+                            ? Colors.redAccent.withValues(alpha: 0.15)
+                            : (isDark
+                                ? const Color(0xFF1E1B2E)
+                                : theme.colorScheme.primary
+                                    .withValues(alpha: 0.05)),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: _isListening
+                              ? Colors.redAccent.withValues(alpha: 0.3)
+                              : (isDark
+                                  ? Colors.white.withValues(alpha: 0.1)
+                                  : theme.colorScheme.primary
+                                      .withValues(alpha: 0.1)),
                         ),
-                        child: IconButton(
-                          onPressed: busy || !_speechReady ? null : _toggleMic,
-                          icon: Icon(
-                            _isListening
-                                ? Icons.mic_rounded
-                                : Icons.mic_none_rounded,
-                            color: !_speechReady
-                                ? cs.onSurface.withValues(alpha: 0.35)
-                                : (_isListening
-                                    ? Colors.redAccent
-                                    : cs.primary),
-                            size: 26,
-                          ),
-                          tooltip: _isListening
-                              ? 'Stop listening'
-                              : 'Start voice input',
+                      ),
+                      child: ScaleTransition(
+                        scale: Tween<double>(begin: 1.0, end: 1.2).animate(
+                          CurvedAnimation(
+                              parent: _micPulseController,
+                              curve: Curves.easeInOut),
+                        ),
+                        child: Icon(
+                          _isListening
+                              ? Icons.mic_rounded
+                              : Icons.mic_none_rounded,
+                          color: _isListening
+                              ? Colors.redAccent
+                              : (isDark
+                                  ? Colors.white70
+                                  : theme.colorScheme.primary),
+                          size: 22,
                         ),
                       ),
                     ),
+                  ),
+                  const SizedBox(width: 10),
+                  // Floating Input Field
                   Expanded(
-                    child: Theme(
-                      data: theme.copyWith(
-                        inputDecorationTheme: const InputDecorationTheme(
-                          border: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          filled: false,
-                        ),
-                      ),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: TextField(
                         controller: _messageController,
+                        focusNode: _focusNode,
                         minLines: 1,
-                        maxLines: 3,
+                        maxLines: 4,
                         textCapitalization: TextCapitalization.sentences,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: cs.onSurface,
+                        style: TextStyle(
+                          color: onSurface,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
                         ),
                         decoration: InputDecoration(
-                          hintText: _isListening
-                              ? 'Listening... Speak now'
-                              : 'Message… (tap mic to speak)',
-                          hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                            color: cs.onSurface.withValues(alpha: 0.45),
+                          hintText:
+                              _isListening ? 'Listening...' : 'Ask anything...',
+                          hintStyle: TextStyle(
+                            color: onSurface.withValues(alpha: 0.35),
+                            fontSize: 15,
                           ),
-                          filled: false,
                           border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          disabledBorder: InputBorder.none,
-                          errorBorder: InputBorder.none,
-                          focusedErrorBorder: InputBorder.none,
                           isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 12,
-                          ),
+                          contentPadding:
+                              const EdgeInsets.symmetric(vertical: 12),
                         ),
-                        scrollPadding: const EdgeInsets.only(bottom: 32),
                         onSubmitted: (_) => _sendMessage(),
                       ),
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 2, bottom: 2),
-                    child: IconButton.filled(
-                      onPressed: sendLocked ? null : () => _sendMessage(),
-                      style: IconButton.styleFrom(
-                        backgroundColor: cs.primary,
-                        foregroundColor: cs.onPrimary,
-                        disabledBackgroundColor: cs.surfaceContainerHighest,
-                        disabledForegroundColor: cs.onSurface.withValues(alpha: 0.35),
+                  const SizedBox(width: 10),
+                  // Send Button
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF9047FF), Color(0xFF6B3DFF)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                      icon: const Icon(Icons.send_rounded, size: 22),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF9047FF).withValues(alpha: 0.4),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: IconButton(
+                      onPressed: sendLocked ? null : () => _sendMessage(),
+                      icon: const Icon(Icons.arrow_upward_rounded,
+                          color: Colors.white, size: 24),
                     ),
                   ),
                 ],
@@ -793,6 +894,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen>
             ),
           ),
         ),
+      ),
     );
   }
 

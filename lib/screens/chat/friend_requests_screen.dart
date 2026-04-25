@@ -20,8 +20,14 @@ class FriendRequestsScreen extends ConsumerWidget {
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => context.pop(),
+          icon: const Icon(Icons.arrow_back, size: 24),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              context.pop();
+            } else {
+              context.go('/dashboard');
+            }
+          },
         ),
         title: const Text('Friend requests'),
       ),

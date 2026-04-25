@@ -12,7 +12,9 @@ import '../core/providers/theme_provider.dart';
 import '../core/routing/app_routes.dart';
 import '../theme/app_theme.dart';
 import '../theme/avatar_helper.dart';
+import '../core/widgets/premium_background.dart';
 import 'ai/ai_chat_screen.dart';
+import 'campus/campus_management_screen.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key, required this.navigationShell});
@@ -144,6 +146,11 @@ class MainScreenState extends ConsumerState<MainScreen> {
           ],
         ),
         actions: [
+          if (widget.navigationShell.currentIndex == 3)
+            IconButton(
+              icon: Icon(Icons.add_circle_outline, color: theme.colorScheme.primary),
+              onPressed: () => context.push('/communities/create'),
+            ),
           Padding(
             padding: const EdgeInsets.only(right: 20),
             child: TextButton.icon(
@@ -348,7 +355,9 @@ class MainScreenState extends ConsumerState<MainScreen> {
           ),
         ),
       ),
-      body: widget.navigationShell,
+      body: PremiumBackground(
+        child: widget.navigationShell,
+      ),
       bottomNavigationBar: Padding(
         padding: EdgeInsets.fromLTRB(
           16,

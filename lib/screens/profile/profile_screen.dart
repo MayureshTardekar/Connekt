@@ -7,8 +7,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:connekt/core/repositories/auth_repository.dart';
 import '../../core/providers/campus_provider.dart';
 import '../../core/routing/app_routes.dart';
-import '../../theme/app_theme.dart';
 import '../../theme/avatar_helper.dart';
+import 'package:intl/intl.dart';
+import '../../core/widgets/premium_background.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -21,13 +22,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
-    final theme = Theme.of(context);
     final memberships = ref.watch(myMembershipsProvider);
     final avatarUrl = user?.userMetadata?['avatar_url'];
 
     String getUserName() {
       if (user == null) return 'Student';
-      return user.userMetadata?['full_name'] ??
+      return user.userMetadata?['display_name'] ??
+          user.userMetadata?['full_name'] ??
           user.userMetadata?['name'] ??
           user.email?.split('@').first ??
           'Student';
@@ -42,452 +43,296 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       return name.isNotEmpty ? name[0].toUpperCase() : 'S';
     }
 
-    Future<void> showEditAliasDialog() async {
-      final user = ref.read(currentUserProvider);
-      final currentAlias = user?.userMetadata?['display_name'] ?? 
-                           user?.userMetadata?['full_name'] ?? 
-                           user?.email?.split('@').first ?? '';
-      
-      final controller = TextEditingController(text: currentAlias);
-
-      return showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Change Campus Alias'),
-          content: TextField(
-            controller: controller,
-            decoration: const InputDecoration(
-              labelText: 'New Alias',
-              hintText: 'Enter your profile name...',
-            ),
-            maxLength: 20,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final newAlias = controller.text.trim();
-                if (newAlias.isNotEmpty) {
-                  Navigator.pop(context);
-                  try {
-                    final res = await AuthRepository().updateDisplayName(newAlias);
-                    if (res['success'] && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Alias updated! ✨')),
-                      );
-                      setState(() {}); // Refresh local state
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error: ${e.toString()}')),
-                      );
-                    }
-                  }
-                }
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    Future<void> pickAndUploadImage() async {
-      final picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 70,
-      );
-
-      if (image != null) {
-        final bytes = await image.readAsBytes();
-        final extension = image.path.split('.').last;
-
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Uploading profile photo...')),
-          );
-        }
-
-        try {
-          final url =
-              await AuthRepository().uploadProfilePhoto(bytes, extension);
-
-          if (url != null && context.mounted) {
-            setState(() {});
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Profile photo updated! ✨')),
-            );
-          }
-        } catch (e) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Upload failed: ${e.toString()}'),
-                backgroundColor: Colors.redAccent,
-              ),
-            );
-          }
-        }
-      }
-    }
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final primaryColor = theme.colorScheme.onSurface;
+    final secondaryColor = theme.colorScheme.onSurface.withValues(alpha: 0.6);
+    final cardColor = theme.colorScheme.surface;
+    final surfaceColor = isDark ? theme.colorScheme.surface : const Color(0xFFF8F9FA);
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text(
-          'My Profile',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        elevation: 0,
-        actions: [
-          IconButton(
-            onPressed: () async {
-              await Supabase.instance.client.auth.signOut();
-              if (context.mounted) context.go(AppRoutes.login);
-            },
-            icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
+      backgroundColor: Colors.transparent,
+      body: PremiumBackground(
+        child: Stack(
           children: [
-            // Profile Header
-            Center(
-              child: Column(
-                children: [
-                  Stack(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          gradient: AppTheme.primaryGradient,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Hero(
-                          tag: 'profile-pic',
-                          child: avatarWidget(
-                            getUserInitials(),
-                            radius: 46,
-                            imageUrl: avatarUrl,
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: GestureDetector(
-                          onTap: pickAndUploadImage,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: const BoxDecoration(
-                              color: AppTheme.primary,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(color: Colors.black26, blurRadius: 4),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.camera_alt_rounded,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  GestureDetector(
-                    onTap: showEditAliasDialog,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          user?.userMetadata?['display_name'] ?? getUserName(),
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Icon(
-                          Icons.edit_note_rounded,
-                          size: 20,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    user?.email ?? '',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 32),
-            
-            // Stats Row
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard(
-                    'Campuses',
-                    memberships.when(
-                      data: (list) => list.length.toString(),
-                      loading: () => '...',
-                      error: (_, __) => '0',
-                    ),
-                    Icons.school_rounded,
-                    AppTheme.primary,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildStatCard(
-                    'Tokens',
-                    '500', // Placeholder but better looking than nothing
-                    Icons.toll_rounded,
-                    Colors.amber,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildStatCard(
-                    'Level',
-                    '2', // Placeholder
-                    Icons.auto_awesome_rounded,
-                    Colors.purpleAccent,
-                  ),
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 40),
-
-            // Memberships Section
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Row(
+            // Top Bar
+            Positioned(
+              top: 50,
+              left: 10,
+              right: 10,
+              child: SizedBox(
+                height: 50,
+                child: Stack(
+                  alignment: Alignment.center,
                   children: [
-                    Icon(Icons.school_rounded, color: AppTheme.primary),
-                    SizedBox(width: 12),
+                    // Back Button
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: IconButton(
+                        icon: Icon(Icons.arrow_back, color: primaryColor),
+                        onPressed: () {
+                          if (Navigator.canPop(context)) {
+                            context.pop();
+                          } else {
+                            context.go('/dashboard');
+                          }
+                        },
+                      ),
+                    ),
+                    
+                    // Centered Title
                     Text(
-                      'My Campuses',
+                      'PROFILE',
                       style: TextStyle(
-                        fontSize: 18,
+                        color: primaryColor,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                    
+                    // Settings Button
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 10),
+                        child: _buildHeaderButton(Icons.settings_outlined, () {}, isDark, primaryColor),
                       ),
                     ),
                   ],
                 ),
-                IconButton.filled(
-                  style: IconButton.styleFrom(
-                    backgroundColor: AppTheme.primary.withValues(alpha: 0.1),
-                    foregroundColor: AppTheme.primary,
-                  ),
-                  onPressed: () => GoRouter.of(context).push('/campus-select'),
-                  icon: const Icon(Icons.add_rounded),
-                ),
-              ],
+              ),
             ),
-            const SizedBox(height: 16),
 
-            memberships.when(
-              data: (list) {
-                if (list.isEmpty) {
-                  return _buildEmptyState();
-                }
-                final selectedId = ref.watch(selectedCampusIdProvider);
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 500),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 100, 24, 40),
+                  child: Column(
+                    children: [
+                  // Profile Photo with Glow
+                  Center(
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Container(
+                          width: 130,
+                          height: 130,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                              width: 2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                                blurRadius: 30,
+                                spreadRadius: 5,
+                              ),
+                            ],
+                          ),
+                        ),
+                        Hero(
+                          tag: 'profile-pic',
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                            ),
+                            child: avatarWidget(
+                              getUserInitials(),
+                              radius: 58,
+                              imageUrl: avatarUrl,
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 4,
+                          child: GestureDetector(
+                            onTap: () => _pickAndUploadImage(context),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: theme.colorScheme.surface, width: 2),
+                              ),
+                              child: Icon(Icons.camera_alt_rounded, size: 16, color: theme.colorScheme.onPrimary),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
-                return ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: list.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 16),
-                  itemBuilder: (context, index) {
-                    final membership = list[index];
-                    final campusName =
-                        membership['campuses']?['name'] ?? 'Unknown';
-                    final campusId = membership['campus_id']?.toString();
-                    final isSelected = selectedId == campusId;
+                  const SizedBox(height: 24),
 
-                    return Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Color(0xFF161129)
-                            : Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow:
-                            Theme.of(context).brightness == Brightness.dark
-                            ? []
-                            : AppTheme.softShadow,
-                        border: Border.all(
-                          color: isSelected
-                              ? AppTheme.primary.withValues(alpha: 0.5)
-                              : AppTheme.cardBorder,
-                          width: isSelected ? 2 : 1,
+                  // Name and Verification
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        getUserName(),
+                        style: TextStyle(
+                          color: primaryColor,
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
                         ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      const SizedBox(width: 8),
+                      const Icon(Icons.verified_rounded, color: Color(0xFF4C87C4), size: 20),
+                    ],
+                  ),
+
+                  const SizedBox(height: 4),
+
+                  Text(
+                    user?.email ?? '',
+                    style: TextStyle(color: secondaryColor, fontSize: 14),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Identity Badges (UID, Branch)
+                  memberships.when(
+                    data: (list) {
+                      if (list.isEmpty) return const SizedBox();
+                      final membership = list.first;
+                      return Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 12,
+                        runSpacing: 12,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                campusName,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.primary,
-                                ),
-                              ),
-                              if (isSelected)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.primary,
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: const Text(
-                                    'Active',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                )
-                              else
-                                TextButton.icon(
-                                  onPressed: () {
-                                    ref
-                                        .read(selectedCampusIdProvider.notifier)
-                                        .selectCampus(campusId);
-                                    context.go(AppRoutes.dashboard);
-                                  },
-                                  icon: const Icon(
-                                    Icons.swap_horiz_rounded,
-                                    size: 18,
-                                  ),
-                                  label: const Text('Switch'),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: AppTheme.primary,
-                                    padding: EdgeInsets.zero,
-                                    minimumSize: const Size(0, 30),
-                                  ),
-                                ),
-                            ],
+                          _buildIdentityBadge(
+                            Icons.badge_outlined,
+                            membership['uid'] ?? 'No UID',
+                            isDark,
+                            primaryColor,
                           ),
-                          const SizedBox(height: 16),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              _buildTag(
-                                Icons.badge_rounded,
-                                'UID: ${membership['uid']}',
-                              ),
-                              _buildTag(
-                                Icons.school_outlined,
-                                membership['course'],
-                              ),
-                              _buildTag(
-                                Icons.account_tree_outlined,
-                                membership['branch'],
-                              ),
-                            ],
+                          _buildIdentityBadge(
+                            Icons.school_outlined,
+                            membership['branch'] ?? 'No Branch',
+                            isDark,
+                            primaryColor,
                           ),
                         ],
+                      );
+                    },
+                    loading: () => const SizedBox(height: 30),
+                    error: (_, __) => const SizedBox(),
+                  ),
+
+                  const SizedBox(height: 40),
+
+                  // Campus Section
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Primary Campus',
+                      style: TextStyle(
+                        color: primaryColor,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
-                    );
-                  },
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Text('Error loading memberships: $e'),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                    memberships.when(
+                      data: (list) {
+                        if (list.isEmpty) return _buildEmptyState();
+                        final membership = list.first;
+                        final campusName = membership['campuses']?['name'] ?? 'Unknown Campus';
+                        
+                        return _buildPremiumCampusCard(campusName, membership, isDark, primaryColor, theme);
+                      },
+                      loading: () => Center(child: CircularProgressIndicator(color: theme.colorScheme.primary)),
+                      error: (e, _) => Text('Error: $e', style: const TextStyle(color: Colors.redAccent)),
+                    ),
+
+                  const SizedBox(height: 40),
+
+                  // Logout Action
+                  _buildMenuTile(
+                    'Logout', 
+                    Icons.logout_rounded, 
+                    const Color(0xFFE57373), 
+                    () => _handleLogout(context), 
+                    isDark, 
+                    primaryColor, 
+                    theme.colorScheme.surfaceContainerHigh
+                  ),
+                ],
+              ),
             ),
+          ),
+        ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFF161129)
-            : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: color.withValues(alpha: 0.1),
+  Widget _buildHeaderButton(
+      IconData icon, VoidCallback onTap, bool isDark, Color primaryColor) {
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: isDark
+              ? theme.colorScheme.surface.withValues(alpha: 0.8)
+              : Colors.white.withValues(alpha: 0.9),
+          shape: BoxShape.circle,
+          border: Border.all(color: primaryColor.withValues(alpha: 0.08)),
+          boxShadow: isDark
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
         ),
-        boxShadow: Theme.of(context).brightness == Brightness.dark
-            ? []
-            : [
-                BoxShadow(
-                  color: color.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          Text(
-            label,
-            style: const TextStyle(
-              color: AppTheme.textSecondary,
-              fontSize: 12,
-            ),
-          ),
-        ],
+        child: Icon(icon, color: primaryColor, size: 20),
       ),
     );
   }
 
-  Widget _buildTag(IconData icon, String label) {
+  Widget _buildIdentityBadge(
+      IconData icon, String label, bool isDark, Color primaryColor) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: AppTheme.primary.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
+        color: isDark ? theme.colorScheme.surface : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: primaryColor.withValues(alpha: 0.08)),
+        boxShadow: isDark
+            ? null
+            : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: AppTheme.primary),
-          const SizedBox(width: 6),
+          Icon(icon, color: theme.colorScheme.primary, size: 14),
+          const SizedBox(width: 8),
           Text(
             label,
-            style: const TextStyle(
-              color: AppTheme.primary,
+            style: TextStyle(
+              color: primaryColor,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -497,33 +342,217 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildPremiumCampusCard(String name, dynamic membership, bool isDark, Color primaryColor, ThemeData theme) {
     return Container(
+      height: 160,
       width: double.infinity,
-      padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark
-            ? Color(0xFF161129)
-            : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Theme.of(context).dividerColor,
-          style: BorderStyle.solid,
-        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: primaryColor.withValues(alpha: 0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
-      child: const Column(
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
         children: [
-          Icon(Icons.explore_outlined, size: 48, color: AppTheme.textSecondary),
-          SizedBox(height: 16),
-          Text(
-            'No campuses joined yet',
-            style: TextStyle(
-              color: AppTheme.textSecondary,
-              fontWeight: FontWeight.w600,
+          // Background Image with Overlay
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                image: DecorationImage(
+                  image: NetworkImage('https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=80&w=800'),
+                  fit: BoxFit.cover,
+                ),
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      (isDark ? const Color(0xFF0B0812) : const Color(0xFF1A1A1A)).withValues(alpha: 0.8),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.star_rounded, color: theme.colorScheme.onPrimary, size: 12),
+                          const SizedBox(width: 4),
+                          Text(
+                            'PRIMARY',
+                            style: TextStyle(color: theme.colorScheme.onPrimary, fontSize: 9, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right_rounded, color: Colors.white54),
+                  ],
+                ),
+                const Spacer(),
+                Text(
+                  name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_today_rounded, color: Colors.white70, size: 12),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Joined ${_formatJoinedDate(membership)}',
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMenuTile(String label, IconData icon, Color color, VoidCallback onTap, bool isDark, Color primaryColor, Color cardColor) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: primaryColor.withValues(alpha: 0.05)),
+        boxShadow: isDark ? null : [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: color, size: 20),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: primaryColor,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Icon(Icons.chevron_right_rounded, color: primaryColor.withValues(alpha: 0.3), size: 20),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickAndUploadImage(BuildContext context) async {
+    final picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+
+    if (image != null) {
+      final bytes = await image.readAsBytes();
+      final extension = image.path.split('.').last;
+      
+      try {
+        final url = await AuthRepository().uploadProfilePhoto(bytes, extension);
+        if (url != null) setState(() {});
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+        }
+      }
+    }
+  }
+
+  Future<void> _handleLogout(BuildContext context) async {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final primaryColor = isDark ? Colors.white : const Color(0xFF1A1A1A);
+    final secondaryColor = isDark ? Colors.white70 : const Color(0xFF666666);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+        title: Text('Logout?', style: TextStyle(color: primaryColor)),
+        content: Text('Are you sure you want to exit your current session?', style: TextStyle(color: secondaryColor)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Cancel', style: TextStyle(color: secondaryColor))),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true), 
+            child: const Text('Logout', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await Supabase.instance.client.auth.signOut();
+      if (context.mounted) context.go(AppRoutes.login);
+    }
+  }
+
+  String _formatJoinedDate(Map<String, dynamic> membership) {
+    // Try different possible keys for joining date
+    final dateStr = membership['created_at'] ?? membership['joined_at'];
+    if (dateStr == null) return 'Recent';
+    try {
+      final date = DateTime.parse(dateStr);
+      return DateFormat('MMM yyyy').format(date);
+    } catch (_) {
+      return 'Recent';
+    }
+  }
+
+  Widget _buildEmptyState() {
+    return const Center(
+      child: Text('No campus memberships found.', style: TextStyle(color: Color(0xFF888888))),
     );
   }
 }

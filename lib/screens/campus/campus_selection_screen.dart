@@ -398,9 +398,23 @@ class _CampusSelectionScreenState extends ConsumerState<CampusSelectionScreen> {
             floating: false,
             pinned: true,
             backgroundColor: const Color(0xFF0F172A),
+            leading: IconButton(
+              icon: const Icon(
+                Icons.arrow_back,
+                color: Colors.white,
+                size: 24,
+              ),
+              onPressed: () {
+                if (Navigator.canPop(context)) {
+                  context.pop();
+                } else {
+                  context.go('/dashboard');
+                }
+              },
+            ),
             flexibleSpace: FlexibleSpaceBar(
               title: const Text(
-                'Find your Campus',
+                'Select Campus',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               background: Container(

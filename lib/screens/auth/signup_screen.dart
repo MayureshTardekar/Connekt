@@ -82,9 +82,23 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+        final errorStr = e.toString();
+        String message = 'Error: $errorStr';
+        
+        if (errorStr.contains('user_already_exists')) {
+          message = 'This email is already registered. Please sign in instead.';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              action: SnackBarAction(
+                label: 'SIGN IN',
+                onPressed: () => context.pop(),
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+        }
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -110,20 +124,18 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: AppTheme.softShadow,
-            ),
-            child: const Icon(
-              Icons.arrow_back_rounded,
-              color: AppTheme.textPrimary,
-              size: 20,
-            ),
+          icon: Icon(
+            Icons.arrow_back,
+            color: theme.colorScheme.onSurface,
+            size: 24,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              context.pop();
+            } else {
+              context.go(AppRoutes.login);
+            }
+          },
         ),
       ),
       body: SafeArea(
@@ -271,8 +283,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 ),
                 const SizedBox(height: 28),
                 Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(
                         'Already have an account? ',

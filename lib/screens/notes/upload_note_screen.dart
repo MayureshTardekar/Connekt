@@ -150,20 +150,17 @@ class _UploadNoteScreenState extends ConsumerState<UploadNoteScreen> {
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: AppTheme.softShadow,
-            ),
-            child: const Icon(
-              Icons.arrow_back_rounded,
-              color: AppTheme.textPrimary,
-              size: 20,
-            ),
+          icon: const Icon(
+            Icons.arrow_back,
+            color: AppTheme.textPrimary,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              context.pop();
+            } else {
+              context.go('/dashboard');
+            }
+          },
         ),
         title: Text(
           'Upload Note',

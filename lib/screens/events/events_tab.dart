@@ -10,6 +10,7 @@ import '../../core/widgets/notes_events_shimmer.dart';
 import '../../theme/app_theme.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:flutter/services.dart';
+import '../../core/widgets/premium_background.dart';
 
 class EventsTab extends ConsumerStatefulWidget {
   const EventsTab({super.key});
@@ -19,7 +20,11 @@ class EventsTab extends ConsumerStatefulWidget {
 }
 
 class _EventsTabState extends ConsumerState<EventsTab> {
-  int _selectedDayIndex = 0;
+  DateTime _selectedDate = DateTime(
+    DateTime.now().year,
+    DateTime.now().month,
+    DateTime.now().day,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -28,9 +33,10 @@ class _EventsTabState extends ConsumerState<EventsTab> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: SafeArea(
-        child: eventsAsync.when(
+      backgroundColor: Colors.transparent,
+      body: PremiumBackground(
+        child: SafeArea(
+          child: eventsAsync.when(
           loading: () => buildEventsTabShimmer(context),
           error: (error, _) => Center(
             child: AppErrorState(
@@ -39,20 +45,19 @@ class _EventsTabState extends ConsumerState<EventsTab> {
             ),
           ),
           data: (events) {
-            final today = DateTime.now();
-            final selectedDate = DateTime(
-              today.year,
-              today.month,
-              today.day,
-            ).add(Duration(days: _selectedDayIndex));
+            final today = DateTime(
+              DateTime.now().year,
+              DateTime.now().month,
+              DateTime.now().day,
+            );
 
             final filteredEvents = events.where((event) {
-              final eventDate = DateTime(
-                event.dateTime.year,
-                event.dateTime.month,
-                event.dateTime.day,
-              );
-              return eventDate == selectedDate;
+              // Safety check for null date (even if non-nullable in model)
+              // and compare only year/month/day
+              final d = event.dateTime;
+              return d.year == _selectedDate.year &&
+                     d.month == _selectedDate.month &&
+                     d.day == _selectedDate.day;
             }).toList()
               ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
 
@@ -63,9 +68,12 @@ class _EventsTabState extends ConsumerState<EventsTab> {
               featuredEvent = filteredEvents.first;
             }
 
-            return AnimationLimiter(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+            return RefreshIndicator(
+              onRefresh: () async => ref.invalidate(campusEventsProvider),
+              child: AnimationLimiter(
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
                 children: AnimationConfiguration.toStaggeredList(
                   duration: const Duration(milliseconds: 375),
                   childAnimationBuilder: (widget) => SlideAnimation(
@@ -81,7 +89,7 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                         Text(
                           'CAMPUS EVENTS',
                           style: theme.textTheme.labelMedium?.copyWith(
-                            color: AppTheme.textSecondary,
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1.5,
                           ),
@@ -100,7 +108,7 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                     Text(
                       '${DateFormat('MMMM yyyy').format(today)} · ${events.length} upcoming events',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.textSecondary,
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
                     const SizedBox(height: 32),
@@ -116,7 +124,29 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                           ),
                         ),
                         TextButton.icon(
-                          onPressed: () {},
+                          onPressed: () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: _selectedDate,
+                              firstDate: today.subtract(const Duration(days: 365)),
+                              lastDate: today.add(const Duration(days: 365)),
+                              builder: (context, child) {
+                                return Theme(
+                                  data: theme.copyWith(
+                                    colorScheme: theme.colorScheme.copyWith(
+                                      primary: AppTheme.primary,
+                                      onPrimary: Colors.white,
+                                      surface: isDark ? theme.colorScheme.surface : Colors.white,
+                                    ),
+                                  ),
+                                  child: child!,
+                                );
+                              },
+                            );
+                            if (picked != null) {
+                              setState(() => _selectedDate = picked);
+                            }
+                          },
                           icon: const Icon(Icons.calendar_month_outlined, size: 16),
                           label: const Text('View month'),
                           style: TextButton.styleFrom(
@@ -134,11 +164,11 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                         scrollDirection: Axis.horizontal,
                         itemBuilder: (context, index) {
                           final date = today.add(Duration(days: index));
-                          final isSelected = _selectedDayIndex == index;
+                          final isSelected = _selectedDate == date;
                           return InkWell(
                             onTap: () {
                               HapticFeedback.selectionClick();
-                              setState(() => _selectedDayIndex = index);
+                              setState(() => _selectedDate = date);
                             },
                             borderRadius: BorderRadius.circular(16),
                             child: AnimatedContainer(
@@ -148,7 +178,7 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                               decoration: BoxDecoration(
                                 color: isSelected 
                                     ? (isDark ? Colors.white : Colors.black)
-                                    : (isDark ? const Color(0xFF1A1A1A) : Colors.grey.shade100),
+                                    : (isDark ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5) : Colors.grey.shade100),
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
                                   color: isSelected 
@@ -209,7 +239,7 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              DateFormat('EEEE, MMMM d').format(selectedDate),
+                              DateFormat('EEEE, MMMM d').format(_selectedDate),
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -241,7 +271,7 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                         padding: const EdgeInsets.all(32),
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1A1A1A) : Colors.grey.shade50,
+                          color: isDark ? theme.colorScheme.surface.withValues(alpha: 0.5) : Colors.grey.shade50,
                           borderRadius: BorderRadius.circular(24),
                         ),
                         child: Text(
@@ -261,9 +291,11 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                   ],
                 ),
               ),
-            );
-          },
+            ),
+          );
+        },
         ),
+      ),
       ),
       floatingActionButton: ref.watch(isCampusCreatorProvider)
           ? FloatingActionButton(
@@ -457,9 +489,9 @@ class _EventsTabState extends ConsumerState<EventsTab> {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+            color: isDark ? theme.colorScheme.surface.withValues(alpha: 0.8) : Colors.white,
             borderRadius: BorderRadius.circular(20),
-            border: isDark ? null : Border.all(color: Colors.grey.shade200),
+            border: isDark ? Border.all(color: theme.dividerColor.withValues(alpha: 0.1)) : Border.all(color: Colors.grey.shade200),
             boxShadow: isDark ? null : [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.03),
@@ -475,7 +507,7 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                 width: 60,
                 height: 70,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF252525) : Colors.grey.shade100,
+                  color: isDark ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5) : Colors.grey.shade100,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Column(
@@ -583,7 +615,7 @@ class _EventsTabState extends ConsumerState<EventsTab> {
                   width: 60,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF252525) : Colors.grey.shade100,
+                    color: isDark ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5) : Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(Icons.event, color: AppTheme.textSecondary.withValues(alpha: 0.5)),

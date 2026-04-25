@@ -55,20 +55,18 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              shape: BoxShape.circle,
-              border: Border.all(color: AppTheme.cardBorder),
-            ),
-            child: const Icon(
-              Icons.arrow_back_rounded,
-              color: AppTheme.textPrimary,
-              size: 20,
-            ),
+          icon: Icon(
+            Icons.arrow_back,
+            color: theme.colorScheme.onSurface,
+            size: 22,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              context.pop();
+            } else {
+              context.go(AppRoutes.dashboard);
+            }
+          },
         ),
         actions: [
           if (currentNote.authorId == ref.watch(currentUserProvider)?.id)

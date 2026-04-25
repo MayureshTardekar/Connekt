@@ -38,6 +38,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           .read(authRepositoryProvider)
           .signInWithEmail(email: email, password: password);
       if (mounted) context.go(AppRoutes.dashboard);
+    } on AuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -53,6 +59,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     setState(() => _activeOAuthProvider = provider);
     try {
       await ref.read(authRepositoryProvider).signInWithOAuth(provider);
+    } on AuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -363,8 +375,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     ],
                   ),
                   const SizedBox(height: 40),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(
                         "Don't have an account? ",

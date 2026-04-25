@@ -10,6 +10,7 @@ import '../../core/routing/app_routes.dart';
 import '../../core/widgets/app_states.dart';
 
 import '../ghost/ghost_tab.dart';
+import '../../core/widgets/premium_background.dart';
 
 class ChatTab extends ConsumerStatefulWidget {
   const ChatTab({super.key});
@@ -18,155 +19,126 @@ class ChatTab extends ConsumerStatefulWidget {
   ConsumerState<ChatTab> createState() => _ChatTabState();
 }
 
-class _ChatTabState extends ConsumerState<ChatTab> {
+class _ChatTabState extends ConsumerState<ChatTab> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        backgroundColor: theme.scaffoldBackgroundColor,
-        body: Container(
-          width: double.infinity,
-          height: double.infinity,
-          color: theme.scaffoldBackgroundColor,
-          child: Stack(
-          children: [
-              // Radial Glows — only visible in dark mode
-              if (isDark) Positioned(
-                top: -150,
-                left: -150,
-                child: Container(
-                  width: 300,
-                  height: 300,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.15),
-                        blurRadius: 150,
-                        spreadRadius: 50,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              if (isDark) Positioned(
-                top: 200,
-                right: -150,
-                child: Container(
-                  width: 300,
-                  height: 300,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.purple.withValues(alpha: 0.1),
-                        blurRadius: 120,
-                        spreadRadius: 40,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              SafeArea(
-                child: Column(
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: PremiumBackground(
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Header
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Social Hub',
-                            style: theme.textTheme.displaySmall?.copyWith(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.5,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                          ),
-                          Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(22),
-                              border: Border.all(
-                                color: isDark
-                                    ? Colors.white.withValues(alpha: 0.1)
-                                    : Colors.black.withValues(alpha: 0.07),
-                              ),
-                              color: isDark
-                                  ? Colors.white.withValues(alpha: 0.05)
-                                  : Colors.black.withValues(alpha: 0.03),
-                            ),
-                            child: Icon(Icons.auto_awesome_rounded, color: theme.colorScheme.primary, size: 20),
-                          ),
-                        ],
+                    Text(
+                      'Social Hub',
+                      style: theme.textTheme.displaySmall?.copyWith(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
-
-                    // Custom Segmented Tab Bar
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Container(
-                        height: 52,
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.05)
-                              : Colors.black.withValues(alpha: 0.04),
-                          borderRadius: BorderRadius.circular(26),
-                          border: Border.all(
-                            color: isDark
-                                ? Colors.white.withValues(alpha: 0.08)
-                                : Colors.black.withValues(alpha: 0.06),
-                          ),
-                        ),
-                        child: TabBar(
-                          indicatorSize: TabBarIndicatorSize.tab,
-                          dividerColor: Colors.transparent,
-                          indicator: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [theme.colorScheme.primary, theme.colorScheme.primary.withValues(alpha: 0.8)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
+                    if (_tabController.index == 1)
+                      GestureDetector(
+                        onTap: () => context.push(AppRoutes.createCommunity),
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(22),
-                            boxShadow: [
-                              BoxShadow(
-                                color: theme.colorScheme.primary.withValues(alpha: 0.35),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+                            border: Border.all(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.1)
+                                  : Colors.black.withValues(alpha: 0.07),
+                            ),
+                            color: theme.colorScheme.surfaceContainer,
                           ),
-                          labelColor: Colors.white,
-                          unselectedLabelColor: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                          labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-                          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                          tabs: const [
-                            Tab(text: 'Announcements'),
-                            Tab(text: 'Communities'),
-                            Tab(text: 'Ghost Chat'),
-                          ],
+                          child: Icon(Icons.add_rounded, color: theme.colorScheme.primary, size: 24),
                         ),
                       ),
-                    ),
+                  ],
+                ),
+              ),
 
-                    const Expanded(
-                      child: TabBarView(
-                        children: [
-                          _AnnouncementsView(),
-                          _CommunitiesView(),
-                          GhostTab(isTab: true),
-                        ],
-                      ),
+              // Custom Segmented Tab Bar
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Container(
+                  height: 52,
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHigh.withValues(alpha: isDark ? 0.5 : 1.0),
+                    borderRadius: BorderRadius.circular(26),
+                    border: Border.all(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : Colors.black.withValues(alpha: 0.06),
                     ),
+                  ),
+                  child: TabBar(
+                    controller: _tabController,
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    dividerColor: Colors.transparent,
+                    indicator: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [theme.colorScheme.primary, theme.colorScheme.primary.withValues(alpha: 0.8)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(22),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.colorScheme.primary.withValues(alpha: 0.35),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    labelColor: Colors.white,
+                    unselectedLabelColor: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                    unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    tabs: const [
+                      Tab(text: 'Announcements'),
+                      Tab(text: 'Communities'),
+                      Tab(text: 'Ghost Chat'),
+                    ],
+                  ),
+                ),
+              ),
+
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: const [
+                    _AnnouncementsView(),
+                    _CommunitiesView(),
+                    GhostTab(isTab: true),
                   ],
                 ),
               ),
@@ -237,10 +209,14 @@ class _AnnouncementsViewState extends ConsumerState<_AnnouncementsView> with Aut
                 );
               }
 
-              return ListView.builder(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
-                itemCount: visible.length,
-                itemBuilder: (context, index) => _AnnouncementTile(conversation: visible[index]),
+              return RefreshIndicator(
+                onRefresh: () async => ref.invalidate(chatConversationsProvider),
+                child: ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
+                  itemCount: visible.length,
+                  itemBuilder: (context, index) => _AnnouncementTile(conversation: visible[index]),
+                ),
               );
             },
           ),
@@ -311,10 +287,14 @@ class _CommunitiesViewState extends ConsumerState<_CommunitiesView> with Automat
                 );
               }
 
-              return ListView.builder(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
-                itemCount: visible.length,
-                itemBuilder: (context, index) => _AnnouncementTile(conversation: visible[index]),
+              return RefreshIndicator(
+                onRefresh: () async => ref.invalidate(chatConversationsProvider),
+                child: ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
+                  itemCount: visible.length,
+                  itemBuilder: (context, index) => _AnnouncementTile(conversation: visible[index]),
+                ),
               );
             },
           ),

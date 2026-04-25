@@ -121,7 +121,7 @@ class CampusRepository {
           .select('*, campuses(*)')
           .eq('user_id', user.id);
 
-      return List<Map<String, dynamic>>.from(response);
+      return List<Map<String, dynamic>>.from(response as List);
     } catch (e) {
       debugPrint('Error getting my campuses: $e');
       rethrow;
@@ -180,118 +180,38 @@ class CampusRepository {
     return (response as List).isNotEmpty;
   }
 
-  // Combined Recent Activity Stream for Dashboard (kept clean for now)
+  // Helper to safely parse Supabase timestamps to UTC
+  DateTime _parseTimestamp(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return DateTime.now();
+    if (!dateStr.endsWith('Z') && !dateStr.contains('+')) {
+      dateStr = '${dateStr}Z';
+    }
+    return DateTime.tryParse(dateStr) ?? DateTime.now();
+  }
+
+  // Isolated Campus Feed Stream for Dashboard
   Stream<List<Map<String, dynamic>>> getRecentActivityStream({
     String? campusId,
   }) {
-
     return _supabase
-        .from('academic_notes') // Main trigger
+        .from('campus_feed_posts') // Main trigger
         .stream(primaryKey: ['id'])
         .asyncMap((_) async {
       final List<Map<String, dynamic>> activities = [];
 
       try {
-        var notesQuery = _supabase.from('notes_with_profiles').select();
-        if (campusId != null) {
-          notesQuery = notesQuery.eq('campus_id', campusId);
-        }
-        final notes = await notesQuery.order('created_at', ascending: false).limit(10);
-        
-        for (var n in notes) {
-          activities.add({
-            'id': n['id'],
-            'type': 'note',
-            'title': n['title'] ?? 'Note',
-            'subtitle': 'Shared a note in ${n['category'] ?? 'General'}',
-            'created_at': DateTime.tryParse(n['created_at'] ?? '') ?? DateTime.now(),
-            'author': n['author_name'] ?? n['author'] ?? 'Student',
-            'author_id': n['author_id'],
-            'author_avatar': n['author_avatar'],
-            'image_url': n['file_url'],
-            'likes_count': n['likes_count'] ?? 0,
-            'location': null,
-            'status': null,
-          });
-        }
-      } catch (e) {
-        debugPrint('Error fetching notes for feed: $e');
-      }
-
-      try {
-        var eventsQuery = _supabase.from('events_with_profiles').select();
-        if (campusId != null) {
-          eventsQuery = eventsQuery.eq('campus_id', campusId);
-        }
-        final events =
-            await eventsQuery.order('created_at', ascending: false).limit(10);
-        for (var e in events) {
-          activities.add({
-            'id': e['id'],
-            'type': 'event',
-            'title': e['title'] ?? 'Event',
-            'subtitle': 'New event at ${e['location'] ?? 'Campus'}',
-            'created_at':
-                DateTime.tryParse(e['created_at'] ?? e['event_date'] ?? '') ??
-                    DateTime.now(),
-            'author': e['author_name'] ?? e['organizer'] ?? 'Student',
-            'author_id': e['author_id'],
-            'author_avatar': e['author_avatar'],
-            'image_url': e['image_url'],
-            'likes_count': e['likes_count'] ?? 0,
-            'location': e['location'],
-            'status': null,
-          });
-        }
-      } catch (e) {
-        debugPrint('Error fetching events for feed: $e');
-      }
-
-      try {
-        var lostQuery = _supabase.from('lost_items_with_profiles').select();
-        if (campusId != null) {
-          lostQuery = lostQuery.eq('campus_id', campusId);
-        }
-        final lostItems =
-            await lostQuery.order('created_at', ascending: false).limit(10);
-        for (var li in lostItems) {
-          final isLost = li['type']?.toString().toLowerCase() == 'lost';
-          activities.add({
-            'id': li['id'],
-            'type': 'lost_found',
-            'title': li['title'] ?? 'Lost/Found Item',
-            'subtitle':
-                '${isLost ? 'Lost' : 'Found'} an item at ${li['location'] ?? 'Campus'}',
-            'created_at':
-                DateTime.tryParse(li['created_at'] ?? '') ?? DateTime.now(),
-            'author': li['author_name'] ?? 'Student',
-            'author_id': li['posted_by'],
-            'author_avatar': li['author_avatar'],
-            'image_url': li['image_url'],
-            'likes_count': 0,
-            'location': li['location'],
-            'status': li['status'] ?? 'Open',
-            'item_type': li['type'],
-          });
-        }
-      } catch (e) {
-        debugPrint('Error fetching lost items for feed: $e');
-      }
-
-      // NEW: Fetch campus feed posts (the Instagram style images)
-      try {
         var feedPostsQuery = _supabase.from('campus_feed_posts_with_profiles').select();
         if (campusId != null) {
           feedPostsQuery = feedPostsQuery.eq('campus_id', campusId);
         }
-        final feedPosts = await feedPostsQuery.order('created_at', ascending: false).limit(10);
+        final feedPosts = await feedPostsQuery.order('created_at', ascending: false).limit(30);
         for (var p in feedPosts) {
           activities.add({
             'id': p['id'],
             'type': 'feed_post',
             'title': p['caption'] ?? 'Social Post',
             'subtitle': 'Shared a new photo',
-            'created_at': DateTime.tryParse(p['created_at'] ?? '') ?? DateTime.now(),
+            'created_at': _parseTimestamp(p['created_at']),
             'author': p['author_full_name'] ?? p['author_display_name'] ?? 'Student',
             'author_id': p['author_id'],
             'author_avatar': p['author_avatar_url'],
@@ -309,7 +229,7 @@ class CampusRepository {
         (a, b) => (b['created_at'] as DateTime)
             .compareTo(a['created_at'] as DateTime),
       );
-      return activities.take(30).toList();
+      return activities;
     });
   }
 
@@ -348,7 +268,6 @@ class CampusRepository {
           user.userMetadata?['display_name'] ??
           user.email?.split('@')[0] ??
           'Student',
-      'created_at': DateTime.now().toIso8601String(),
     });
   }
 
@@ -423,7 +342,6 @@ class CampusRepository {
       'type': type,
       'status': 'Open',
       'posted_by': user.id,
-      'created_at': DateTime.now().toIso8601String(),
     };
 
     if (imageUrl != null && imageUrl.trim().isNotEmpty) {
@@ -728,7 +646,6 @@ class CampusRepository {
       'author_id': user.id,
       'image_url': imageUrl,
       'caption': caption,
-      'created_at': DateTime.now().toIso8601String(),
     });
   }
 
@@ -791,6 +708,39 @@ class CampusRepository {
       return result != null;
     } catch (_) {
       return false;
+    }
+  }
+
+  Future<int> getUserContributionCount(String userId) async {
+    try {
+      final results = await Future.wait([
+        _supabase.from('academic_notes').select('id').eq('author_id', userId),
+        _supabase.from('campus_events').select('id').eq('author_id', userId),
+        _supabase.from('lost_found').select('id').eq('posted_by', userId),
+        _supabase.from('campus_feed_posts').select('id').eq('author_id', userId),
+      ]);
+
+      int total = 0;
+      for (var res in results) {
+        if (res is List) {
+          total += res.length;
+        }
+      }
+      return total;
+    } catch (e) {
+      debugPrint('Error fetching contribution count: $e');
+      return 0;
+    }
+  }
+
+  Future<void> resolveLostFoundItem(String itemId, bool isResolved) async {
+    try {
+      await _supabase
+          .from('lost_found')
+          .update({'is_resolved': isResolved})
+          .eq('id', itemId);
+    } catch (e) {
+      throw Exception('Failed to update status: $e');
     }
   }
 }

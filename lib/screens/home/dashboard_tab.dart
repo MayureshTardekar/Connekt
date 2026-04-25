@@ -65,59 +65,12 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600),
-            child: Stack(
-              clipBehavior: Clip.hardEdge,
-          children: [
-            Positioned(
-              left: -30,
-              top: 40 - _scrollOffset * 0.14,
-              child: IgnorePointer(
-                child: RepaintBoundary(
-                  child: Container(
-                    width: 220,
-                    height: 220,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          theme.colorScheme.primary.withValues(alpha: 0.11),
-                          theme.colorScheme.primary.withValues(alpha: 0.02),
-                          Colors.transparent,
-                        ],
-                        stops: const [0.0, 0.45, 1.0],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              right: -50,
-              top: 280 - _scrollOffset * 0.09,
-              child: IgnorePointer(
-                child: RepaintBoundary(
-                  child: Container(
-                    width: 180,
-                    height: 180,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          theme.colorScheme.tertiary.withValues(alpha: 0.08),
-                          Colors.transparent,
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            RefreshIndicator(
+            child: RefreshIndicator(
               onRefresh: () async {
                 ref.invalidate(recentActivityProvider);
                 ref.invalidate(campusEventsProvider);
@@ -149,53 +102,45 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                         ],
                       ),
                     ),
-                    if (campus != null) ...[
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: GestureDetector(
-                          onTap: () => context.push('/campus-select'),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 8,
+                    const Spacer(),
+                    if (campus != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.08,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.15,
                             ),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primary.withValues(
-                                alpha: 0.1,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: theme.colorScheme.primary.withValues(
-                                  alpha: 0.2,
-                                ),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.location_on_rounded,
-                                  color: theme.colorScheme.primary,
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 6),
-                                Flexible(
-                                  child: Text(
-                                    campus['name'] ?? 'Select Campus',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.labelLarge?.copyWith(
-                                      color: theme.colorScheme.primary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                            width: 1,
                           ),
                         ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.account_balance_rounded,
+                              color: theme.colorScheme.primary,
+                              size: 14,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              (campus['name'] as String? ?? 'Campus').toUpperCase(),
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: theme.colorScheme.primary,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ],
                   ],
                 ),
               ),
@@ -472,8 +417,6 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                 ],
               ),
             ),
-          ],
-        ),
           ),
         ),
       ),
@@ -482,7 +425,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
 
   Widget _buildQuickStats(BuildContext context, ThemeData theme) {
     final isDark = theme.brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : theme.colorScheme.surface;
+    final cardColor = isDark ? theme.colorScheme.surface : theme.colorScheme.surface;
     
     // Dynamic fetching of stats
     final eventsCount = ref.watch(campusEventsProvider).value?.length ?? 0;
@@ -590,7 +533,7 @@ class _DiscoverQuickGridState extends State<_DiscoverQuickGrid> {
   @override
   Widget build(BuildContext context) {
     final isDark = widget.theme.brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF2A2A2A) : widget.theme.colorScheme.surface;
+    final cardColor = isDark ? widget.theme.colorScheme.surface : widget.theme.colorScheme.surface;
 
     final List<Map<String, dynamic>> items = [
       {'icon': Icons.menu_book_rounded, 'label': 'Notes', 'color': const Color(0xFF3B82F6), 'onTap': widget.onNotes},
@@ -691,7 +634,7 @@ class _SpotlightCarouselState extends State<_SpotlightCarousel> {
     if (slides.isEmpty) {
       slides.add({
         'image':
-            'https://images.unsplash.com/photo-1541339907198-e08756ebafe3?q=80&w=1200', // Premium University theme
+            'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=80&w=800', // Premium University theme
         'title': 'Welcome to Connekt',
         'subtitle': 'The premium social hub for your campus life.',
       });

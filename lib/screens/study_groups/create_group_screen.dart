@@ -116,6 +116,19 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
       appBar: AppBar(
         title: const Text('Create Study Group'),
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back,
+            size: 24,
+          ),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              context.pop();
+            } else {
+              context.go('/dashboard');
+            }
+          },
+        ),
       ),
       body: Form(
         key: _formKey,

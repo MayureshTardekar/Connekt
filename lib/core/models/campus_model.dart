@@ -36,6 +36,7 @@ class CampusMember {
   final String? course;
   final String? branch;
   final String role;
+  final DateTime? createdAt;
 
   CampusMember({
     required this.id,
@@ -45,6 +46,7 @@ class CampusMember {
     this.course,
     this.branch,
     required this.role,
+    this.createdAt,
   });
 
   factory CampusMember.fromJson(Map<String, dynamic> json) {
@@ -56,6 +58,7 @@ class CampusMember {
       course: json['course'],
       branch: json['branch'],
       role: json['role'] ?? 'member',
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
     );
   }
 }

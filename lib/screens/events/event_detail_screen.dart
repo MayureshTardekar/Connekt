@@ -103,34 +103,26 @@ class EventDetailScreen extends ConsumerWidget {
             pinned: true,
             backgroundColor: accent,
             leading: IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.arrow_back_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
+              icon: const Icon(
+                Icons.arrow_back,
+                color: Colors.white,
+                size: 24,
               ),
-              onPressed: () => context.pop(),
+              onPressed: () {
+                if (Navigator.canPop(context)) {
+                  context.pop();
+                } else {
+                  context.go('/dashboard');
+                }
+              },
             ),
             actions: [
               if (isOrganizer)
                 IconButton(
-                  icon: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.delete_outline_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
+                  icon: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: Colors.white,
+                    size: 24,
                   ),
                   onPressed: () => _deleteEvent(context, ref),
                 ),

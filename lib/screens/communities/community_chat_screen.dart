@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:record/record.dart';
@@ -13,6 +14,7 @@ import '../../core/widgets/image_preview_send_sheet.dart';
 import '../../core/widgets/media_bubble.dart';
 import '../../core/widgets/message_interaction_sheet.dart';
 import 'community_admin_screen.dart';
+import '../../core/widgets/premium_background.dart';
 
 class CommunityChatScreen extends ConsumerStatefulWidget {
   final String communityId;
@@ -27,12 +29,15 @@ class _CommunityChatScreenState extends ConsumerState<CommunityChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final AudioRecorder _audioRecorder = AudioRecorder();
+  late final FocusNode _focusNode;
   bool _isRecording = false;
   Map<String, dynamic>? _replyingTo;
 
   @override
   void initState() {
     super.initState();
+    _focusNode = FocusNode();
+    _focusNode.addListener(() => setState(() {}));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(activeCommunityIdProvider.notifier).state = widget.communityId;
     });
@@ -40,6 +45,7 @@ class _CommunityChatScreenState extends ConsumerState<CommunityChatScreen> {
 
   @override
   void dispose() {
+    _focusNode.dispose();
     _messageController.dispose();
     _scrollController.dispose();
     _audioRecorder.dispose();
@@ -128,8 +134,23 @@ class _CommunityChatScreenState extends ConsumerState<CommunityChatScreen> {
     final membershipStatusAsync = ref.watch(communityMembershipStatusProvider);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back,
+            color: theme.colorScheme.onSurface,
+            size: 24,
+          ),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              context.pop();
+            } else {
+              context.go('/dashboard');
+            }
+          },
+        ),
         title: const Text('Community'),
         elevation: 0,
         actions: [
@@ -148,18 +169,17 @@ class _CommunityChatScreenState extends ConsumerState<CommunityChatScreen> {
           ),
         ],
       ),
-      body: membershipStatusAsync.when(
-        data: (status) {
-          if (status != 'member') {
-            return _buildAccessDenied(status);
-          }
-          return Column(
+      body: PremiumBackground(
+        child: membershipStatusAsync.when(
+          data: (status) {
+            if (status != 'member') {
+              return _buildAccessDenied(status);
+            }
+            return Column(
             children: [
               Expanded(
-                child: ColoredBox(
-                  color: theme.brightness == Brightness.light
-                      ? theme.colorScheme.surfaceContainerLow
-                      : theme.scaffoldBackgroundColor,
+                child: Container(
+                  color: Colors.transparent,
                   child: messagesAsync.when(
                   data: (messages) => ListView.builder(
                     controller: _scrollController,
@@ -188,8 +208,9 @@ class _CommunityChatScreenState extends ConsumerState<CommunityChatScreen> {
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, r) => const Center(child: Text('Error loading status')),
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, r) => const Center(child: Text('Error loading status')),
+        ),
       ),
     );
   }
@@ -438,61 +459,132 @@ class _CommunityChatScreenState extends ConsumerState<CommunityChatScreen> {
 
   Widget _buildInputArea() {
     final theme = Theme.of(context);
-    return Material(
-      elevation: 8,
-      color: theme.colorScheme.surface,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 10, 8, 12),
+    final cs = theme.colorScheme;
+    final isFocused = _focusNode.hasFocus;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        boxShadow: isFocused
+            ? [
+                BoxShadow(
+                  color: cs.primary.withValues(alpha: 0.15),
+                  blurRadius: 30,
+                  spreadRadius: -10,
+                )
+              ]
+            : null,
+      ),
+      child: SafeArea(
+        top: false,
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            IconButton(
-              icon: const Icon(Icons.image_outlined),
-              color: theme.colorScheme.primary,
-              onPressed: _pickImageForPreview,
-            ),
-            Expanded(
-              child: TextField(
-                controller: _messageController,
-                style: theme.textTheme.bodyLarge,
-                decoration: InputDecoration(
-                  hintText: 'Type a message…',
-                  filled: true,
-                  fillColor: theme.colorScheme.surfaceContainerHighest
-                      .withValues(alpha: 0.5),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                ),
-              ),
-            ),
+            // Professional Mic Button on the LEFT
             GestureDetector(
               onLongPress: _startRecording,
               onLongPressUp: _stopAndSendRecording,
-              child: Container(
-                padding: const EdgeInsets.all(12),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   color: _isRecording
                       ? theme.colorScheme.error
-                      : theme.colorScheme.primaryContainer,
+                      : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                   shape: BoxShape.circle,
+                  border: Border.all(
+                    color: _isRecording
+                        ? theme.colorScheme.error
+                        : cs.primary.withValues(alpha: 0.1),
+                  ),
                 ),
-                child: Icon(
-                  _isRecording ? Icons.mic : Icons.mic_none,
-                  color: _isRecording
-                      ? theme.colorScheme.onError
-                      : theme.colorScheme.onPrimaryContainer,
+                child: Center(
+                  child: Icon(
+                    _isRecording ? Icons.mic : Icons.mic_none,
+                    color: _isRecording ? Colors.white : cs.primary,
+                    size: 22,
+                  ),
                 ),
               ),
             ),
+            const SizedBox(width: 8),
+
+            // Floating Input Field with Glassmorphism
+            Expanded(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(
+                    color: isFocused
+                        ? cs.primary.withValues(alpha: 0.4)
+                        : cs.outlineVariant.withValues(alpha: 0.2),
+                    width: 1.5,
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(28),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.image_outlined, size: 20),
+                        color: cs.primary,
+                        onPressed: _pickImageForPreview,
+                      ),
+                      Expanded(
+                        child: TextField(
+                          controller: _messageController,
+                          focusNode: _focusNode,
+                          style: theme.textTheme.bodyMedium,
+                          maxLines: 4,
+                          minLines: 1,
+                          decoration: InputDecoration(
+                            hintText: 'Type a message…',
+                            hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                              color: cs.onSurface.withValues(alpha: 0.4),
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+
+            // Send Button
             if (!_isRecording)
-              IconButton.filled(
-                onPressed: _sendMessage,
-                icon: const Icon(Icons.send_rounded),
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [cs.primary, cs.primary.withValues(alpha: 0.8)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: cs.primary.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  onPressed: _sendMessage,
+                  icon: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                ),
               ),
           ],
         ),

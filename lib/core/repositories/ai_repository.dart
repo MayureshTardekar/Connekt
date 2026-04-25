@@ -100,7 +100,7 @@ class AIRepository {
   }) async {
     _logApiKeyFingerprint(apiKey);
     final uri = Uri.parse(
-      'https://generativelanguage.googleapis.com/v1/models/$modelId:generateContent?key=$apiKey',
+      'https://generativelanguage.googleapis.com/v1beta/models/$modelId:generateContent?key=$apiKey',
     );
 
     final payload = <String, dynamic>{

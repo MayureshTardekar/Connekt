@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/repositories/chat_repository.dart';
 import '../../core/utils/time_formatter.dart';
@@ -31,10 +32,19 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   final _textController = TextEditingController();
   final _scrollController = ScrollController();
   final _chatRepo = ChatRepository();
+  late final FocusNode _focusNode;
   Map<String, dynamic>? _replyingTo;
 
   @override
+  void initState() {
+    super.initState();
+    _focusNode = FocusNode();
+    _focusNode.addListener(() => setState(() {}));
+  }
+
+  @override
   void dispose() {
+    _focusNode.dispose();
     _textController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -76,6 +86,20 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back,
+            color: theme.colorScheme.onSurface,
+            size: 24,
+          ),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              context.pop();
+            } else {
+              context.go('/dashboard');
+            }
+          },
+        ),
         title: Row(
           children: [
             CircleAvatar(
@@ -193,6 +217,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
               else
                 _ChatInput(
                   controller: _textController,
+                  focusNode: _focusNode,
                   onSend: _sendMessage,
                 ),
             ],
@@ -380,63 +405,87 @@ class _MessageBubble extends StatelessWidget {
 }
 
 class _ChatInput extends StatelessWidget {
-  const _ChatInput({required this.controller, required this.onSend});
+  const _ChatInput({
+    required this.controller,
+    required this.focusNode,
+    required this.onSend,
+  });
   final TextEditingController controller;
+  final FocusNode focusNode;
   final VoidCallback onSend;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isFocused = focusNode.hasFocus;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        border: Border(top: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1))),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, -4),
-          ),
-        ],
+        color: Colors.transparent,
+        boxShadow: isFocused
+            ? [
+                BoxShadow(
+                  color: cs.primary.withValues(alpha: 0.1),
+                  blurRadius: 40,
+                  spreadRadius: -10,
+                )
+              ]
+            : null,
       ),
       child: SafeArea(
         top: false,
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Expanded(
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(28),
+                  border: Border.all(
+                    color: isFocused
+                        ? cs.primary.withValues(alpha: 0.4)
+                        : cs.outlineVariant.withValues(alpha: 0.2),
+                    width: 1.5,
+                  ),
                 ),
                 child: TextField(
                   controller: controller,
+                  focusNode: focusNode,
                   style: theme.textTheme.bodyMedium,
+                  maxLines: 4,
+                  minLines: 1,
                   decoration: InputDecoration(
                     hintText: 'Type a message...',
                     hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                      color: cs.onSurface.withValues(alpha: 0.4),
                     ),
                     border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
                   ),
                 ),
               ),
             ),
             const SizedBox(width: 12),
             Container(
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
-                  colors: [
-                    theme.colorScheme.primary,
-                    theme.colorScheme.primary.withValues(alpha: 0.8),
-                  ],
+                  colors: [cs.primary, cs.primary.withValues(alpha: 0.8)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                    color: cs.primary.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),

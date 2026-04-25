@@ -105,10 +105,16 @@ class _PostLostItemScreenState extends ConsumerState<PostLostItemScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(
-            Icons.arrow_back_rounded,
+            Icons.arrow_back,
             color: AppTheme.textPrimary,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              context.pop();
+            } else {
+              context.go('/dashboard');
+            }
+          },
         ),
         title: Text(
           'Report Item',

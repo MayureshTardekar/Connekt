@@ -73,6 +73,20 @@ class _CampusFeedScreenState extends ConsumerState<CampusFeedScreen> {
                     snap: true,
                     backgroundColor: theme.scaffoldBackgroundColor,
                     elevation: 0,
+                    leading: IconButton(
+                      icon: Icon(
+                        Icons.arrow_back,
+                        color: theme.colorScheme.onSurface,
+                        size: 24,
+                      ),
+                      onPressed: () {
+                        if (Navigator.canPop(context)) {
+                          context.pop();
+                        } else {
+                          context.go('/dashboard');
+                        }
+                      },
+                    ),
                     title: Text(
                       '$campusName Feed',
                       style: theme.textTheme.titleLarge?.copyWith(

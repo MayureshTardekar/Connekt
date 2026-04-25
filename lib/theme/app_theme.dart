@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  static const Color primary = Color(0xFF2563EB);
-  static const Color primaryLight = Color(0xFF60A5FA);
-  static const Color primaryDark = Color(0xFF1D4ED8);
+  static const Color primary = Color(0xFF9047FF);
+  static const Color primaryLight = Color(0xFFB07AFF);
+  static const Color primaryDark = Color(0xFF6B3DFF);
 
   static const Color background = Color(0xFFF5F7FB);
   static const Color surface = Colors.white;
@@ -85,6 +85,9 @@ class AppTheme {
         primary: primary,
         secondary: primaryLight,
         surface: surface,
+        surfaceContainer: Color(0xFFF0F2F8),
+        surfaceContainerHigh: Color(0xFFE8EBF5),
+        onSurface: textPrimary,
       ),
       textTheme: baseText.copyWith(
         displayLarge: GoogleFonts.inter(
@@ -244,11 +247,11 @@ class AppTheme {
   }
 
   static ThemeData get darkTheme {
-    const darkBg = Color(0xFF0D0D12); // Pure Obsidian
-    const darkSurface = Color(0xFF16161E); // Deep Charcoal
-    const darkBorder = Color(0xFF23232E); // Subtle Border
-    const primaryAccent = Color(0xFF0A84FF); // Electric Blue
-    const secondaryAccent = Color(0xFF5E5CE6); // Indigo Glow
+    const darkBg = Color(0xFF0B0812); // Deep Midnight
+    const darkSurface = Color(0xFF120E1A); // Royal Dark Purple
+    const darkBorder = Color(0xFF1E1B2E); // Deep Indigo Border
+    const primaryAccent = Color(0xFF9047FF); // Royal Purple
+    const secondaryAccent = Color(0xFF6B3DFF); // Deep Indigo Glow
 
     final baseText = ThemeData.dark().textTheme;
     return ThemeData(
@@ -385,7 +388,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFF1A1A24),
+        fillColor: const Color(0xFF1E1B2E),
         hintStyle: GoogleFonts.poppins(
           color: const Color(0xFF4B5563),
           fontWeight: FontWeight.w400,

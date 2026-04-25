@@ -90,39 +90,32 @@ class ItemDetailScreen extends ConsumerWidget {
             expandedHeight: 300,
             pinned: true,
             backgroundColor: _statusColor,
-            leading: GestureDetector(
-              onTap: () => context.pop(),
-              child: Container(
-                margin: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.arrow_back_rounded,
-                  color: Colors.white,
-                ),
+            leading: IconButton(
+              icon: const Icon(
+                Icons.arrow_back,
+                color: Colors.white,
+                size: 24,
               ),
+              onPressed: () {
+                if (Navigator.canPop(context)) {
+                  context.pop();
+                } else {
+                  context.go('/dashboard');
+                }
+              },
             ),
             actions: [
               if (isOwner)
                 Padding(
                   padding: const EdgeInsets.only(right: 12),
-                  child: GestureDetector(
-                    onTap: () => _deleteItem(context, ref),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.delete_outline_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
+                  child: IconButton(
+                  icon: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: Colors.white,
+                    size: 24,
                   ),
+                  onPressed: () => _deleteItem(context, ref),
+                ),
                 ),
             ],
             flexibleSpace: FlexibleSpaceBar(

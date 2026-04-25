@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/repositories/study_groups_repository.dart';
 import '../../core/models/study_group.dart';
@@ -152,6 +153,19 @@ class _StudyGroupChatScreenState extends ConsumerState<StudyGroupChatScreen> {
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(widget.group.subject, overflow: TextOverflow.ellipsis),
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back,
+            size: 24,
+          ),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              context.pop();
+            } else {
+              context.go('/dashboard');
+            }
+          },
+        ),
       ),
       body: Column(
         children: [

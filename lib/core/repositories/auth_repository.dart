@@ -233,7 +233,7 @@ class AuthRepository {
   }) async {
     try {
       final user = _supabase.auth.currentUser;
-      final updates = {
+      final updates = <String, dynamic>{
         'id': id,
         'updated_at': DateTime.now().toIso8601String(),
       };

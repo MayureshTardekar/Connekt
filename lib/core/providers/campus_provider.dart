@@ -168,3 +168,9 @@ final isCampusCreatorProvider = Provider<bool>((ref) {
 
   return createdBy != null && createdBy == currentUserId;
 });
+
+final userContributionCountProvider = FutureProvider<int>((ref) async {
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null) return 0;
+  return ref.watch(campusRepositoryProvider).getUserContributionCount(user.id);
+});

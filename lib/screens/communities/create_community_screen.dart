@@ -58,6 +58,20 @@ class _CreateCommunityScreenState extends ConsumerState<CreateCommunityScreen> {
         title: const Text('New Community', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.black,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back,
+            color: Colors.white,
+            size: 24,
+          ),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              context.pop();
+            } else {
+              context.go('/dashboard');
+            }
+          },
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),

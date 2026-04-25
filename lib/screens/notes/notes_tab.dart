@@ -11,6 +11,7 @@ import '../../core/widgets/app_states.dart';
 import '../../core/widgets/notes_events_shimmer.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/avatar_helper.dart';
+import '../../core/widgets/premium_background.dart';
 
 class NotesTab extends ConsumerStatefulWidget {
   const NotesTab({super.key});
@@ -69,9 +70,12 @@ class _NotesTabState extends ConsumerState<NotesTab> {
           return matchesCategory && matchesSearch;
         }).toList();
 
-        return Scaffold(
-          body: CustomScrollView(
-            slivers: [
+        return PremiumBackground(
+          child: RefreshIndicator(
+            onRefresh: () async => ref.invalidate(academicNotesProvider),
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
               SliverAppBar(
                 expandedHeight: 160,
                 floating: false,
@@ -92,7 +96,7 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                             Text(
                               'NOTES LIBRARY',
                               style: TextStyle(
-                                color: isDark ? Colors.white70 : Colors.black54,
+                                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 1.2,
                                 fontSize: 12,
@@ -112,7 +116,7 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                         Text(
                           'Premium repository of campus resources',
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: isDark ? Colors.white70 : Colors.black54,
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
                         ),
                       ],
@@ -134,9 +138,7 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                           suffixIcon: const Icon(Icons.tune_rounded), // Added filter icon
                           hintText: 'Search subjects or authors...',
                           filled: true,
-                          fillColor: isDark 
-                              ? const Color(0xFF1E1E1E) 
-                              : const Color(0xFFF1F5F9),
+                          fillColor: theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.5),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: BorderSide.none,
@@ -238,6 +240,7 @@ class _NotesTabState extends ConsumerState<NotesTab> {
               const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
           ),
+          ),
         );
       },
     );
@@ -252,8 +255,9 @@ class _NotesTabState extends ConsumerState<NotesTab> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF161616) : Colors.white, // Darker background
+        color: theme.colorScheme.surface.withValues(alpha: 0.8), // Semi-transparent surface
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.1)),
       ),
       child: Material(
         color: Colors.transparent,
@@ -270,7 +274,7 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                   width: 72,
                   height: 72,
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF222222) : const Color(0xFFF0F0F0),
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(16),
                     image: const DecorationImage(
                       image: NetworkImage('https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?q=80&w=200'),
