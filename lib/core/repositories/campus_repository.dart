@@ -114,6 +114,17 @@ class CampusRepository {
     });
   }
 
+  Future<void> leaveCampus(String campusId) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw Exception('Not authenticated');
+
+    await _supabase
+        .from('campus_members')
+        .delete()
+        .eq('campus_id', campusId)
+        .eq('user_id', user.id);
+  }
+
   Future<List<Map<String, dynamic>>> getMyCampuses() async {
     try {
       final user = _supabase.auth.currentUser;

@@ -48,11 +48,12 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
 
   String _userName() {
     final user = Supabase.instance.client.auth.currentUser;
-    return user?.userMetadata?['display_name'] ??
+    final raw = user?.userMetadata?['display_name'] ??
         user?.userMetadata?['full_name'] ??
         user?.userMetadata?['name'] ??
         user?.email?.split('@').first ??
         'Student';
+    return raw.toString().trim().split(RegExp(r'\s+')).first;
   }
 
   @override
@@ -87,7 +88,8 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
+                    Flexible(
+                      fit: FlexFit.tight,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -95,14 +97,17 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                           const SizedBox(height: 4),
                           Text(
                             _userName(),
-                            style: theme.textTheme.displaySmall,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.displaySmall?.copyWith(
+                              fontSize: 30,
+                              height: 1.05,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.visible,
                           ),
                         ],
                       ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 12),
                     if (campus != null)
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -313,15 +318,10 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                     Padding(
                       padding: const EdgeInsets.only(left: 4, bottom: 8),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
                             'Discover',
                             style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                          TextButton(
-                            onPressed: () {},
-                            child: const Text('See all', style: TextStyle(color: Colors.blue)),
                           ),
                         ],
                       ),
@@ -354,9 +354,20 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Campus Feed', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-                    TextButton(
-                      onPressed: () {},
-                      child: const Text('View all', style: TextStyle(color: Colors.blue)),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton.filledTonal(
+                          tooltip: 'Post to campus feed',
+                          onPressed: () => context.push(AppRoutes.campusFeed),
+                          icon: const Icon(Icons.add_photo_alternate_rounded),
+                        ),
+                        const SizedBox(width: 6),
+                        TextButton(
+                          onPressed: () => context.push(AppRoutes.campusFeed),
+                          child: const Text('View all', style: TextStyle(color: Colors.blue)),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -549,16 +560,24 @@ class _DiscoverQuickGridState extends State<_DiscoverQuickGrid> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: visibleItems.map((item) => Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: _buildIcon(cardColor, item['icon'], item['label'], item['color'], item['onTap']),
-            )).toList(),
-          ),
+        GridView.count(
+          crossAxisCount: 4,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 14,
+          crossAxisSpacing: 12,
+          childAspectRatio: 0.78,
+          children: visibleItems
+              .map(
+                (item) => _buildIcon(
+                  cardColor,
+                  item['icon'],
+                  item['label'],
+                  item['color'],
+                  item['onTap'],
+                ),
+              )
+              .toList(),
         ),
         const SizedBox(height: 8),
         Center(
@@ -598,6 +617,8 @@ class _DiscoverQuickGridState extends State<_DiscoverQuickGrid> {
           const SizedBox(height: 8),
           Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: widget.theme.textTheme.labelSmall?.copyWith(color: widget.theme.textTheme.bodySmall?.color, fontSize: 11),
           ),
         ],

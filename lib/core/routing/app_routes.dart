@@ -14,6 +14,7 @@ abstract final class AppRoutes {
   static const chatFriendRequests = '/chat/friend-requests';
   static const world = '/world';
   static const campusSelect = '/campus-select';
+  static const campusFeed = '/campus-feed';
   static const lostFound = '/lost-found';
   static const lostFoundDetail = '/lost-found/detail';
   static const lostFoundPost = '/lost-found/post';

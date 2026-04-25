@@ -18,6 +18,7 @@ import '../../screens/ai/ai_chat_screen.dart';
 
 // Tab Screens
 import '../../screens/home/dashboard_tab.dart';
+import '../../screens/home/campus_feed_screen.dart';
 import '../../screens/notes/notes_tab.dart';
 import '../../screens/events/events_tab.dart';
 import '../../screens/chat/chat_tab.dart';
@@ -113,6 +114,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.campusSelect,
         builder: (context, state) => const CampusSelectionScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.campusFeed,
+        builder: (context, state) => const CampusFeedScreen(),
       ),
       GoRoute(
         path: AppRoutes.chatFriendRequests,

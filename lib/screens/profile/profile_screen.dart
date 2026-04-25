@@ -19,6 +19,8 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  bool _isLeavingCampus = false;
+
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
@@ -248,7 +250,34 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         final membership = list.first;
                         final campusName = membership['campuses']?['name'] ?? 'Unknown Campus';
                         
-                        return _buildPremiumCampusCard(campusName, membership, isDark, primaryColor, theme);
+                        return Column(
+                          children: [
+                            _buildPremiumCampusCard(campusName, membership, isDark, primaryColor, theme),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: _isLeavingCampus
+                                    ? null
+                                    : () => _confirmLeaveCampus(membership),
+                                icon: _isLeavingCampus
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      )
+                                    : const Icon(Icons.logout_rounded),
+                                label: Text(_isLeavingCampus ? 'Leaving...' : 'Leave Campus'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: const Color(0xFFE57373),
+                                  side: BorderSide(
+                                    color: const Color(0xFFE57373).withValues(alpha: 0.55),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
                       },
                       loading: () => Center(child: CircularProgressIndicator(color: theme.colorScheme.primary)),
                       error: (e, _) => Text('Error: $e', style: const TextStyle(color: Colors.redAccent)),
@@ -437,6 +466,55 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _confirmLeaveCampus(Map<String, dynamic> membership) async {
+    final campusId = membership['campus_id']?.toString();
+    final campusName = membership['campuses']?['name']?.toString() ?? 'this campus';
+    if (campusId == null || campusId.isEmpty) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Leave Campus?'),
+        content: Text(
+          'You will leave $campusName and can join another campus after this.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Leave', style: TextStyle(color: Color(0xFFE57373))),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _isLeavingCampus = true);
+    try {
+      await ref.read(campusRepositoryProvider).leaveCampus(campusId);
+      ref.read(selectedCampusIdProvider.notifier).selectCampus(null);
+      ref.invalidate(myCampusesProvider);
+      ref.invalidate(myMembershipsProvider);
+      ref.invalidate(campusMemberCountProvider);
+
+      if (mounted) {
+        context.go(AppRoutes.campusSelect);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not leave campus: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLeavingCampus = false);
+    }
   }
 
   Widget _buildMenuTile(String label, IconData icon, Color color, VoidCallback onTap, bool isDark, Color primaryColor, Color cardColor) {

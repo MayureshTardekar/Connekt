@@ -252,15 +252,6 @@ class MainScreenState extends ConsumerState<MainScreen> {
                       },
                     ),
                     _DrawerItem(
-                      icon: Icons.location_on_outlined,
-                      title: 'Campus',
-                      subtitle: 'Switch or join your campus',
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        context.push(AppRoutes.campusSelect);
-                      },
-                    ),
-                    _DrawerItem(
                       icon: Icons.auto_awesome_outlined,
                       title: 'AI Assistant',
                       subtitle: 'Ask questions and get quick help',

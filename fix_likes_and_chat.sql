@@ -110,5 +110,24 @@ BEGIN
     END IF;
 END $$;
 
+-- Allow a student to leave their current campus so they can join another one.
+-- Required if RLS is enabled on public.campus_members.
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_policies
+        WHERE schemaname = 'public'
+          AND tablename = 'campus_members'
+          AND policyname = 'Users can leave their campus'
+    ) THEN
+        CREATE POLICY "Users can leave their campus"
+        ON public.campus_members
+        FOR DELETE
+        TO authenticated
+        USING (auth.uid() = user_id);
+    END IF;
+END $$;
+
 -- 6) Ghost Posts missing author_name? (Sometimes needed for models)
 ALTER TABLE public.ghost_posts ADD COLUMN IF NOT EXISTS author_name TEXT DEFAULT 'Ghost';
