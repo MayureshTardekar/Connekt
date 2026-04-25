@@ -38,10 +38,76 @@ class _ChatTabState extends ConsumerState<ChatTab> with SingleTickerProviderStat
     super.dispose();
   }
 
+  void _showCreateAnnouncementDialog(BuildContext context, WidgetRef ref) {
+    final titleController = TextEditingController();
+    final theme = Theme.of(context);
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: theme.scaffoldBackgroundColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1)),
+          ),
+          title: Text(
+            'New Announcement Channel',
+            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          content: TextField(
+            controller: titleController,
+            style: TextStyle(color: theme.colorScheme.onSurface),
+            decoration: InputDecoration(
+              hintText: 'Channel Name (e.g. Exam Updates)',
+              hintStyle: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final title = titleController.text.trim();
+                if (title.isNotEmpty) {
+                  Navigator.pop(ctx);
+                  try {
+                    final campusId = ref.read(selectedCampusIdProvider);
+                    if (campusId != null) {
+                      await ref.read(chatRepositoryProvider).createAnnouncementChannel(
+                            title: title,
+                            campusId: campusId,
+                          );
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Announcement channel created!')),
+                        );
+                      }
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Failed: $e')),
+                      );
+                    }
+                  }
+                }
+              },
+              child: const Text('Create'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final isCampusCreator = ref.watch(isCampusCreatorProvider);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -64,9 +130,15 @@ class _ChatTabState extends ConsumerState<ChatTab> with SingleTickerProviderStat
                         color: theme.colorScheme.onSurface,
                       ),
                     ),
-                    if (_tabController.index == 1)
+                    if (_tabController.index == 1 || (_tabController.index == 0 && isCampusCreator))
                       GestureDetector(
-                        onTap: () => context.push(AppRoutes.createCommunity),
+                        onTap: () {
+                          if (_tabController.index == 1) {
+                            context.push(AppRoutes.createCommunity);
+                          } else if (_tabController.index == 0) {
+                            _showCreateAnnouncementDialog(context, ref);
+                          }
+                        },
                         child: Container(
                           width: 44,
                           height: 44,

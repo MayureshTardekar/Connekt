@@ -28,6 +28,28 @@ class ChatRepository {
     }
   }
 
+  // Create an official announcement channel
+  Future<void> createAnnouncementChannel({
+    required String title,
+    required String campusId,
+  }) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw Exception('Not authenticated');
+
+    final channelId = 'announce_${DateTime.now().millisecondsSinceEpoch}';
+
+    await _supabase.from('chat_conversations').insert({
+      'id': channelId,
+      'other_user_name': title,
+      'participant_id': user.id, // The creator's ID
+      'is_official': true,
+      'is_group': true,
+      'campus_id': campusId,
+      'last_message': 'Channel created',
+      'last_message_time': DateTime.now().toUtc().toIso8601String(),
+    });
+  }
+
   // Real-time stream of conversations
   Stream<List<ChatConversation>> watchConversations() {
     return _supabase
