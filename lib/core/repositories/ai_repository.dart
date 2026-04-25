@@ -74,8 +74,8 @@ class AIRepository {
 
   AIRepository();
 
-  /// Stable `v1` REST — single model until quota/404 issues are resolved.
-  static const String _geminiModelId = 'gemini-1.5-flash';
+  /// Stable Gemini REST model, override with --dart-define=GEMINI_MODEL=...
+  static String get _geminiModelId => AppConfig.geminiModel;
 
   static String _geminiHttpError(int statusCode) => 'Error: $statusCode';
 
@@ -96,8 +96,9 @@ class AIRepository {
   Future<http.Response> _geminiRawGenerateContent({
     required String apiKey,
     required String userMessageText,
-    String modelId = _geminiModelId,
+    String? modelId,
   }) async {
+    modelId ??= _geminiModelId;
     _logApiKeyFingerprint(apiKey);
     final uri = Uri.parse(
       'https://generativelanguage.googleapis.com/v1beta/models/$modelId:generateContent?key=$apiKey',
@@ -182,7 +183,7 @@ class AIRepository {
       return _msgNoAiKeysAtAll();
     }
 
-    // --- GEMINI first: stable v1 REST + gemini-1.5-flash (web: Gemini only). ---
+    // --- GEMINI first: stable REST. On web this is the only direct provider. ---
     if (AppConfig.hasConfiguredGeminiKey) {
       try {
         final keys = <String>[
@@ -197,28 +198,29 @@ class AIRepository {
           final combinedUserText =
               '$fullSystemInstruction\n\n---\n\nUser message:\n$message';
 
-          final key = keys.first;
+          for (final key in keys) {
+            final response = await _geminiRawGenerateContent(
+              apiKey: key,
+              userMessageText: combinedUserText,
+              modelId: _geminiModelId,
+            );
+            final body = response.body;
 
-          final response = await _geminiRawGenerateContent(
-            apiKey: key,
-            userMessageText: combinedUserText,
-            modelId: _geminiModelId,
-          );
-          final body = response.body;
-
-          if (response.statusCode == 200) {
-            final text = _parseGeminiGenerateContentText(body);
-            if (text != null && text.isNotEmpty) {
-              if (text.contains('WARNING')) _warningCount++;
-              return text;
+            if (response.statusCode == 200) {
+              final text = _parseGeminiGenerateContentText(body);
+              if (text != null && text.isNotEmpty) {
+                if (text.contains('WARNING')) _warningCount++;
+                return text;
+              }
+              lastError = 'Gemini 200 but empty/parse failed';
+              continue;
             }
-            lastError = 'Gemini 200 but empty/parse failed';
-          } else {
-            lastError = 'HTTP ${response.statusCode}';
-          }
 
-          if (kIsWeb) {
-            return _geminiHttpError(response.statusCode);
+            lastError = 'Gemini HTTP ${response.statusCode}';
+            _logHttpFailure('gemini_raw', response);
+            if (!_httpLooksRateLimited(response.statusCode, response.body)) {
+              break;
+            }
           }
         } else {
           lastError = 'no gemini key';
@@ -245,7 +247,7 @@ class AIRepository {
               'Authorization': 'Bearer ${AppConfig.groqApiKey}',
             },
             body: jsonEncode({
-              'model': 'llama-3.3-70b-versatile',
+              'model': AppConfig.groqModel,
               'messages': [
                 {'role': 'system', 'content': fullSystemInstruction},
                 {'role': 'user', 'content': message},
@@ -370,7 +372,7 @@ class AIRepository {
     required List<dynamic> lostFound,
   }) async {
     final hasGemini = AppConfig.keyLooksConfigured(AppConfig.geminiApiKey);
-    final hasGroq = AppConfig.groqApiKey.trim().isNotEmpty;
+    final hasGroq = !kIsWeb && AppConfig.groqApiKey.trim().isNotEmpty;
     if (!hasGemini && !hasGroq) {
       return "Campus data synced. I'm ready to help!";
     }
@@ -417,7 +419,7 @@ class AIRepository {
             'Authorization': 'Bearer ${AppConfig.groqApiKey}',
           },
           body: jsonEncode({
-            'model': 'llama-3.3-70b-versatile',
+            'model': AppConfig.groqModel,
             'messages': [
               {
                 'role': 'system',

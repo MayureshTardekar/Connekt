@@ -376,6 +376,8 @@ class _LostFoundTabState extends ConsumerState<LostFoundTab> {
   }
 
   Widget _buildFilterTabs(int lostCount) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Container(

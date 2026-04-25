@@ -353,10 +353,7 @@ class _MessageBubble extends StatelessWidget {
                       ),
                     const SizedBox(height: 2),
                     Text(
-                      TimeFormatter.format(
-                        DateTime.tryParse(message['created_at'] ?? '') ??
-                            DateTime.now(),
-                      ),
+                      TimeFormatter.format(message['created_at']),
                       style: theme.textTheme.labelSmall?.copyWith(
                         fontSize: 9,
                         color: (isMe

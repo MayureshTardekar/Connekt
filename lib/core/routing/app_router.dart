@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -44,9 +46,14 @@ import '../models/lost_item.dart';
 import '../models/study_group.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
+  final authRefresh = GoRouterRefreshStream(
+    ref.read(authRepositoryProvider).authStateChanges,
+  );
+  ref.onDispose(authRefresh.dispose);
   
   return GoRouter(
     initialLocation: AppRoutes.splash,
+    refreshListenable: authRefresh,
     redirect: (context, state) {
       final user = ref.read(authRepositoryProvider).currentUser;
       final location = state.matchedLocation;
@@ -293,6 +300,24 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+class GoRouterRefreshStream extends ChangeNotifier {
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    notifyListeners();
+    _subscription = stream.asBroadcastStream().listen(
+      (_) => notifyListeners(),
+      onError: (_) => notifyListeners(),
+    );
+  }
+
+  late final StreamSubscription<dynamic> _subscription;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
 
 class _RoutePayloadErrorScreen extends StatelessWidget {
   const _RoutePayloadErrorScreen({required this.message});

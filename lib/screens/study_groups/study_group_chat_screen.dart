@@ -344,7 +344,7 @@ class _StudyMsgTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final type = message['message_type']?.toString() ?? 'text';
-    final created = DateTime.tryParse(message['created_at']?.toString() ?? '');
+    final created = TimeFormatter.parseSupabaseTimestamp(message['created_at']);
     final reactions = Map<String, dynamic>.from(message['reactions'] ?? {});
 
     final bubbleColor = isMe ? theme.colorScheme.primaryContainer : theme.colorScheme.surfaceContainerHighest;

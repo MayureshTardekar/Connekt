@@ -23,7 +23,7 @@ class Campus {
       bannerUrl: json['banner_url'] as String?,
       // join_pin may not exist in the DB yet — read safely
       joinPin: json.containsKey('join_pin') ? json['join_pin'] as String? : null,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: DateTime.parse(json['created_at'] as String).toUtc(),
     );
   }
 }
@@ -58,7 +58,7 @@ class CampusMember {
       course: json['course'],
       branch: json['branch'],
       role: json['role'] ?? 'member',
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']).toUtc() : null,
     );
   }
 }

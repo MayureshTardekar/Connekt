@@ -702,19 +702,18 @@ class _GhostTabState extends ConsumerState<GhostTab>
   Widget _buildInputArea() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: isDark
-            ? theme.colorScheme.surfaceContainer
-            : theme.cardColor,
-        border: Border(
-          top: BorderSide(
-            color: theme.dividerColor.withValues(alpha: 0.1),
-          ),
-        ),
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+    const radius = 28.0;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        16,
+        8,
+        16,
+        keyboardOpen ? 12 : 18 + MediaQuery.paddingOf(context).bottom,
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           if (_replyingTo != null)
             Container(
@@ -764,88 +763,169 @@ class _GhostTabState extends ConsumerState<GhostTab>
                 ],
               ),
             ),
-          Row(
-            children: [
-              Hero(
-                tag: kGhostImagePickerHeroTag,
-                child: Material(
-                  type: MaterialType.transparency,
-                  child: IconButton(
-                    icon: const Icon(Icons.image_outlined, color: Colors.white54),
-                    onPressed: _isSendingLocally ? null : _pickImageForPreview,
+          ClipRRect(
+            borderRadius: BorderRadius.circular(radius),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+              child: Container(
+                padding: const EdgeInsets.all(1.2),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(radius),
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.white.withValues(alpha: isDark ? 0.18 : 0.55),
+                      const Color(0xFF9047FF).withValues(alpha: 0.42),
+                      const Color(0xFF6B3DFF).withValues(alpha: 0.24),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                ),
-              ),
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white.withValues(alpha: 0.05)
-                        : Colors.black.withValues(alpha: 0.02),
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: TextField(
-                    controller: _messageController,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
-                    cursorColor: AppColors.ghostPrimary,
-                    decoration: const InputDecoration(
-                      hintText: 'Say something anonymous...',
-                      hintStyle: TextStyle(color: Colors.white24, fontSize: 13),
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(vertical: 12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF9047FF).withValues(alpha: 0.34),
+                      blurRadius: 26,
+                      spreadRadius: 1,
+                      offset: const Offset(0, 8),
                     ),
-                    onSubmitted: (_) => _sendMessage(),
-                  ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onLongPress: _startRecording,
-                onLongPressUp: _stopAndSendRecording,
                 child: Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
-                    color: _isRecording
-                        ? Colors.redAccent
-                        : AppColors.ghostPrimary,
-                    shape: BoxShape.circle,
+                    color: (isDark ? const Color(0xFF120E1A) : Colors.white)
+                        .withValues(alpha: isDark ? 0.74 : 0.84),
+                    borderRadius: BorderRadius.circular(radius - 1),
                   ),
-                  child: Icon(
-                    _isRecording ? Icons.mic : Icons.mic_none,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-              ),
-              if (!_isRecording) ...[
-                const SizedBox(width: 4),
-                GestureDetector(
-                  onTap: _isSendingLocally ? null : _sendMessage,
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.ghostPrimary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: _isSendingLocally
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
+                  child: Row(
+                    children: [
+                      Tooltip(
+                        message: _isRecording
+                            ? 'Release to send voice'
+                            : 'Hold for voice message',
+                        child: GestureDetector(
+                          onLongPress: _isSendingLocally ? null : _startRecording,
+                          onLongPressUp:
+                              _isSendingLocally ? null : _stopAndSendRecording,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 220),
+                            width: 46,
+                            height: 46,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: _isRecording
+                                    ? const [
+                                        Color(0xFFFF4D6D),
+                                        Color(0xFFFF8FA3),
+                                      ]
+                                    : const [
+                                        Color(0xFF9047FF),
+                                        Color(0xFF6B3DFF),
+                                      ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: (_isRecording
+                                          ? Colors.redAccent
+                                          : const Color(0xFF9047FF))
+                                      .withValues(alpha: 0.38),
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
                             ),
-                          )
-                        : const Icon(
-                            Icons.send_rounded,
-                            color: Colors.white,
-                            size: 20,
+                            child: Icon(
+                              _isRecording ? Icons.mic : Icons.mic_none,
+                              color: Colors.white,
+                              size: 21,
+                            ),
                           ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: _messageController,
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          cursorColor: AppColors.ghostPrimary,
+                          decoration: InputDecoration(
+                            hintText: _isRecording
+                                ? 'Recording voice...'
+                                : 'Say something anonymous...',
+                            hintStyle: TextStyle(
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.34),
+                              fontSize: 13,
+                            ),
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            filled: false,
+                            isDense: true,
+                            contentPadding:
+                                const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          onSubmitted: (_) => _sendMessage(),
+                        ),
+                      ),
+                      Hero(
+                        tag: kGhostImagePickerHeroTag,
+                        child: Material(
+                          type: MaterialType.transparency,
+                          child: IconButton(
+                            tooltip: 'Send image',
+                            icon: Icon(
+                              Icons.image_outlined,
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.62),
+                            ),
+                            onPressed:
+                                _isSendingLocally ? null : _pickImageForPreview,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [Color(0xFF9047FF), Color(0xFF6B3DFF)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
+                        child: IconButton(
+                          tooltip: 'Send message',
+                          onPressed: _isSendingLocally ? null : _sendMessage,
+                          icon: _isSendingLocally
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.send_rounded,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ],
+              ),
+            ),
           ),
         ],
       ),

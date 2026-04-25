@@ -19,7 +19,7 @@ class PremiumBackground extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     // Background base color
-    final baseColor = isDark ? const Color(0xFF0B0812) : theme.scaffoldBackgroundColor;
+    final baseColor = theme.scaffoldBackgroundColor;
 
     // Light mode glows (subtle) or Dark mode glows (Midnight Purple)
     final glow1Color = isDark 

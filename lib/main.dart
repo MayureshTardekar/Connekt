@@ -31,10 +31,20 @@ void main() async {
 
     // Initialize Supabase Backend
     if (AppConfig.isSupabaseConfigured) {
-      await Supabase.initialize(
-        url: AppConfig.supabaseUrl,
-        anonKey: AppConfig.supabaseAnonKey,
-      );
+      try {
+        await Supabase.initialize(
+          url: AppConfig.supabaseUrl,
+          anonKey: AppConfig.supabaseAnonKey,
+        );
+        debugPrint(
+          'Supabase initialized. Session restored: '
+          '${Supabase.instance.client.auth.currentSession != null}',
+        );
+      } catch (e, st) {
+        debugPrint('Supabase initialization failed: $e');
+        debugPrint('$st');
+        rethrow;
+      }
     } else {
       debugPrint('---------------------------------------------------------');
       debugPrint('⚠️ CONFIGURE SUPABASE TO UNLOCK LIVE FEATURES');

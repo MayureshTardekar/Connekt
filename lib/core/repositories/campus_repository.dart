@@ -87,14 +87,17 @@ class CampusRepository {
       throw Exception('You are already a member of a campus. Please leave your current campus to join a new one.');
     }
 
-    // 3. Security Check: Verify PIN if set
+    // 3. Security Check: Verify PIN if set. Select the whole row so older
+    // databases without campuses.join_pin do not fail with a missing column.
     final campusData = await _supabase
         .from('campuses')
-        .select('join_pin')
+        .select()
         .eq('id', campusId)
         .maybeSingle();
     
-    final requiredPin = campusData?['join_pin']?.toString();
+    final requiredPin = campusData != null && campusData.containsKey('join_pin')
+        ? campusData['join_pin']?.toString()
+        : null;
     if (requiredPin != null && requiredPin.isNotEmpty) {
       if (pin == null || pin.trim() != requiredPin.trim()) {
         throw Exception('Invalid Campus PIN. Please ask your campus administrator for the correct PIN.');

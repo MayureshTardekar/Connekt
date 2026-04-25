@@ -19,6 +19,10 @@ class AppConfig {
   static const String geminiApiKey = String.fromEnvironment('GEMINI_API_KEY');
   static const String geminiApiKeyBackup =
       String.fromEnvironment('GEMINI_API_KEY_BACKUP');
+  static const String geminiModel = String.fromEnvironment(
+    'GEMINI_MODEL',
+    defaultValue: 'gemini-2.5-flash-lite',
+  );
   // Redirect URLs
   /// Optional override (e.g. staging). If empty on web, [oauthRedirectUrl] uses the
   /// current browser origin so the port matches `flutter run` (avoids localhost:3000
@@ -50,6 +54,10 @@ class AppConfig {
   static const String xaiApiKey = String.fromEnvironment('XAI_API_KEY');
   static const String nvidiaApiKey = String.fromEnvironment('NVIDIA_API_KEY');
   static const String groqApiKey = String.fromEnvironment('GROQ_API_KEY');
+  static const String groqModel = String.fromEnvironment(
+    'GROQ_MODEL',
+    defaultValue: 'llama-3.3-70b-versatile',
+  );
   static const String geminiApiKeyTertiary =
       String.fromEnvironment('GEMINI_API_KEY_TERTIARY');
 

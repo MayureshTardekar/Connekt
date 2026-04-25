@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -715,10 +716,10 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen>
   Widget _buildInputArea(ThemeData theme) {
     final isDark = theme.brightness == Brightness.dark;
     final onSurface = theme.colorScheme.onSurface;
-    final surfaceColor = isDark ? const Color(0xFF18181B) : Colors.white;
     final busy = _isLoading || _isLoadingContext;
     final sendLocked = busy || _blockSendUntilRetry;
     final isFocused = _focusNode.hasFocus;
+    const radius = 28.0;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -730,166 +731,156 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen>
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(32),
+          borderRadius: BorderRadius.circular(radius),
           boxShadow: [
-            if (isFocused)
+            if (isFocused || _isListening)
               BoxShadow(
-                color: const Color(0xFF9047FF).withValues(alpha: 0.25),
-                blurRadius: 20,
-                spreadRadius: 2,
+                color: const Color(0xFF9047FF).withValues(alpha: 0.24),
+                blurRadius: 22,
+                spreadRadius: 1,
+                offset: const Offset(0, 7),
               ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(32),
-          child: Container(
-            padding: const EdgeInsets.all(1),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(32),
-              gradient: LinearGradient(
-                colors: [
-                  const Color(0xFF9047FF).withValues(alpha: 0.5),
-                  const Color(0xFF6B3DFF).withValues(alpha: 0.2),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
+          borderRadius: BorderRadius.circular(radius),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: Container(
+              padding: const EdgeInsets.all(1),
               decoration: BoxDecoration(
-                color: surfaceColor.withValues(alpha: isDark ? 0.85 : 0.95),
-                borderRadius: BorderRadius.circular(31),
-                boxShadow: _focusNode.hasFocus
-                    ? [
-                        BoxShadow(
-                          color: const Color(0xFF9047FF)
-                              .withValues(alpha: isDark ? 0.25 : 0.15),
-                          blurRadius: 20,
-                          spreadRadius: 2,
-                        )
-                      ]
-                    : [
-                        BoxShadow(
-                          color:
-                              Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
-                          blurRadius: 15,
-                          offset: const Offset(0, 5),
-                        )
-                      ],
-                border: Border.all(
-                  color: _focusNode.hasFocus
-                      ? const Color(0xFF9047FF).withValues(alpha: 0.4)
-                      : onSurface.withValues(alpha: 0.08),
-                  width: 1.5,
+                borderRadius: BorderRadius.circular(radius),
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white.withValues(alpha: isDark ? 0.14 : 0.45),
+                    const Color(0xFF9047FF).withValues(alpha: 0.22),
+                    const Color(0xFF6B3DFF).withValues(alpha: 0.14),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              child: Row(
-                children: [
-                  // Professional Voice Input Button
-                  GestureDetector(
-                    onTap: busy || !_speechReady ? null : _toggleMic,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                decoration: BoxDecoration(
+                  color: (isDark ? const Color(0xFF120E1A) : Colors.white)
+                      .withValues(alpha: isDark ? 0.62 : 0.78),
+                  borderRadius: BorderRadius.circular(radius - 1),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+                child: Row(
+                  children: [
+                    Tooltip(
+                      message: _isListening ? 'Stop voice input' : 'Voice input',
+                      child: GestureDetector(
+                        onTap: busy || !_speechReady ? null : _toggleMic,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          width: 46,
+                          height: 46,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: _isListening
+                                  ? const [Color(0xFFFF4D6D), Color(0xFFFF8FA3)]
+                                  : const [Color(0xFF9047FF), Color(0xFF6B3DFF)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: (_isListening
+                                        ? Colors.redAccent
+                                        : const Color(0xFF9047FF))
+                                    .withValues(alpha: 0.38),
+                                blurRadius: 18,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: ScaleTransition(
+                            scale: Tween<double>(begin: 1.0, end: 1.16).animate(
+                              CurvedAnimation(
+                                  parent: _micPulseController,
+                                  curve: Curves.easeInOut),
+                            ),
+                            child: Icon(
+                              _isListening
+                                  ? Icons.mic_rounded
+                                  : Icons.mic_none_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: TextField(
+                          controller: _messageController,
+                          focusNode: _focusNode,
+                          minLines: 1,
+                          maxLines: 4,
+                          textCapitalization: TextCapitalization.sentences,
+                          style: TextStyle(
+                            color: onSurface,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: _isListening
+                                ? 'Listening...'
+                                : 'Ask anything...',
+                            hintStyle: TextStyle(
+                              color: onSurface.withValues(alpha: 0.35),
+                              fontSize: 15,
+                            ),
+                            filled: false,
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            disabledBorder: InputBorder.none,
+                            errorBorder: InputBorder.none,
+                            focusedErrorBorder: InputBorder.none,
+                            isDense: true,
+                            contentPadding:
+                                const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          onSubmitted: (_) => _sendMessage(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Container(
                       width: 46,
                       height: 46,
                       decoration: BoxDecoration(
-                        color: _isListening
-                            ? Colors.redAccent.withValues(alpha: 0.15)
-                            : (isDark
-                                ? const Color(0xFF1E1B2E)
-                                : theme.colorScheme.primary
-                                    .withValues(alpha: 0.05)),
                         shape: BoxShape.circle,
-                        border: Border.all(
-                          color: _isListening
-                              ? Colors.redAccent.withValues(alpha: 0.3)
-                              : (isDark
-                                  ? Colors.white.withValues(alpha: 0.1)
-                                  : theme.colorScheme.primary
-                                      .withValues(alpha: 0.1)),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF9047FF), Color(0xFF6B3DFF)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                      ),
-                      child: ScaleTransition(
-                        scale: Tween<double>(begin: 1.0, end: 1.2).animate(
-                          CurvedAnimation(
-                              parent: _micPulseController,
-                              curve: Curves.easeInOut),
-                        ),
-                        child: Icon(
-                          _isListening
-                              ? Icons.mic_rounded
-                              : Icons.mic_none_rounded,
-                          color: _isListening
-                              ? Colors.redAccent
-                              : (isDark
-                                  ? Colors.white70
-                                  : theme.colorScheme.primary),
-                          size: 22,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  // Floating Input Field
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: TextField(
-                        controller: _messageController,
-                        focusNode: _focusNode,
-                        minLines: 1,
-                        maxLines: 4,
-                        textCapitalization: TextCapitalization.sentences,
-                        style: TextStyle(
-                          color: onSurface,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        decoration: InputDecoration(
-                          hintText:
-                              _isListening ? 'Listening...' : 'Ask anything...',
-                          hintStyle: TextStyle(
-                            color: onSurface.withValues(alpha: 0.35),
-                            fontSize: 15,
+                        boxShadow: [
+                          BoxShadow(
+                            color:
+                                const Color(0xFF9047FF).withValues(alpha: 0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
                           ),
-                          border: InputBorder.none,
-                          isDense: true,
-                          contentPadding:
-                              const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        onSubmitted: (_) => _sendMessage(),
+                        ],
+                      ),
+                      child: IconButton(
+                        onPressed: sendLocked ? null : () => _sendMessage(),
+                        icon: const Icon(Icons.arrow_upward_rounded,
+                            color: Colors.white, size: 24),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  // Send Button
-                  Container(
-                    width: 46,
-                    height: 46,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF9047FF), Color(0xFF6B3DFF)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF9047FF).withValues(alpha: 0.4),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: IconButton(
-                      onPressed: sendLocked ? null : () => _sendMessage(),
-                      icon: const Icon(Icons.arrow_upward_rounded,
-                          color: Colors.white, size: 24),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

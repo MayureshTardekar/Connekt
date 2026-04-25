@@ -222,7 +222,9 @@ class _CommunityChatScreenState extends ConsumerState<CommunityChatScreen> {
         ref.read(communityRepositoryProvider).supabase.auth.currentUser?.id;
     final type = message['message_type'];
     final reactions = Map<String, dynamic>.from(message['reactions'] ?? {});
-    final createdAt = DateTime.parse(message['created_at']);
+    final createdAt =
+        TimeFormatter.parseSupabaseTimestamp(message['created_at']) ??
+            DateTime.now();
 
     final bubbleBg = isMe
         ? theme.colorScheme.primaryContainer

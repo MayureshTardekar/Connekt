@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/providers/campus_provider.dart';
@@ -389,9 +390,7 @@ class _FeedPostCardState extends State<_FeedPostCard> {
     final authorAvatar = post['author_avatar'] as String?;
     final likesCount = (post['likes_count'] as int?) ?? 0;
     final createdAt = post['created_at'] as String?;
-    final timeAgo = createdAt != null
-        ? TimeFormatter.format(DateTime.tryParse(createdAt) ?? DateTime.now())
-        : '';
+    final timeAgo = createdAt != null ? TimeFormatter.format(createdAt) : '';
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

@@ -222,10 +222,10 @@ class CommunityRepository {
     try {
       final data = await supabase
           .from('campuses')
-          .select('join_pin')
+          .select()
           .eq('id', campusId)
           .single();
-      final p = data['join_pin'];
+      final p = data.containsKey('join_pin') ? data['join_pin'] : null;
       return p != null && p.toString().trim().isNotEmpty;
     } catch (e) {
       // Column may not exist yet — treat as no PIN required
@@ -240,11 +240,11 @@ class CommunityRepository {
     try {
       final data = await supabase
           .from('campuses')
-          .select('join_pin')
+          .select()
           .eq('id', campusId)
           .single();
 
-      final expected = data['join_pin'];
+      final expected = data.containsKey('join_pin') ? data['join_pin'] : null;
       if (expected == null || expected.toString().trim().isEmpty) {
         return true;
       }

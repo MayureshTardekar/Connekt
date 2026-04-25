@@ -7,7 +7,7 @@ final themeProvider = StateNotifierProvider<ThemeNotifier, ThemeMode>((ref) {
 });
 
 class ThemeNotifier extends StateNotifier<ThemeMode> {
-  ThemeNotifier() : super(ThemeMode.light) {
+  ThemeNotifier() : super(ThemeMode.dark) {
     _loadTheme();
   }
 
@@ -27,10 +27,10 @@ class ThemeNotifier extends StateNotifier<ThemeMode> {
   void _loadTheme() async {
     final prefs = await SharedPreferences.getInstance();
     final mode = prefs.getString(_key);
-    if (mode == 'dark') {
-      state = ThemeMode.dark;
-    } else {
+    if (mode == 'light') {
       state = ThemeMode.light;
+    } else {
+      state = ThemeMode.dark;
     }
   }
 }

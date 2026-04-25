@@ -69,7 +69,10 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
     setState(() => _isLoading = true);
     try {
       final campus = ref.read(selectedCampusProvider);
-      final user = Supabase.instance.client.auth.currentUser!;
+      final user = Supabase.instance.client.auth.currentUser;
+      if (campus == null || user == null) {
+        throw Exception('Please sign in and select a campus before creating a group.');
+      }
 
       final dateTimeStr = selectedDateTime.toIso8601String();
 
@@ -77,7 +80,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
       final response = await Supabase.instance.client
           .from('study_groups')
           .insert({
-            'campus_id': campus!['campus_id'],
+            'campus_id': campus['campus_id'],
             'creator_id': user.id,
             'creator_name': user.userMetadata?['full_name'] ?? 'Student',
             'subject': _subjectController.text.trim(),

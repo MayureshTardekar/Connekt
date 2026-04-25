@@ -1,23 +1,28 @@
 class TimeFormatter {
-  /// Formats a [DateTime] (or ISO-8601 [String]) into a relative time string.
-  /// Always normalises to UTC before computing the difference, so UTC timestamps
-  /// from Supabase are displayed correctly regardless of the device's local timezone.
-  static String format(dynamic input) {
-    DateTime? dateTime;
+  static final RegExp _timezoneSuffix = RegExp(r'(z|[+-]\d{2}:?\d{2})$', caseSensitive: false);
 
+  /// Parses Supabase timestamps as UTC when the wire value omits an explicit
+  /// timezone, then converts to device local time for UI display.
+  static DateTime? parseSupabaseTimestamp(dynamic input) {
     if (input is DateTime) {
-      dateTime = input;
-    } else if (input is String) {
-      dateTime = DateTime.tryParse(input);
+      return input.isUtc ? input.toLocal() : input;
     }
+    if (input is! String || input.trim().isEmpty) return null;
+
+    final raw = input.trim();
+    final normalized = _timezoneSuffix.hasMatch(raw) ? raw : '${raw}Z';
+    return DateTime.tryParse(normalized)?.toLocal();
+  }
+
+  /// Formats a [DateTime] (or ISO-8601 [String]) into a relative time string.
+  /// Supabase UTC timestamps are converted to the device's local time before
+  /// computing the relative label, avoiding timezone-offset drift.
+  static String format(dynamic input) {
+    final dateTime = parseSupabaseTimestamp(input);
 
     if (dateTime == null) return '';
 
-    // CRITICAL: Always work in UTC so that IST (+5:30) or any other offset
-    // does not skew the difference calculation.
-    final utcNow = DateTime.now().toUtc();
-    final utcTime = dateTime.toUtc();
-    final difference = utcNow.difference(utcTime);
+    final difference = DateTime.now().difference(dateTime);
 
     if (difference.isNegative || difference.inSeconds < 45) {
       return 'just now';

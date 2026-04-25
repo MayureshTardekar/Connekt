@@ -6,6 +6,11 @@ class AppTheme {
   static const Color primaryLight = Color(0xFFB07AFF);
   static const Color primaryDark = Color(0xFF6B3DFF);
 
+  static const Color darkBase = Color(0xFF120E1A);
+  static const Color darkSurface = Color(0xFF181222);
+  static const Color darkSurfaceMuted = Color(0xFF21182F);
+  static const Color darkBorder = Color(0xFF30243F);
+
   static const Color background = Color(0xFFF5F7FB);
   static const Color surface = Colors.white;
   static const Color surfaceMuted = Color(0xFFF8FAFC);
@@ -247,9 +252,9 @@ class AppTheme {
   }
 
   static ThemeData get darkTheme {
-    const darkBg = Color(0xFF0B0812); // Deep Midnight
-    const darkSurface = Color(0xFF120E1A); // Royal Dark Purple
-    const darkBorder = Color(0xFF1E1B2E); // Deep Indigo Border
+    const darkBg = AppTheme.darkBase; // Global Dark Purple base
+    const darkSurface = AppTheme.darkSurface;
+    const darkBorder = AppTheme.darkBorder;
     const primaryAccent = Color(0xFF9047FF); // Royal Purple
     const secondaryAccent = Color(0xFF6B3DFF); // Deep Indigo Glow
 
@@ -263,6 +268,9 @@ class AppTheme {
         primary: primaryAccent,
         secondary: secondaryAccent,
         surface: darkSurface,
+        surfaceContainer: AppTheme.darkSurfaceMuted,
+        surfaceContainerHigh: Color(0xFF291D39),
+        surfaceContainerHighest: Color(0xFF332247),
         onSurface: Colors.white,
         outline: darkBorder,
       ),
@@ -388,7 +396,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFF1E1B2E),
+        fillColor: AppTheme.darkSurfaceMuted,
         hintStyle: GoogleFonts.poppins(
           color: const Color(0xFF4B5563),
           fontWeight: FontWeight.w400,
