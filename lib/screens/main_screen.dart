@@ -146,6 +146,11 @@ class MainScreenState extends ConsumerState<MainScreen> {
           ],
         ),
         actions: [
+          if (widget.navigationShell.currentIndex == 1)
+            IconButton(
+              icon: Icon(Icons.add_circle_outline, color: theme.colorScheme.primary),
+              onPressed: () => context.push(AppRoutes.noteUpload),
+            ),
           if (widget.navigationShell.currentIndex == 3)
             IconButton(
               icon: Icon(Icons.add_circle_outline, color: theme.colorScheme.primary),

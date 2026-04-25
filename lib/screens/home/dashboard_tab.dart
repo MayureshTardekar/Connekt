@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/providers/campus_provider.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/utils/time_formatter.dart';
@@ -927,6 +928,36 @@ class _PostCardState extends ConsumerState<_PostCard> {
               widget.activity['title'] ?? widget.activity['caption'] ?? '',
               style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
             ),
+            
+            if (widget.activity['image_url'] != null && widget.activity['image_url'].toString().isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: CachedNetworkImage(
+                    imageUrl: widget.activity['image_url'],
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      height: 200,
+                      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                      child: const Center(child: CircularProgressIndicator()),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      height: 150,
+                      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                      child: const Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.broken_image_rounded, color: Colors.grey, size: 40),
+                          SizedBox(height: 8),
+                          Text('Image unavailable', style: TextStyle(color: Colors.grey)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             
             if (widget.activity['location'] != null)
               Padding(
