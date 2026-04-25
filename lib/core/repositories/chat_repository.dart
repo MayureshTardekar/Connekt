@@ -41,9 +41,7 @@ class ChatRepository {
     await _supabase.from('chat_conversations').insert({
       'id': channelId,
       'other_user_name': title,
-      'participant_id': user.id, // The creator's ID
       'is_official': true,
-      'is_group': true,
       'campus_id': campusId,
       'last_message': 'Channel created',
       'last_message_time': DateTime.now().toUtc().toIso8601String(),
