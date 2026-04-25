@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../core/models/chat_conversation.dart';
 import '../../core/providers/campus_provider.dart';
 import '../../core/providers/chat_provider.dart';
+import '../../core/providers/community_provider.dart';
 import '../../core/routing/app_routes.dart';
 import '../../core/widgets/app_states.dart';
 
@@ -248,8 +249,7 @@ class _CommunitiesViewState extends ConsumerState<_CommunitiesView> with Automat
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final conversationsAsync = ref.watch(chatConversationsProvider);
-    final selectedCampusId = ref.watch(selectedCampusIdProvider);
+    final communitiesAsync = ref.watch(communitiesProvider);
     final query = _searchController.text.trim().toLowerCase();
 
     return Column(
@@ -264,17 +264,15 @@ class _CommunitiesViewState extends ConsumerState<_CommunitiesView> with Automat
         ),
         const SizedBox(height: 20),
         Expanded(
-          child: conversationsAsync.when(
+          child: communitiesAsync.when(
             loading: () => const AppLoadingState(message: 'Loading communities...'),
             error: (error, _) => AppErrorState(
               message: error.toString(),
-              onRetry: () => ref.invalidate(chatConversationsProvider),
+              onRetry: () => ref.invalidate(communitiesProvider),
             ),
-            data: (conversations) {
-              final visible = conversations
-                  .where((chat) => !chat.isOfficial)
-                  .where((chat) => chat.campusId == selectedCampusId || chat.isGroup)
-                  .where((chat) => chat.participantName.toLowerCase().contains(query))
+            data: (communities) {
+              final visible = communities
+                  .where((c) => (c['name'] as String? ?? '').toLowerCase().contains(query))
                   .toList();
 
               if (visible.isEmpty) {
@@ -288,12 +286,12 @@ class _CommunitiesViewState extends ConsumerState<_CommunitiesView> with Automat
               }
 
               return RefreshIndicator(
-                onRefresh: () async => ref.invalidate(chatConversationsProvider),
+                onRefresh: () async => ref.invalidate(communitiesProvider),
                 child: ListView.builder(
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
                   itemCount: visible.length,
-                  itemBuilder: (context, index) => _AnnouncementTile(conversation: visible[index]),
+                  itemBuilder: (context, index) => _CommunityListTile(community: visible[index]),
                 ),
               );
             },
@@ -486,5 +484,116 @@ class _AnnouncementTile extends StatelessWidget {
     if (diff.inMinutes < 60) return '${diff.inMinutes}m';
     if (diff.inHours < 24) return '${diff.inHours}h';
     return DateFormat('MMM d').format(value);
+  }
+}
+
+class _CommunityListTile extends StatelessWidget {
+  final Map<String, dynamic> community;
+
+  const _CommunityListTile({required this.community});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final name = community['name'] as String? ?? 'Unknown';
+    final desc = community['description'] as String? ?? '';
+    final isPrivate = community['is_private'] as bool? ?? false;
+    final id = community['id'] as String;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        color: theme.colorScheme.onSurface.withValues(alpha: 0.03),
+        border: Border.all(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.05)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            context.push(AppRoutes.communityChat.replaceAll(':id', id));
+          },
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [theme.colorScheme.primary, theme.colorScheme.primary.withValues(alpha: 0.8)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: Icon(
+                    isPrivate ? Icons.lock_rounded : Icons.groups_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              name,
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurface,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          if (isPrivate)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                              ),
+                              child: const Text(
+                                'Private',
+                                style: TextStyle(
+                                  color: Colors.orange,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      if (desc.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          desc,
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                            fontSize: 12,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
